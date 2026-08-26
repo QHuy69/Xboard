@@ -1,0 +1,45 @@
+name: Sync customized Xboard with upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-xboard-custom-en
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the customized branch
+        uses: actions/checkout@v4
+        with:
+          ref: custom-en
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Merge the official Xboard release
+        run: |
+          git remote add upstream https://github.com/cedar2025/Xboard.git 2>/dev/null || true
+          git fetch upstream master
+          git merge --no-edit upstream/master
+
+      - name: Advance to the translated admin asset revision
+        run: |
+          git -C public/assets/admin fetch origin custom-en
+          git -C public/assets/admin checkout --detach origin/custom-en
+
+      - name: Commit and publish the customized update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet; then
+            git add public/assets/admin
+            git commit -m "chore(admin): update translated admin assets"
+          fi
+          git push origin HEAD:custom-en
