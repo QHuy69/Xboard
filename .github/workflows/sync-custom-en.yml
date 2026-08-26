@@ -23,6 +23,11 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Merge the official Xboard release
         run: |
           git remote add upstream https://github.com/cedar2025/Xboard.git 2>/dev/null || true
@@ -36,8 +41,6 @@ jobs:
 
       - name: Commit and publish the customized update
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if ! git diff --quiet; then
             git add public/assets/admin
             git commit -m "chore(admin): update translated admin assets"
