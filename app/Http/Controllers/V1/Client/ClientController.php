@@ -72,7 +72,7 @@ class ClientController extends Controller
             filterKeywords: $filterKeywords
         );
 
-        $this->setSubscribeInfoToServers($serversFiltered, $user, count($servers) - count($serversFiltered));
+        $this->setSubscribeInfoToServers($serversFiltered, $user, count($servers) - count($serversFiltered), $request);
         $serversFiltered = $this->addPrefixToServerName($serversFiltered);
 
         // Instantiate the protocol class with filtered servers and client info
@@ -190,7 +190,60 @@ class ClientController extends Controller
         ];
     }
 
-    private function setSubscribeInfoToServers(&$servers, $user, $rejectServerCount = 0)
+    private const SUBSCRIBE_INFO_LABELS = [
+        'zh-CN' => [
+            'remaining' => '剩余流量：%s', 'expiry' => '套餐到期：%s',
+            'reset' => '距离下次重置剩余：%d 天', 'website' => '官网：%s', 'never' => '长期有效',
+        ],
+        'zh-TW' => [
+            'remaining' => '剩餘流量：%s', 'expiry' => '方案到期：%s',
+            'reset' => '距離下次重置剩餘：%d 天', 'website' => '官網：%s', 'never' => '長期有效',
+        ],
+        'en-US' => [
+            'remaining' => 'Remaining traffic: %s', 'expiry' => 'Plan expires: %s',
+            'reset' => 'Next reset in: %d days', 'website' => 'Website: %s', 'never' => 'Never expires',
+        ],
+        'vi-VN' => [
+            'remaining' => 'Lưu lượng còn lại: %s', 'expiry' => 'Gói hết hạn: %s',
+            'reset' => 'Còn %d ngày đến lần đặt lại tiếp theo', 'website' => 'Website: %s', 'never' => 'Không bao giờ hết hạn',
+        ],
+        'ja-JP' => [
+            'remaining' => '残り通信量：%s', 'expiry' => 'プラン有効期限：%s',
+            'reset' => '次回リセットまで：%d日', 'website' => '公式サイト：%s', 'never' => '無期限',
+        ],
+        'ko-KR' => [
+            'remaining' => '남은 트래픽: %s', 'expiry' => '요금제 만료일: %s',
+            'reset' => '다음 초기화까지: %d일', 'website' => '웹사이트: %s', 'never' => '만료되지 않음',
+        ],
+        'fa-IR' => [
+            'remaining' => 'حجم باقی‌مانده: %s', 'expiry' => 'انقضای طرح: %s',
+            'reset' => 'تا بازنشانی بعدی: %d روز', 'website' => 'وب‌سایت: %s', 'never' => 'بدون انقضا',
+        ],
+        'ru-RU' => [
+            'remaining' => 'Остаток трафика: %s', 'expiry' => 'Срок действия тарифа: %s',
+            'reset' => 'До следующего сброса: %d дн.', 'website' => 'Сайт: %s', 'never' => 'Бессрочно',
+        ],
+    ];
+
+    private function subscribeInfoLocale(Request $request): string
+    {
+        $supported = array_keys(self::SUBSCRIBE_INFO_LABELS);
+        foreach ($request->getLanguages() as $language) {
+            $language = str_replace('_', '-', (string) $language);
+            if (in_array($language, $supported, true)) {
+                return $language;
+            }
+            $base = strtolower(explode('-', $language)[0]);
+            foreach ($supported as $candidate) {
+                if (strtolower(explode('-', $candidate)[0]) === $base) {
+                    return $candidate;
+                }
+            }
+        }
+        return 'en-US';
+    }
+
+    private function setSubscribeInfoToServers(&$servers, $user, $rejectServerCount = 0, ?Request $request = null)
     {
         if (!isset($servers[0]))
             return;
@@ -201,22 +254,30 @@ class ClientController extends Controller
         }
         if (!(int) admin_setting('show_info_to_server_enable', 0))
             return;
+        $labels = self::SUBSCRIBE_INFO_LABELS[$this->subscribeInfoLocale($request ?? request())];
         $useTraffic = $user['u'] + $user['d'];
         $totalTraffic = $user['transfer_enable'];
         $remainingTraffic = Helper::trafficConvert($totalTraffic - $useTraffic);
-        $expiredDate = $user['expired_at'] ? date('Y-m-d', $user['expired_at']) : __('长期有效');
+        $expiredDate = $user['expired_at'] ? date('Y-m-d', $user['expired_at']) : $labels['never'];
         $userService = new UserService();
         $resetDay = $userService->getResetDay($user);
-        array_unshift($servers, array_merge($servers[0], [
-            'name' => "套餐到期：{$expiredDate}",
-        ]));
-        if ($resetDay) {
+        $website = trim((string) admin_setting('app_url', ''));
+        if ($website !== '') {
+            $website = parse_url($website, PHP_URL_HOST) ?: $website;
             array_unshift($servers, array_merge($servers[0], [
-                'name' => "距离下次重置剩余：{$resetDay} 天",
+                'name' => sprintf($labels['website'], $website),
             ]));
         }
         array_unshift($servers, array_merge($servers[0], [
-            'name' => "剩余流量：{$remainingTraffic}",
+            'name' => sprintf($labels['expiry'], $expiredDate),
+        ]));
+        if ($resetDay) {
+            array_unshift($servers, array_merge($servers[0], [
+                'name' => sprintf($labels['reset'], $resetDay),
+            ]));
+        }
+        array_unshift($servers, array_merge($servers[0], [
+            'name' => sprintf($labels['remaining'], $remainingTraffic),
         ]));
     }
 
