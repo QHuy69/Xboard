@@ -234,21 +234,31 @@ class ClientController extends Controller
         }
         $cookie = str_replace('_', '-', (string) $request->cookie('luck_locale', ''));
         if (in_array($cookie, $supported, true)) {
+            $this->storeUserLocale($user, $cookie);
             return $cookie;
         }
         foreach ($request->getLanguages() as $language) {
             $language = str_replace('_', '-', (string) $language);
             if (in_array($language, $supported, true)) {
+                $this->storeUserLocale($user, $language);
                 return $language;
             }
             $base = strtolower(explode('-', $language)[0]);
             foreach ($supported as $candidate) {
                 if (strtolower(explode('-', $candidate)[0]) === $base) {
+                    $this->storeUserLocale($user, $candidate);
                     return $candidate;
                 }
             }
         }
         return 'en-US';
+    }
+
+    private function storeUserLocale($user, string $locale): void
+    {
+        if ($user instanceof \App\Models\User && $user->locale !== $locale) {
+            $user->forceFill(['locale' => $locale])->saveQuietly();
+        }
     }
 
     private function setSubscribeInfoToServers(&$servers, $user, $rejectServerCount = 0, ?Request $request = null)
