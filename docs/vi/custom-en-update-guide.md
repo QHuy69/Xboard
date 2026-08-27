@@ -89,6 +89,8 @@ Node đang chạy ba cổng: Hysteria2 UDP `45157`, VLESS TCP `13101` và AnyTLS
 
 Bản triển khai hiện dùng tên TLS `nt1.zaoguang-vpn.com` (CNAME tới `ntt1.zaoguang-vpn.com`, A trỏ về `8.216.43.70`) và ACME HTTP-01 để tự gia hạn chứng chỉ. Hysteria2/AnyTLS dùng SNI này với `allow_insecure=false`; VLESS Reality dùng đích `www.gov.cn` (cổng thông tin Chính phủ Trung Quốc), uTLS `safari`. Sau khi đổi chứng chỉ hoặc Reality, hãy tải lại subscription để nhận SNI/đích mới.
 
+Subscription info node đã bật (`show_info_to_server_enable=1`): client sẽ thấy các dòng còn lưu lượng, ngày hết hạn, ngày reset và website. Nhãn được chọn theo `Accept-Language` của client, hỗ trợ zh-CN, zh-TW, en-US, vi-VN, ja-JP, ko-KR, fa-IR và ru-RU; nếu không nhận diện được sẽ dùng tiếng Anh.
+
 Kiểm tra nhanh từ máy khách:
 
 - TCP `13101` và `48161` phải kết nối được; Hysteria2 `45157` là UDP nên bài kiểm tra TCP sẽ báo thất bại dù UDP vẫn hoạt động.
