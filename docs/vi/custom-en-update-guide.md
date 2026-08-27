@@ -87,7 +87,7 @@ Mỗi thay đổi dịch giao diện nằm trong xboard-admin-dist; Xboard chín
 
 Node đang chạy ba cổng: Hysteria2 UDP `45157`, VLESS TCP `13101` và AnyTLS TCP `48161`. Hysteria2/AnyTLS phải dùng chứng chỉ công khai khi client đặt `allow_insecure=false`; chứng chỉ tự ký sẽ làm client báo lỗi TLS và không có lưu lượng.
 
-Bản triển khai hiện dùng tên TLS `8-216-43-70.sslip.io` (DNS của tên này trỏ trực tiếp về `8.216.43.70`) và ACME HTTP-01 để tự gia hạn chứng chỉ. VLESS Reality dùng đích `www.gov.cn` (cổng thông tin Chính phủ Trung Quốc), uTLS `safari`; không bật `allow_insecure`. Sau khi đổi chứng chỉ hoặc Reality, hãy tải lại subscription để nhận SNI/đích mới.
+Bản triển khai hiện dùng tên TLS `nt1.zaoguang-vpn.com` (CNAME tới `ntt1.zaoguang-vpn.com`, A trỏ về `8.216.43.70`) và ACME HTTP-01 để tự gia hạn chứng chỉ. Hysteria2/AnyTLS dùng SNI này với `allow_insecure=false`; VLESS Reality dùng đích `www.gov.cn` (cổng thông tin Chính phủ Trung Quốc), uTLS `safari`. Sau khi đổi chứng chỉ hoặc Reality, hãy tải lại subscription để nhận SNI/đích mới.
 
 Kiểm tra nhanh từ máy khách:
 
