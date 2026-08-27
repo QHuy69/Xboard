@@ -19,6 +19,12 @@ class NodeResource extends JsonResource
             'type' => $this['type'],
             'version' => $this['version'] ?? null,
             'name' => $this['name'],
+            // The Luck theme renders the node address from host/port. Keep
+            // these fields in the user API response so it never displays
+            // "undefined:undefined" for otherwise valid nodes.
+            'host' => $this['host'] ?? null,
+            'port' => $this['port'] ?? null,
+            'server_port' => $this['server_port'] ?? null,
             'rate' => $this['rate'],
             'tags' => $this['tags'],
             'is_online' => $this['is_online'],
