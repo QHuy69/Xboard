@@ -225,9 +225,17 @@ class ClientController extends Controller
         ],
     ];
 
-    private function subscribeInfoLocale(Request $request): string
+    private function subscribeInfoLocale(Request $request, $user = null): string
     {
         $supported = array_keys(self::SUBSCRIBE_INFO_LABELS);
+        $stored = str_replace('_', '-', (string) data_get($user, 'locale', ''));
+        if (in_array($stored, $supported, true)) {
+            return $stored;
+        }
+        $cookie = str_replace('_', '-', (string) $request->cookie('luck_locale', ''));
+        if (in_array($cookie, $supported, true)) {
+            return $cookie;
+        }
         foreach ($request->getLanguages() as $language) {
             $language = str_replace('_', '-', (string) $language);
             if (in_array($language, $supported, true)) {
@@ -254,7 +262,7 @@ class ClientController extends Controller
         }
         if (!(int) admin_setting('show_info_to_server_enable', 0))
             return;
-        $labels = self::SUBSCRIBE_INFO_LABELS[$this->subscribeInfoLocale($request ?? request())];
+        $labels = self::SUBSCRIBE_INFO_LABELS[$this->subscribeInfoLocale($request ?? request(), $user)];
         $useTraffic = $user['u'] + $user['d'];
         $totalTraffic = $user['transfer_enable'];
         $remainingTraffic = Helper::trafficConvert($totalTraffic - $useTraffic);
