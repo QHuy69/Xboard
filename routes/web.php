@@ -60,6 +60,18 @@ $renderTheme = function (Request $request) {
             }
             Log::info('Theme initialized in public directory', ['theme' => $theme]);
         }
+        // Runtime overrides (i18n and the customized shell) live in the
+        // mounted theme directory. Keep their public copies fresh even when
+        // the rest of the theme assets were already published.
+        if ($themePath) {
+            foreach (['i18n-v18.js', 'dashboard.blade.php'] as $runtimeFile) {
+                $source = $themePath . '/' . $runtimeFile;
+                $target = $publicThemePath . '/' . $runtimeFile;
+                if (File::exists($source)) {
+                    File::copy($source, $target);
+                }
+            }
+        }
 
         $renderParams = [
             'title' => admin_setting('app_name', 'Xboard'),
