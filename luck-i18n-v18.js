@@ -446,6 +446,47 @@
   // the complete safety net; the locale's own strings take precedence.
   var dictionary = locale === 'zh-CN' ? zh : Object.assign({}, en, dictionaries[locale] || {});
 
+  // Luck's compiled chunks occasionally concatenate translated and source
+  // fragments in one text node (for example, "gói mới的Hạn mức...").  These
+  // values cannot be handled by an exact dictionary lookup, so normalize the
+  // known mixed fragments as a final, locale-aware pass.  Keep the fallback in
+  // English for locales whose dictionaries do not contain a dedicated phrase;
+  // the important invariant is that a non-Chinese locale never leaks CJK text.
+  function normalizeMixedFragments(value) {
+    if (!value || locale === 'zh-CN') return value;
+    var viLocale = locale === 'vi-VN';
+    var notice = viLocale ? 'Lưu ý mua gói' : 'Purchase notice';
+    var quota = viLocale ? 'Hạn mức lưu lượng của gói mới có hiệu lực ngay' : 'The new plan traffic quota takes effect immediately';
+    var limits = viLocale ? 'Giới hạn thiết bị và giới hạn tốc độ sẽ áp dụng theo gói mới' : 'Device and speed limits follow the new plan';
+    var advice = viLocale ? 'Nên mua gói mới vào đầu tháng hoặc khi sắp hết lưu lượng để tránh lãng phí.' : 'Buy a new plan at the start of the month or when traffic is nearly exhausted to avoid waste.';
+    var orderDetails = viLocale ? 'Chi tiết đơn hàng' : 'Order details';
+    var basicInfo = viLocale ? 'Thông tin cơ bản' : 'Basic information';
+    var planInfo = viLocale ? 'Thông tin gói' : 'Plan information';
+    var planCost = viLocale ? 'Chi phí gói' : 'Plan cost';
+    var paidAmount = viLocale ? 'Số tiền đã thanh toán' : 'Paid amount';
+    var deviceUnit = viLocale ? ' thiết bị' : ' devices';
+    var cancelNotice = viLocale
+      ? 'Nếu hủy đơn khi thanh toán bằng số dư, số dư sẽ tự động được hoàn lại vào tài khoản.'
+      : 'If you cancel an order paid from your balance, the balance will be returned automatically.';
+    return value
+      .replace(/(?:购买|Mua)\s*Gói?提醒/g, notice)
+      .replace(/Mua gói提醒/g, notice)
+      .replace(/gói mới\s*的\s*Hạn mức lưu lượng\s*将立即生效/g, quota)
+      .replace(/(?:新Gói|gói mới)\s*的\s*Hạn mức lưu lượng\s*将立即生效/g, quota)
+      .replace(/Giới hạn thiết bị\s*和\s*Giới hạn tốc độ\s*将按(?:gói mới|新Gói)执行/g, limits)
+      .replace(/建议在(?:月初|tháng初)或(?:流量|Lưu lượng)即将用完时(?:购买|Mua)gói mới，以避免浪费。/g, advice)
+      .replace(/建议在月初或流量即将用完时购买Gói mới，以避免浪费。/g, advice)
+      .replace(/Hủy\s*購入|HủyMua|Hủy购买/g, viLocale ? 'Hủy mua' : 'Cancel purchase')
+      .replace(/Đơn hàngChi tiết/g, orderDetails)
+      .replace(/基本Thông tin/g, basicInfo)
+      .replace(/GóiThông tin/g, planInfo)
+      .replace(/Gói费用/g, planCost)
+      .replace(/Đã thanh toánSố tiền/g, paidAmount)
+      .replace(/(\d+)\s*台/g, '$1' + deviceUnit)
+      .replace(/Hủy后如使用Thanh toán bằng số dư，Số dư将自动退回到您的Tài khoản/g, cancelNotice)
+      .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại');
+  }
+
   function translateText(text) {
     var leading = text.match(/^\s*/)[0];
     var trailing = text.match(/\s*$/)[0];
@@ -551,6 +592,7 @@
         .replace(/总计/g, 'Total')
         .replace(/(\d+)\s*(?:月|month)\s*(\d+)\s*(?:日|day)/g, '$1/$2');
     }
+    translatedCore = normalizeMixedFragments(translatedCore);
     // Apply Chinese fragments after the mixed-language normalizers too. The
     // pre-built bundle can translate one half of a label before this script
     // sees the other half, so an exact-key-only pass is not sufficient.
@@ -581,7 +623,7 @@
       function normalizeLeaf(element) {
         if (!element || element.nodeType !== 1 || element.childElementCount !== 0) return;
         var text = element.textContent || '';
-        var normalized = text
+        var normalized = normalizeMixedFragments(text)
           .replace(/ChungLiên kết đăng ký/g, 'Liên kết đăng ký chung')
           .replace(/Dùng ứng dụng để quétMã QRNhập nhanh/g, 'Dùng ứng dụng để quét mã QR để nhập nhanh')
           .replace(/Dùng ứng dụng để quétMã QR/g, 'Dùng ứng dụng để quét mã QR')
@@ -641,6 +683,32 @@
   }
   function start() {
     translate(document.body);
+    // The compiled mobile shell can render the bottom navigation without
+    // wiring the click callback (this is most visible on the Node item).  Use
+    // a delegated fallback so dynamically mounted nav items still work.  If
+    // the app's own router handles the click, the pathname changes first and
+    // this fallback does nothing; otherwise it performs a normal SPA-safe
+    // navigation after the event has finished bubbling.
+    if (!window.__LUCK_MOBILE_NAV_FALLBACK__) {
+      window.__LUCK_MOBILE_NAV_FALLBACK__ = true;
+      document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (!target || !target.closest) return;
+        var item = target.closest('.mobile-bottom-nav .nav-item');
+        if (!item) return;
+        var items = Array.prototype.slice.call(document.querySelectorAll('.mobile-bottom-nav .nav-item'));
+        var index = items.indexOf(item);
+        var routes = ['/dashboard', '/plans', '/servers', '/orders'];
+        var route = routes[index];
+        if (!route) return;
+        var pathBeforeClick = window.location.pathname;
+        window.setTimeout(function () {
+          if (window.location.pathname === pathBeforeClick && pathBeforeClick !== route) {
+            window.location.assign(route);
+          }
+        }, 120);
+      }, false);
+    }
     new MutationObserver(function (records) {
       records.forEach(function (record) {
         if (record.type === 'characterData' && record.target.parentElement) translate(record.target.parentElement);

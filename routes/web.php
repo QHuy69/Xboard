@@ -50,11 +50,30 @@ $renderTheme = function (Request $request) {
         $publicThemePath = public_path('theme/' . $theme);
         $themePath = $themeService->getThemePath($theme);
         // A custom runtime file may create the public theme directory before
-        // the first request. Treat a missing assets directory as an
-        // uninitialized theme so route chunks (profile, orders, etc.) are
-        // published instead of falling through to the HTML shell.
+        // the first request. Treat a missing or partial assets directory as
+        // uninitialized so route chunks (profile, orders, mobile navigation,
+        // etc.) are published instead of falling through to the HTML shell.
+        $publicThemeAssets = $publicThemePath . '/assets';
+        $sourceThemeAssets = $themePath ? $themePath . '/assets' : null;
         $needsThemePublish = !File::exists($publicThemePath)
-            || (File::isDirectory($themePath . '/assets') && !File::exists($publicThemePath . '/assets'));
+            || ($sourceThemeAssets && File::isDirectory($sourceThemeAssets) && !File::isDirectory($publicThemeAssets));
+        if (!$needsThemePublish && $sourceThemeAssets && File::isDirectory($sourceThemeAssets)) {
+            // Compare relative asset paths, not just directory existence. A
+            // previous deployment could have copied only the entry chunk,
+            // leaving lazy-loaded pages (and the mobile nav component) absent.
+            $publicAssetPaths = [];
+            foreach (File::allFiles($publicThemeAssets) as $publicAsset) {
+                $relative = ltrim(str_replace($publicThemeAssets, '', $publicAsset->getPathname()), DIRECTORY_SEPARATOR . '/');
+                $publicAssetPaths[$relative] = true;
+            }
+            foreach (File::allFiles($sourceThemeAssets) as $sourceAsset) {
+                $relative = ltrim(str_replace($sourceThemeAssets, '', $sourceAsset->getPathname()), DIRECTORY_SEPARATOR . '/');
+                if (!isset($publicAssetPaths[$relative])) {
+                    $needsThemePublish = true;
+                    break;
+                }
+            }
+        }
         if ($needsThemePublish) {
             if (!$themePath || !File::copyDirectory($themePath, $publicThemePath)) {
                 throw new Exception('主题初始化失败');
