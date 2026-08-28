@@ -312,10 +312,26 @@
     '如果Mã QR无法显示，请点击下方链接：': 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:', '打开Thanh toán链接': 'Mở liên kết thanh toán',
     'ĐóngThanh toán': 'Đóng thanh toán', '检查Thanh toánTrang thái': 'Kiểm tra trạng thái thanh toán'
   });
-  var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': {} };
+  var zh = {};
+  Object.assign(zh, {
+    'Mạng速度': '网络速度', 'Tốc độ mạng': '网络速度', 'Không giới hạn速': '不限速', 'Không giới hạn tốc độ': '不限速',
+    'Hỗ trợ续费': '支持续费', 'Hỗ trợ gia hạn': '支持续费', 'NhậpMã giảm giá代码': '请输入优惠码', 'Nhập mã giảm giá': '请输入优惠码',
+    'Xác nhận购买': '确认购买', 'Xác nhận mua': '确认购买', 'Đang创建Đơn hàng...': '正在创建订单...', 'Đang tạo đơn hàng...': '正在创建订单...',
+    'Máy chủ网关Lỗi，请稍后重试': '网关错误，请稍后重试', 'Lỗi máy chủ, vui lòng thử lại sau': '网关错误，请稍后重试',
+    'Xác nhận您的Đơn hàngThông tin': '请确认您的订单信息', 'Vui lòng xác nhận thông tin đơn hàng': '请确认您的订单信息',
+    'Gói名称': '套餐名称', 'Tên gói': '套餐名称', '订阅周期': '订阅周期', 'Chu kỳ gói': '订阅周期',
+    '流量配额': '流量配额', 'Hạn mức lưu lượng': '流量配额', '设备数量': '设备数量', 'Giới hạn thiết bị': '设备限制',
+    '设备限制': '设备限制', '速度限制': '速度限制', 'Giới hạn tốc độ': '速度限制', '月付': '月付', 'Hàng tháng': '月付',
+    'GóiGiá': '套餐价格', 'Giá gói': '套餐价格', '最终Giá': '最终价格', 'Giá cuối': '最终价格', 'Hủy购买': '取消购买', 'Hủy mua': '取消购买',
+    '扫码Thanh toán': '扫码支付', 'Quét mã thanh toán': '扫码支付', 'Thanh toánSố tiền': '支付金额', 'Số tiền thanh toán': '支付金额',
+    'Đơn hàng号': '订单号', 'Mã đơn hàng': '订单号', '请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán': '请使用支付应用扫描上方二维码完成支付',
+    'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:': '如果二维码无法显示，请点击下方链接：', 'Mở liên kết thanh toán': '打开支付链接',
+    'ĐóngThanh toán': '关闭支付', 'Đóng thanh toán': '关闭支付', '检查Thanh toánTrang thái': '检查支付状态', 'Kiểm tra trạng thái thanh toán': '检查支付状态'
+  });
+  var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
   // A partially translated locale must never fall back to Chinese.  English is
   // the complete safety net; the locale's own strings take precedence.
-  var dictionary = locale === 'zh-CN' ? {} : Object.assign({}, en, dictionaries[locale] || {});
+  var dictionary = locale === 'zh-CN' ? zh : Object.assign({}, en, dictionaries[locale] || {});
 
   function translateText(text) {
     var leading = text.match(/^\s*/)[0];
