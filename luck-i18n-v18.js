@@ -610,6 +610,25 @@
     }
     return translatedCore !== originalCore ? leading + translatedCore + trailing : text;
   }
+  function normalizeInlineBoundaries(root) {
+    if (locale !== 'vi-VN') return;
+    var scope = root || document;
+    var elements = [];
+    if (scope.nodeType === 1 && scope.matches && scope.matches('.warning-text p')) elements.push(scope);
+    if (scope.querySelectorAll) Array.prototype.push.apply(elements, Array.prototype.slice.call(scope.querySelectorAll('.warning-text p')));
+    elements.forEach(function (element) {
+      var children = Array.prototype.slice.call(element.childNodes || []);
+      for (var index = 1; index < children.length; index += 1) {
+        var previous = children[index - 1];
+        var current = children[index];
+        if (previous.nodeType !== Node.TEXT_NODE || current.nodeType !== Node.ELEMENT_NODE) continue;
+        var previousText = previous.nodeValue || '';
+        var currentText = current.textContent || '';
+        if (!previousText || !currentText || /\s$/.test(previousText) || /^\s/.test(currentText)) continue;
+        if (/[A-Za-zÀ-ỹ0-9)]$/.test(previousText) && /^[A-Za-zÀ-ỹ0-9(]/.test(currentText)) previous.nodeValue = previousText + ' ';
+      }
+    });
+  }
   function translate(root) {
     var walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT);
     var node;
@@ -684,6 +703,7 @@
         normalizeLeaf(element);
       });
     }
+    normalizeInlineBoundaries(root || document);
   }
   function start() {
     translate(document.body);
@@ -728,6 +748,7 @@
           if (node.nodeType === Node.ELEMENT_NODE) translate(node);
         });
       });
+      normalizeInlineBoundaries(document);
       // Release the guard only after the first mounted chunk has gone through
       // translation, preventing a visible flash of source-language loading
       // text on slow/mobile connections.
