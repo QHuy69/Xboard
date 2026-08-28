@@ -16,7 +16,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=8">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=9">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -39,7 +39,7 @@
 <body>
   <div id="app"></div>
   <div class="luck-shell-actions">
-    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.domain.com') }}" target="_blank" rel="noopener noreferrer">
+    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.domain.com') }}" target="_blank" rel="noopener noreferrer" hidden>
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="luck-app-download-label">Tải ứng dụng</span>
     </a>
@@ -261,6 +261,31 @@
           }
         });
       };
+      var syncDownloadPlacement = function () {
+        if (!download) return;
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        if (path === '/login' || path === '/register') {
+          download.hidden = true;
+          return;
+        }
+        var shellActions = document.querySelector('.luck-shell-actions');
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          if (shellActions && download.parentElement !== shellActions) {
+            shellActions.insertBefore(download, banner);
+          }
+          download.hidden = !shellActions;
+          return;
+        }
+        var headerActions = document.querySelector('.header-actions');
+        if (!headerActions) {
+          download.hidden = true;
+          return;
+        }
+        if (download.parentElement !== headerActions) {
+          headerActions.insertBefore(download, headerActions.firstElementChild);
+        }
+        download.hidden = false;
+      };
       banner.addEventListener('click', open);
       close.addEventListener('click', dismiss);
       modal.addEventListener('click', function (event) {
@@ -274,6 +299,7 @@
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(function () {
           syncClashIcons();
+          syncDownloadPlacement();
           checkEligibility(false);
         }, 120);
       };
@@ -283,11 +309,13 @@
       }
       window.addEventListener('popstate', scheduleRefresh);
       window.addEventListener('pageshow', scheduleRefresh);
+      window.addEventListener('resize', scheduleRefresh);
       window.addEventListener('storage', function (event) {
         if (event.key === 'v2board_token') checkEligibility(true);
       });
       window.setTimeout(function () {
         syncClashIcons();
+        syncDownloadPlacement();
         checkEligibility(true);
       }, 0);
     }());

@@ -96,6 +96,18 @@
   flex: 0 0 auto;
 }
 
+.luck-app-download[hidden] {
+  display: none !important;
+}
+
+.header-actions > .luck-app-download {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 17px;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
 .luck-donate-banner:hover,
 .luck-app-download:hover {
   filter: brightness(1.05);
@@ -125,6 +137,15 @@
 
 .subscription-dialog[data-luck-subscription="clash"] .dialog-icon > svg {
   display: none !important;
+}
+
+/* Node polling may rebuild the SVG paths. The generated 0.3s transition then
+   makes every highlighted country flash from white to green on each refresh.
+   Keep the status colors, but render them immediately and without pulsing. */
+.world-map-container .map-svg .country.has-nodes {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
 }
 
 body.luck-donate-open {
