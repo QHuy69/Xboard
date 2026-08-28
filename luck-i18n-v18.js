@@ -381,7 +381,12 @@
     '最近30天': 'last 30 days', '流量': 'Traffic', '上传流量': 'Upload traffic', '下载流量': 'Download traffic',
     '订单详情': 'Order details', '套餐信息': 'Plan information', '关闭支付': 'Close payment', '打开支付链接': 'Open payment link',
     '付款方式': 'Payment method', '网银': 'Bank transfer', '银行卡': 'Bank card', '支付金额': 'Payment amount',
-    '购买套餐': 'Purchase plan', '返回套餐列表': 'Back to plans', '确认支付': 'Confirm payment'
+    '购买套餐': 'Purchase plan', '返回套餐列表': 'Back to plans', '确认支付': 'Confirm payment',
+    'Gói Clash链接': 'Clash subscription link', 'Dùng cho ứng dụng Clash客户端': 'For Clash clients',
+    'Gói V2Ray链接': 'V2Ray subscription link', 'Dùng cho ứng dụng V2Ray客户端': 'For V2Ray clients',
+    'Gói Shadowsocks链接': 'Shadowsocks subscription link', '适用于 Shadowsocks 系列客户端': 'For Shadowsocks clients',
+    'Gói Hiddify链接': 'Hiddify subscription link', 'Dùng cho ứng dụng Hiddify客户端': 'For Hiddify clients',
+    '链接': 'link', '客户端': 'clients', '客户端订阅': 'client subscription'
   };
   var extraVi = {
     '购买': 'Mua', '提示': 'Lưu ý', '升级': 'Nâng cấp', '基本信息': 'Thông tin cơ bản', '周期': 'Chu kỳ',
@@ -394,7 +399,12 @@
     '最近30天': '30 ngày gần đây', '流量': 'Lưu lượng', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống',
     '订单详情': 'Chi tiết đơn hàng', '套餐信息': 'Thông tin gói', '关闭支付': 'Đóng thanh toán', '打开支付链接': 'Mở liên kết thanh toán',
     '付款方式': 'Phương thức thanh toán', '网银': 'Chuyển khoản ngân hàng', '银行卡': 'Thẻ ngân hàng', '支付金额': 'Số tiền thanh toán',
-    '购买套餐': 'Mua gói', '返回套餐列表': 'Quay lại danh sách gói', '确认支付': 'Xác nhận thanh toán'
+    '购买套餐': 'Mua gói', '返回套餐列表': 'Quay lại danh sách gói', '确认支付': 'Xác nhận thanh toán',
+    'Gói Clash链接': 'Liên kết đăng ký Clash', 'Dùng cho ứng dụng Clash客户端': 'Dùng cho ứng dụng Clash',
+    'Gói V2Ray链接': 'Liên kết đăng ký V2Ray', 'Dùng cho ứng dụng V2Ray客户端': 'Dùng cho ứng dụng V2Ray',
+    'Gói Shadowsocks链接': 'Liên kết đăng ký Shadowsocks', '适用于 Shadowsocks 系列客户端': 'Dùng cho ứng dụng Shadowsocks',
+    'Gói Hiddify链接': 'Liên kết đăng ký Hiddify', 'Dùng cho ứng dụng Hiddify客户端': 'Dùng cho ứng dụng Hiddify',
+    '链接': 'liên kết', '客户端': 'ứng dụng', '客户端订阅': 'liên kết ứng dụng'
   };
   var extraZh = {
     'Mua': '购买', 'Lưu ý': '提示', 'Nâng cấp': '升级', 'Thông tin cơ bản': '基本信息', 'Chu kỳ': '周期', 'Chi tiết giá': '费用明细',
@@ -404,7 +414,16 @@
     'Xu hướng sử dụng lưu lượng': '流量使用趋势', '30 ngày gần đây': '最近30天', 'Lưu lượng': '流量', 'Lưu lượng tải lên': '上传流量',
     'Lưu lượng tải xuống': '下载流量', 'Chi tiết đơn hàng': '订单详情', 'Thông tin gói': '套餐信息', 'Đóng thanh toán': '关闭支付',
     'Mở liên kết thanh toán': '打开支付链接', 'Phương thức thanh toán': '付款方式', 'Số tiền thanh toán': '支付金额', 'Mua gói': '购买套餐',
-    'Quay lại danh sách gói': '返回套餐列表', 'Xác nhận thanh toán': '确认支付'
+    'Quay lại danh sách gói': '返回套餐列表', 'Xác nhận thanh toán': '确认支付',
+    'Clash subscription link': 'Clash 订阅链接', 'For Clash clients': '适用于 Clash 客户端',
+    'V2Ray subscription link': 'V2Ray 订阅链接', 'For V2Ray clients': '适用于 V2Ray 客户端',
+    'Shadowsocks subscription link': 'Shadowsocks 订阅链接', 'For Shadowsocks clients': '适用于 Shadowsocks 客户端',
+    'Hiddify subscription link': 'Hiddify 订阅链接', 'For Hiddify clients': '适用于 Hiddify 客户端',
+    'Gói Clash链接': 'Clash 订阅链接', 'Dùng cho ứng dụng Clash客户端': '适用于 Clash 客户端',
+    'Gói V2Ray链接': 'V2Ray 订阅链接', 'Dùng cho ứng dụng V2Ray客户端': '适用于 V2Ray 客户端',
+    'Gói Shadowsocks链接': 'Shadowsocks 订阅链接', '适用于 Shadowsocks 系列客户端': '适用于 Shadowsocks 客户端',
+    'Gói Hiddify链接': 'Hiddify 订阅链接', 'Dùng cho ứng dụng Hiddify客户端': '适用于 Hiddify 客户端',
+    '链接': '链接', '客户端': '客户端', '客户端订阅': '客户端订阅'
   };
   Object.assign(en, extraEn); Object.assign(vi, extraVi); Object.assign(zh, extraZh);
   Object.assign(tw, extraEn); Object.assign(ja, extraEn); Object.assign(ko, extraEn); Object.assign(fa, extraEn); Object.assign(ru, extraEn);

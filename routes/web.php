@@ -68,16 +68,27 @@ $renderTheme = function (Request $request) {
             foreach ([
                 'i18n-v18.js',
                 'dashboard.blade.php',
-                'assets/oPGsis9D-v2.js',
-                'assets/C0KnXkt1.js',
-                'assets/lsrL0SOU.js',
-                'assets/C6e3mGRa-v3.js',
+                'assets/luck-overrides.css',
+                'assets/oPGsis9D-v3.js',
+                'assets/C0KnXkt1-v2.js',
+                'assets/lsrL0SOU-v2.js',
+                'assets/C6e3mGRa-v4.js',
+                'assets/BBbuoBq5-v8.js',
             ] as $runtimeFile) {
                 $source = $themePath . '/' . $runtimeFile;
                 $target = $publicThemePath . '/' . $runtimeFile;
                 if (File::exists($source)) {
-                    File::ensureDirectoryExists(dirname($target));
-                    File::copy($source, $target);
+                    try {
+                        File::ensureDirectoryExists(dirname($target));
+                        // A read-only/publicly prebuilt theme must not turn a
+                        // normal page request into a 500 just because an
+                        // optional runtime override cannot be copied.
+                        if (!@copy($source, $target)) {
+                            Log::warning('Theme runtime override could not be copied', ['target' => $target]);
+                        }
+                    } catch (\Throwable $copyError) {
+                        Log::warning('Theme runtime override failed', ['target' => $target, 'error' => $copyError->getMessage()]);
+                    }
                 }
             }
         }
