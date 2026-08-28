@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\File;
 */
 
 
-Route::get('/', function (Request $request) {
+$renderTheme = function (Request $request) {
     if (admin_setting('app_url') && admin_setting('safe_mode_enable', 0)) {
         $requestHost = $request->getHost();
         $configHost = parse_url(admin_setting('app_url'), PHP_URL_HOST);
@@ -77,7 +77,14 @@ Route::get('/', function (Request $request) {
         ]);
         abort(500, '主题加载失败');
     }
-});
+};
+
+Route::get('/', $renderTheme);
+
+// The Luck theme is a history-mode SPA. Serve its shell for client-side
+// routes as well, so refreshing /servers, /profile, /orders, etc. does not
+// fall through to Laravel's 404 page before Vue Router can boot.
+Route::get('/{path}', $renderTheme)->where('path', 'dashboard|plans|plans/purchase/[^/]+|servers|orders|tickets|traffic-details|invite|profile|docs');
 
 //TODO:: 兼容
 Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))), function () {

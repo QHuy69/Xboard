@@ -312,6 +312,11 @@
     '如果Mã QR无法显示，请点击下方链接：': 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:', '打开Thanh toán链接': 'Mở liên kết thanh toán',
     'ĐóngThanh toán': 'Đóng thanh toán', '检查Thanh toánTrang thái': 'Kiểm tra trạng thái thanh toán'
   });
+  // The server map component exposes country names in Chinese. Resolve its
+  // ISO region code and let Intl.DisplayNames render the active locale,
+  // covering the full map (including territories) without hard-coding one
+  // language's spelling.
+  var countryZhToCode = {"台湾":"TW","芬兰":"FI","荷兰":"NL","土耳其":"TR","新加坡":"SG","中国":"CN","美国":"US","日本":"JP","韩国":"KR","俄罗斯":"RU","德国":"DE","英国":"GB","法国":"FR","加拿大":"CA","澳大利亚":"AU","印度":"IN","泰国":"TH","巴西":"BR","意大利":"IT","西班牙":"ES","墨西哥":"MX","阿根廷":"AR","南非":"ZA","埃及":"EG","沙特阿拉伯":"SA","伊朗":"IR","巴基斯坦":"PK","孟加拉国":"BD","印度尼西亚":"ID","马来西亚":"MY","菲律宾":"PH","越南":"VN","缅甸":"MM","哈萨克斯坦":"KZ","乌克兰":"UA","波兰":"PL","罗马尼亚":"RO","希腊":"GR","葡萄牙":"PT","比利时":"BE","瑞士":"CH","奥地利":"AT","瑞典":"SE","挪威":"NO","丹麦":"DK","爱尔兰":"IE","新西兰":"NZ","智利":"CL","秘鲁":"PE","哥伦比亚":"CO","委内瑞拉":"VE","以色列":"IL","阿联酋":"AE","卡塔尔":"QA","科威特":"KW","约旦":"JO","黎巴嫩":"LB","叙利亚":"SY","伊拉克":"IQ","阿富汗":"AF","尼泊尔":"NP","斯里兰卡":"LK","蒙古":"MN","朝鲜":"KP","香港":"HK","澳门":"MO","吉尔吉斯斯坦":"KG","阿尔巴尼亚":"AL","安道尔":"AD","亚美尼亚":"AM","阿塞拜疆":"AZ","白俄罗斯":"BY","波黑":"BA","保加利亚":"BG","克罗地亚":"HR","塞浦路斯":"CY","捷克":"CZ","爱沙尼亚":"EE","格鲁吉亚":"GE","匈牙利":"HU","冰岛":"IS","拉脱维亚":"LV","列支敦士登":"LI","立陶宛":"LT","卢森堡":"LU","马耳他":"MT","摩尔多瓦":"MD","摩纳哥":"MC","黑山":"ME","北马其顿":"MK","圣马力诺":"SM","塞尔维亚":"RS","斯洛伐克":"SK","斯洛文尼亚":"SI","梵蒂冈":"VA","阿尔及利亚":"DZ","安哥拉":"AO","贝宁":"BJ","博茨瓦纳":"BW","布基纳法索":"BF","布隆迪":"BI","喀麦隆":"CM","佛得角":"CV","中非":"CF","乍得":"TD","科摩罗":"KM","刚果共和国":"CG","刚果民主共和国":"CD","吉布提":"DJ","赤道几内亚":"GQ","厄立特里亚":"ER","埃塞俄比亚":"ET","加蓬":"GA","冈比亚":"GM","加纳":"GH","几内亚":"GN","几内亚比绍":"GW","科特迪瓦":"CI","肯尼亚":"KE","莱索托":"LS","利比里亚":"LR","利比亚":"LY","马达加斯加":"MG","马拉维":"MW","马里":"ML","毛里塔尼亚":"MR","毛里求斯":"MU","摩洛哥":"MA","莫桑比克":"MZ","纳米比亚":"NA","尼日尔":"NE","尼日利亚":"NG","卢旺达":"RW","圣多美和普林西比":"ST","塞内加尔":"SN","塞舌尔":"SC","塞拉利昂":"SL","索马里":"SO","南苏丹":"SS","苏丹":"SD","斯威士兰":"SZ","坦桑尼亚":"TZ","多哥":"TG","突尼斯":"TN","乌干达":"UG","赞比亚":"ZM","津巴布韦":"ZW","安提瓜和巴布达":"AG","巴哈马":"BS","巴巴多斯":"BB","伯利兹":"BZ","玻利维亚":"BO","哥斯达黎加":"CR","古巴":"CU","多米尼克":"DM","多米尼加":"DO","厄瓜多尔":"EC","萨尔瓦多":"SV","格林纳达":"GD","危地马拉":"GT","圭亚那":"GY","海地":"HT","洪都拉斯":"HN","牙买加":"JM","尼加拉瓜":"NI","巴拿马":"PA","巴拉圭":"PY","圣基茨和尼维斯":"KN","圣卢西亚":"LC","圣文森特和格林纳丁斯":"VC","苏里南":"SR","特立尼达和多巴哥":"TT","乌拉圭":"UY","东帝汶":"TL","阿曼":"OM","也门":"YE","斐济":"FJ","基里巴斯":"KI","马绍尔群岛":"MH","密克罗尼西亚":"FM","瑙鲁":"NR","帕劳":"PW","巴布亚新几内亚":"PG","萨摩亚":"WS","所罗门群岛":"SB","汤加":"TO","图瓦卢":"TV","瓦努阿图":"VU","格陵兰":"GL","法罗群岛":"FO","直布罗陀":"GI","根西岛":"GG","泽西岛":"JE","马恩岛":"IM","奥兰群岛":"AX","斯瓦尔巴和扬马延":"SJ","波多黎各":"PR","美属维尔京群岛":"VI","美属萨摩亚":"AS","关岛":"GU","北马里亚纳群岛":"MP","美国本土外小岛屿":"UM","英属维尔京群岛":"VG","开曼群岛":"KY","特克斯和凯科斯群岛":"TC","安圭拉":"AI","蒙特塞拉特":"MS","百慕大":"BM","阿鲁巴":"AW","库拉索":"CW","荷属圣马丁":"SX","荷属加勒比区":"BQ","法属圭亚那":"GF","瓜德罗普":"GP","马提尼克":"MQ","圣巴泰勒米":"BL","法属圣马丁":"MF","圣皮埃尔和密克隆":"PM","法属波利尼西亚":"PF","新喀里多尼亚":"NC","瓦利斯和富图纳":"WF","库克群岛":"CK","纽埃":"NU","托克劳":"TK","皮特凯恩群岛":"PN","诺福克岛":"NF","圣诞岛":"CX","科科斯群岛":"CC","福克兰群岛":"FK","南乔治亚和南桑威奇群岛":"GS","圣赫勒拿":"SH","阿森松和特里斯坦达库尼亚":"AC","英属印度洋领地":"IO","法属南部领土":"TF","赫德岛和麦克唐纳群岛":"HM","布韦岛":"BV","留尼汪":"RE","马约特":"YT","西撒哈拉":"EH","南极洲":"AQ","科索沃":"XK","巴勒斯坦":"PS"};
   var zh = {};
   Object.assign(zh, {
     'Mạng速度': '网络速度', 'Tốc độ mạng': '网络速度', 'Không giới hạn速': '不限速', 'Không giới hạn tốc độ': '不限速',
@@ -334,6 +339,7 @@
     'Xác nhậnThanh toán': 'Confirm payment', '手续费': 'Service fee', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Order is unpaid. Continue to scan the payment code',
     '请Vui lòng xác nhận thông tin đơn hàng': 'Please confirm your order information',
     '您有一笔未付款的订单': 'You have one unpaid order', '您有一笔未Thanh toán的Đơn hàng': 'You have one unpaid order',
+    '节点数量:': 'Node count:', '在线状态:': 'Online status:', '可用性:': 'Availability:', '暂无节点': 'No nodes',
     '购买其他套餐将会': 'Buying another plan will affect', '重置您当前的流量使用情况': 'reset your current traffic usage', '，并立即生效新的套餐配置：': ' and immediately apply the new plan configuration:',
     '礼品卡卡密': 'Gift card code', '请输入礼品卡卡密': 'Enter gift card code', '请输入16位礼品卡卡密，不区分大小写': 'Enter the 16-character gift card code (case-insensitive)', '礼品卡类型说明': 'Gift card type information',
     '增加账户余额': 'Add account balance', '延长套餐有效期': 'Extend plan validity', '增加可用流量': 'Add traffic quota', '重置已用': 'Reset used traffic', '激活指定套餐': 'Activate selected plan', '礼品卡兑换': 'Redeem gift card', '兑换中...': 'Redeeming...', '立即兑换': 'Redeem now',
@@ -345,6 +351,7 @@
     'Xác nhậnThanh toán': 'Xác nhận thanh toán', '手续费': 'Phí dịch vụ', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán',
     '请Vui lòng xác nhận thông tin đơn hàng': 'Vui lòng xác nhận thông tin đơn hàng',
     '您有一笔未付款的订单': 'Bạn có một đơn hàng chưa thanh toán', '您有一笔未Thanh toán的Đơn hàng': 'Bạn có một đơn hàng chưa thanh toán',
+    '节点数量:': 'Số node:', '在线状态:': 'Trạng thái online:', '可用性:': 'Tính khả dụng:', '暂无节点': 'Chưa có node',
     '购买其他套餐将会': 'Mua gói khác sẽ ảnh hưởng đến', '重置您当前的流量使用情况': 'đặt lại trạng thái lưu lượng hiện tại', '，并立即生效新的套餐配置：': ' và tạo cấu hình gói mới ngay:',
     '礼品卡卡密': 'Mã thẻ quà tặng', '请输入礼品卡卡密': 'Nhập mã thẻ quà tặng', '请输入16位礼品卡卡密，不区分大小写': 'Nhập mã thẻ quà tặng 16 ký tự (không phân biệt hoa thường)', '礼品卡类型说明': 'Thông tin loại thẻ quà tặng',
     '增加账户余额': 'Tăng số dư tài khoản', '延长套餐有效期': 'Gia hạn gói', '增加可用流量': 'Tăng hạn mức lưu lượng', '重置已用': 'Đặt lại lưu lượng đã dùng', '激活指定套餐': 'Kích hoạt gói đã chọn', '礼品卡兑换': 'Đổi thẻ quà tặng', '兑换中...': 'Đang đổi...', '立即兑换': 'Đổi ngay',
@@ -356,6 +363,7 @@
     'Xác nhận thanh toán': '确认支付', 'Phí dịch vụ': '手续费', 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán': '订单尚未支付，请继续扫描支付码',
     'Vui lòng xác nhận thông tin đơn hàng': '请确认您的订单信息',
     'Bạn có một đơn hàng chưa thanh toán': '您有一笔未付款的订单',
+    'Số node:': '节点数量:', 'Trạng thái online:': '在线状态:', 'Tính khả dụng:': '可用性:', 'Chưa có node': '暂无节点',
     'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó': '您有未付款或正在开通的订单，请稍后再试或取消该订单'
   });
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
@@ -379,6 +387,14 @@
       core = core.replace(/天前/g, daysAgoLabel).replace(/天/g, dayLabel);
     }
     var translatedCore = Object.prototype.hasOwnProperty.call(dictionary, core) ? dictionary[core] : core;
+    var regionCode = countryZhToCode[core];
+    if (regionCode && locale !== 'zh-CN' && typeof Intl !== 'undefined' && Intl.DisplayNames) {
+      try {
+        translatedCore = new Intl.DisplayNames([locale], { type: 'region' }).of(regionCode) || translatedCore;
+      } catch (error) {
+        // Keep the dictionary fallback when a browser lacks a locale pack.
+      }
+    }
     if (translatedCore === core && locale !== 'zh-CN') {
       // Pages also contain counters such as “今日流量0 GB”. Replace known
       // Chinese fragments inside those dynamic strings, longest first.
