@@ -89,6 +89,8 @@ $renderTheme = function (Request $request) {
                 'dashboard.blade.php',
                 'assets/luck-overrides.css',
                 'assets/oPGsis9D-v3.js',
+                'assets/oPGsis9D-v2.js',
+                'assets/BBbuoBq5.js',
                 'assets/C0KnXkt1-v2.js',
                 'assets/lsrL0SOU-v2.js',
                 'assets/C6e3mGRa-v4.js',
@@ -117,7 +119,25 @@ $renderTheme = function (Request $request) {
                         // that exact generated fragment before publishing;
                         // all other assets continue through a byte-for-byte
                         // copy.
-                        if ($runtimeFile === 'assets/oPGsis9D-v3.js') {
+                        // The stock entry references the world-map chunk without
+                        // a query string. Give that one import a fresh URL so a
+                        // browser cannot reuse a previously cached malformed
+                        // map chunk after it has been repaired below.
+                        if ($runtimeFile === 'assets/BBbuoBq5.js') {
+                            $assetContents = @file_get_contents($source);
+                            $fixedContents = $assetContents === false ? false : str_replace(
+                                './oPGsis9D-v2.js',
+                                './oPGsis9D-v2.js?v=48',
+                                $assetContents
+                            );
+                            if ($fixedContents !== false) {
+                                if (@file_put_contents($target, $fixedContents) === false) {
+                                    Log::warning('Theme entry asset could not be cache-busted', ['target' => $target]);
+                                }
+                                continue;
+                            }
+                        }
+                        if (in_array($runtimeFile, ['assets/oPGsis9D-v2.js', 'assets/oPGsis9D-v3.js'], true)) {
                             $assetContents = @file_get_contents($source);
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 "\n            }\n          }\n        }\n      });\n      return countryMap;",
