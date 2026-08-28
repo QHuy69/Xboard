@@ -127,9 +127,16 @@ $renderTheme = function (Request $request) {
                             $assetContents = @file_get_contents($source);
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 './oPGsis9D-v2.js',
-                                './oPGsis9D-v2.js?v=49',
+                                './oPGsis9D-v2.js?v=50',
                                 $assetContents
                             );
+                            if ($fixedContents !== false) {
+                                $fixedContents = str_replace(
+                                    ['assets/DM1yaN1X.js', 'assets/BEq_qS6Y.js', 'assets/oPGsis9D-v2.js'],
+                                    ['assets/DM1yaN1X.js?v=50', 'assets/BEq_qS6Y.js?v=50', 'assets/oPGsis9D-v2.js?v=50'],
+                                    $fixedContents
+                                );
+                            }
                             if ($fixedContents !== false) {
                                 // The map route imports Vue's runtime by a
                                 // bare URL. Bust that dependency too, since a
@@ -137,7 +144,7 @@ $renderTheme = function (Request $request) {
                                 // mobile browser cache for several hours.
                                 $fixedContents = str_replace(
                                     './DM1yaN1X.js',
-                                    './DM1yaN1X.js?v=49',
+                                    './DM1yaN1X.js?v=50',
                                     $fixedContents
                                 );
                                 if (@file_put_contents($target, $fixedContents) === false) {
