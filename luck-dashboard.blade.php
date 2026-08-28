@@ -18,17 +18,46 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=4">
   <style>
-    /* Keep the first paint hidden while the runtime translator normalizes
-       asynchronously mounted Luck chunks. A bounded fallback below prevents
-       a failed optional script from leaving the app invisible. */
-    html.luck-i18n-pending #app { visibility: hidden; }
+    /* The translator runs after the Vue shell mounts. Never hide the app while
+       waiting for an optional translation pass: on a slow mobile connection
+       that turns a recoverable delay into a black/empty screen. */
+    html.luck-i18n-pending #app { visibility: visible; }
   </style>
   <script>
     document.documentElement.classList.add('luck-i18n-pending');
     window.__LUCK_RELEASE_I18N_GUARD__ = function () {
       document.documentElement.classList.remove('luck-i18n-pending');
     };
-    window.setTimeout(window.__LUCK_RELEASE_I18N_GUARD__, 2500);
+    window.setTimeout(window.__LUCK_RELEASE_I18N_GUARD__, 1000);
+  </script>
+  <script>
+    /* A stale cached entry chunk can reject a lazy route import. Retry once
+       with a cache-busting query so a first visit never requires a manual F5;
+       the session flag prevents an endless reload loop if an origin is down. */
+    (function () {
+      var retryKey = 'luck_chunk_retry_at';
+      var isChunkFailure = function (value) {
+        var message = value && (value.message || value.reason || value);
+        return /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk|ChunkLoadError|network/i.test(String(message || ''));
+      };
+      var retry = function (value) {
+        if (!isChunkFailure(value)) return;
+        var now = Date.now();
+        try {
+          var previous = Number(sessionStorage.getItem(retryKey) || 0);
+          if (previous && now - previous < 15000) return;
+          sessionStorage.setItem(retryKey, String(now));
+        } catch (ignore) {}
+        var url = new URL(window.location.href);
+        url.searchParams.set('luck_reload', String(now));
+        window.setTimeout(function () { window.location.replace(url.toString()); }, 0);
+      };
+      window.addEventListener('error', function (event) { retry(event && (event.error || event.message)); });
+      window.addEventListener('unhandledrejection', function (event) { retry(event && event.reason); });
+      window.setTimeout(function () {
+        try { if (document.getElementById('app') && document.getElementById('app').children.length) sessionStorage.removeItem(retryKey); } catch (ignore) {}
+      }, 8000);
+    }());
   </script>
   <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=1"></script>
 </head>

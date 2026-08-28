@@ -766,18 +766,38 @@
         }, 120);
       }, false);
     }
+    if (!window.__LUCK_DESKTOP_NAV_FALLBACK__) {
+      window.__LUCK_DESKTOP_NAV_FALLBACK__ = true;
+      document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (!target || !target.closest) return;
+        var item = target.closest('.sidebar .menu-item');
+        if (!item) return;
+        var items = Array.prototype.slice.call(document.querySelectorAll('.sidebar .menu-item'));
+        var index = items.indexOf(item);
+        var routes = ['/dashboard', '/plans', '/servers', '/orders', '/tickets', '/traffic-details', '/invite', '/profile', '/docs'];
+        var route = routes[index];
+        if (!route) return;
+        var pathBeforeClick = window.location.pathname;
+        window.setTimeout(function () {
+          if (window.location.pathname === pathBeforeClick && pathBeforeClick !== route) window.location.assign(route);
+        }, 120);
+      }, false);
+    }
+    var guardReleaseRetries = 0;
     function releaseI18nGuard() {
       // Vietnamese/English pages must not reveal a newly mounted chunk while
       // it still contains source CJK text. The observer can receive the DOM
       // mutation before the component's final text node, so retry briefly
       // until the translation pass has settled (the blade guard has a bounded
       // timeout as a safety net).
-      if ((locale === 'vi-VN' || locale === 'en-US') && document.body) {
+      if ((locale === 'vi-VN' || locale === 'en-US') && document.body && guardReleaseRetries < 20) {
         var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
         var textNode;
         while ((textNode = walker.nextNode())) {
           if (textNode.parentElement && /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/.test(textNode.parentElement.tagName)) continue;
           if (/[\u3400-\u9fff]/.test(textNode.nodeValue || '')) {
+            guardReleaseRetries += 1;
             window.setTimeout(releaseI18nGuard, 50);
             return;
           }

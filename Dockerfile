@@ -16,6 +16,12 @@ WORKDIR /www
 
 COPY .docker /
 
+# Preserve the maintained Luck shell/translation overrides before cloning the
+# upstream application. The clone intentionally replaces /www, so copying
+# these files into a temporary build directory makes them available below.
+RUN mkdir -p /tmp/luck-custom
+COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg /tmp/luck-custom/
+
 # Add build arguments
 ARG CACHEBUST=1
 ARG REPO_URL=https://github.com/cedar2025/Xboard
@@ -30,15 +36,18 @@ RUN echo "Attempting to clone branch: ${BRANCH_NAME} from ${REPO_URL} with CACHE
 
 # Keep custom Luck runtime files in the image's public tree. Static JS is
 # served from public/theme while compose mounts storage/theme for templates.
-RUN mkdir -p public/theme/Luck/assets && \
-    if [ -f luck-i18n-v18.js ]; then cp luck-i18n-v18.js public/theme/Luck/i18n-v18.js; fi && \
-    if [ -f luck-dashboard.blade.php ]; then cp luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php; fi && \
-    if [ -f luck-overrides.css ]; then cp luck-overrides.css public/theme/Luck/assets/luck-overrides.css; fi
+RUN mkdir -p public/theme/Luck/assets storage/theme/Luck/assets && \
+    cp /tmp/luck-custom/luck-i18n-v18.js public/theme/Luck/i18n-v18.js && \
+    cp /tmp/luck-custom/luck-i18n-v18.js storage/theme/Luck/i18n-v18.js && \
+    cp /tmp/luck-custom/luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php && \
+    cp /tmp/luck-custom/luck-dashboard.blade.php storage/theme/Luck/dashboard.blade.php && \
+    cp /tmp/luck-custom/luck-overrides.css public/theme/Luck/assets/luck-overrides.css && \
+    cp /tmp/luck-custom/luck-overrides.css storage/theme/Luck/assets/luck-overrides.css
 
 # The donation entry point deliberately serves the QR artwork only; keeping it
 # at a stable public path lets the Blade shell reference it without exposing
 # the underlying bank details.
-COPY luck-donate-qr.svg /www/public/luck-donate-qr.svg
+RUN cp /tmp/luck-custom/luck-donate-qr.svg /www/public/luck-donate-qr.svg
 
 # Overlay the customized runtime files on top of the upstream checkout. The
 # image deliberately clones upstream for normal updates, but these files are
