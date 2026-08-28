@@ -328,6 +328,27 @@
     'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:': '如果二维码无法显示，请点击下方链接：', 'Mở liên kết thanh toán': '打开支付链接',
     'ĐóngThanh toán': '关闭支付', 'Đóng thanh toán': '关闭支付', '检查Thanh toánTrang thái': '检查支付状态', 'Kiểm tra trạng thái thanh toán': '检查支付状态'
   });
+  Object.assign(en, {
+    '立即购买': 'Buy now', '购买Gói提醒': 'Purchase notice', '购买Gói': 'Purchase plan', 'Quay lạiGói列表': 'Back to plans',
+    '选择Thanh toán方式': 'Choose payment method', '请选择Thanh toán方式': 'Please choose a payment method', 'HủyThanh toán': 'Cancel payment',
+    'Xác nhậnThanh toán': 'Confirm payment', '手续费': 'Service fee', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Order is unpaid. Continue to scan the payment code',
+    '请Vui lòng xác nhận thông tin đơn hàng': 'Please confirm your order information',
+    '您有未付款或Đang kích hoạt的Đơn hàng，请稍后再试或将其Hủy': 'You have an unpaid or activating order. Please try again later or cancel it'
+  });
+  Object.assign(vi, {
+    '立即购买': 'Mua ngay', '购买Gói提醒': 'Lưu ý mua gói', '购买Gói': 'Mua gói', 'Quay lạiGói列表': 'Quay lại danh sách gói',
+    '选择Thanh toán方式': 'Chọn phương thức thanh toán', '请选择Thanh toán方式': 'Vui lòng chọn phương thức thanh toán', 'HủyThanh toán': 'Hủy thanh toán',
+    'Xác nhậnThanh toán': 'Xác nhận thanh toán', '手续费': 'Phí dịch vụ', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán',
+    '请Vui lòng xác nhận thông tin đơn hàng': 'Vui lòng xác nhận thông tin đơn hàng',
+    '您有未付款或Đang kích hoạt的Đơn hàng，请稍后再试或将其Hủy': 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó'
+  });
+  Object.assign(zh, {
+    'Mua ngay': '立即购买', 'Lưu ý mua gói': '购买提示', 'Mua gói': '购买套餐', 'Quay lại danh sách gói': '返回套餐列表',
+    'Chọn phương thức thanh toán': '选择支付方式', 'Vui lòng chọn phương thức thanh toán': '请选择支付方式', 'Hủy thanh toán': '取消支付',
+    'Xác nhận thanh toán': '确认支付', 'Phí dịch vụ': '手续费', 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán': '订单尚未支付，请继续扫描支付码',
+    'Vui lòng xác nhận thông tin đơn hàng': '请确认您的订单信息',
+    'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó': '您有未付款或正在开通的订单，请稍后再试或取消该订单'
+  });
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
   // A partially translated locale must never fall back to Chinese.  English is
   // the complete safety net; the locale's own strings take precedence.
@@ -397,7 +418,9 @@
         .replace(/如果Mã QR无法显示，请点击下方链接：/g, 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:')
         .replace(/打开Thanh toán链接/g, 'Mở liên kết thanh toán')
         .replace(/ĐóngThanh toán/g, 'Đóng thanh toán')
-        .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán');
+        .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán')
+        .replace(/您有未付款或Đang kích hoạt的Đơn hàng，请稍后再试或将其Hủy/g, 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó')
+        .replace(/您有未付款或Đang kích hoạt的Đơn hàng/g, 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt');
     } else if (locale === 'en-US') {
       translatedCore = translatedCore
         .replace(/网络Lỗi/g, 'Network error')
@@ -476,7 +499,7 @@
         if (normalized !== text) element.textContent = normalized;
       }
       normalizeLeaf(root);
-      (root || document).querySelectorAll('h1,h2,h3,p,span,div').forEach(function (element) {
+      (root || document).querySelectorAll('h1,h2,h3,p,span').forEach(function (element) {
         normalizeLeaf(element);
       });
     }
