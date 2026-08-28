@@ -16,7 +16,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5.js?v=6"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5.js?v=7"></script>
 </head>
 <body>
   <div id="app"></div>
