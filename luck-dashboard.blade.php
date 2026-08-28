@@ -39,7 +39,7 @@
 <body>
   <div id="app"></div>
   <div class="luck-shell-actions">
-    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.domain.com') }}" target="_blank" rel="noopener noreferrer" hidden>
+    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.zaoguang-vpn.com') }}" target="_blank" rel="noopener noreferrer" hidden>
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="luck-app-download-label">Tải ứng dụng</span>
     </a>
