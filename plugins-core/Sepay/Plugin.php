@@ -78,11 +78,12 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     public function pay($order): array
     {
         $account = trim((string) $this->getConfig('sepay_account_number', ''));
+        $accountName = trim((string) $this->getConfig('sepay_account_name', ''));
         $bank = trim((string) $this->getConfig('sepay_bank_code', 'Vietcombank'));
         $rate = (float) $this->getConfig('sepay_cny_vnd_rate', 0);
         $prefix = trim((string) $this->getConfig('sepay_transfer_prefix', 'XBOARD'));
 
-        if ($account === '' || $bank === '' || $prefix === '') {
+        if ($account === '' || $accountName === '' || $bank === '' || $prefix === '') {
             throw new ApiException('SePay bank account settings are incomplete');
         }
         if ($rate <= 0) {
@@ -100,7 +101,9 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             'bank' => $bank,
             'amount' => $amountVnd,
             'des' => $description,
-            'template' => 'compact'
+            'template' => 'compact',
+            'showinfo' => 'true',
+            'holder' => $accountName
         ]);
 
         return [
