@@ -127,7 +127,7 @@ $renderTheme = function (Request $request) {
                             $assetContents = @file_get_contents($source);
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 './oPGsis9D-v2.js',
-                                './oPGsis9D-v2.js?v=48',
+                                './oPGsis9D-v2.js?v=49',
                                 $assetContents
                             );
                             if ($fixedContents !== false) {
@@ -137,7 +137,7 @@ $renderTheme = function (Request $request) {
                                 // mobile browser cache for several hours.
                                 $fixedContents = str_replace(
                                     './DM1yaN1X.js',
-                                    './DM1yaN1X.js?v=48',
+                                    './DM1yaN1X.js?v=49',
                                     $fixedContents
                                 );
                                 if (@file_put_contents($target, $fixedContents) === false) {
