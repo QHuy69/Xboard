@@ -153,6 +153,44 @@ for luck_root in /www/public/theme/Luck /www/storage/theme/Luck; do
     cp /tmp/luck-custom/luck-overrides.css "$luck_root/assets/luck-overrides.css"
 done
 
+# Keep every Luck import on a fresh physical URL. This is intentionally done
+# for the whole generated graph (not only Vue): mobile browsers can retain a
+# broken lazy chunk indefinitely when the filename is reused after deploy.
+# Repair the known world-map fragment before aliases are copied, then rewrite
+# every JavaScript reference to its corresponding `-fresh.js` file.
+php -r '
+$roots = ["/www/public/theme/Luck/assets", "/www/storage/theme/Luck/assets"];
+$broken = "\n            }\n          }\n        }\n      });\n      return countryMap;";
+$fixed = "\n            }\n          }\n      });\n      return countryMap;";
+foreach ($roots as $root) {
+    if (!is_dir($root)) continue;
+    foreach (["oPGsis9D-v2.js", "oPGsis9D-v3.js"] as $name) {
+        $path = $root . "/" . $name;
+        if (!is_file($path)) continue;
+        $contents = file_get_contents($path);
+        $contents = str_replace($broken, $fixed, $contents);
+        file_put_contents($path, $contents);
+    }
+    $aliases = [];
+    foreach (glob($root . "/*.js") as $path) {
+        $name = basename($path);
+        if (str_ends_with($name, "-fresh.js")) continue;
+        $alias = substr($name, 0, -3) . "-fresh.js";
+        copy($path, $root . "/" . $alias);
+        $aliases[$name] = $alias;
+    }
+    foreach (glob($root . "/*.js") as $path) {
+        $contents = @file_get_contents($path);
+        if ($contents === false) continue;
+        $rewritten = $contents;
+        foreach ($aliases as $from => $to) {
+            $rewritten = str_replace($from, $to, $rewritten);
+        }
+        if ($rewritten !== $contents) @file_put_contents($path, $rewritten);
+    }
+}
+'
+
 echo "[entrypoint] Starting services (caddy=${ENABLE_CADDY} web=${ENABLE_WEB} horizon=${ENABLE_HORIZON} ws=${ENABLE_WS_SERVER})..."
 # Drop stale Octane/WorkerMan state files so the new master does not signal
 # PIDs left over from a previous container run (causes Swoole kill EPERM).

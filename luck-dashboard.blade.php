@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#3b82f6">
   <link rel="icon" type="image/svg+xml" href="/theme/{{$theme}}/favicon.svg">
   <title>ZaoGuang Service</title>
-  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/DM1yaN1X.js?v=50">
-  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/BEq_qS6Y.js?v=50">
+  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/DM1yaN1X-fresh.js">
+  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/BEq_qS6Y-fresh.js">
   <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/0I8bmyai.js">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/DmSyTPzn.css">
   <!-- Keep the shell and dashboard styles render-blocking. Vite normally
@@ -34,7 +34,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5.js?v=50"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js"></script>
 </head>
 <body>
   <div id="app"></div>

@@ -127,14 +127,42 @@ $renderTheme = function (Request $request) {
                         if ($runtimeFile === 'assets/BBbuoBq5.js') {
                             $assetContents = @file_get_contents($source);
                             $fixedContents = $assetContents === false ? false : str_replace(
-                                './oPGsis9D-v2.js',
-                                './oPGsis9D-v2.js?v=50',
+                                [
+                                    './oPGsis9D-v2.js?v=50',
+                                    './oPGsis9D-v2.js?v=51',
+                                    './oPGsis9D-v2.js?v=53',
+                                    './oPGsis9D-v2.js',
+                                ],
+                                [
+                                    './oPGsis9D-v2-fresh.js',
+                                    './oPGsis9D-v2-fresh.js',
+                                    './oPGsis9D-v2-fresh.js',
+                                    './oPGsis9D-v2-fresh.js',
+                                ],
                                 $assetContents
                             );
                             if ($fixedContents !== false) {
                                 $fixedContents = str_replace(
-                                    ['assets/DM1yaN1X.js', 'assets/BEq_qS6Y.js', 'assets/oPGsis9D-v2.js'],
-                                    ['assets/DM1yaN1X-v3.js', 'assets/BEq_qS6Y.js?v=50', 'assets/oPGsis9D-v2.js?v=50'],
+                                    [
+                                        'assets/DM1yaN1X.js',
+                                        'assets/DM1yaN1X-v3.js?v=50',
+                                        'assets/DM1yaN1X-v3.js',
+                                        'assets/BEq_qS6Y.js',
+                                        'assets/BEq_qS6Y-v3.js',
+                                        'assets/oPGsis9D-v2.js',
+                                        'assets/oPGsis9D-v2.js?v=50',
+                                        'assets/oPGsis9D-v2.js?v=53',
+                                    ],
+                                    [
+                                        'assets/DM1yaN1X-fresh.js',
+                                        'assets/DM1yaN1X-fresh.js',
+                                        'assets/DM1yaN1X-fresh.js',
+                                        'assets/BEq_qS6Y-fresh.js',
+                                        'assets/BEq_qS6Y-fresh.js',
+                                        'assets/oPGsis9D-v2-fresh.js',
+                                        'assets/oPGsis9D-v2-fresh.js',
+                                        'assets/oPGsis9D-v2-fresh.js',
+                                    ],
                                     $fixedContents
                                 );
                             }
@@ -144,8 +172,20 @@ $renderTheme = function (Request $request) {
                                 // previous broken response may still be in a
                                 // mobile browser cache for several hours.
                                 $fixedContents = str_replace(
-                                    './DM1yaN1X.js',
-                                    './DM1yaN1X-v3.js',
+                                    [
+                                        './DM1yaN1X.js',
+                                        './DM1yaN1X-v3.js',
+                                        './DM1yaN1X-v3.js?v=50',
+                                        './DM1yaN1X-v3.js?v=53',
+                                        './DM1yaN1X-v2.js',
+                                    ],
+                                    [
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                    ],
                                     $fixedContents
                                 );
                                 if (@file_put_contents($target, $fixedContents) === false) {
@@ -163,8 +203,20 @@ $renderTheme = function (Request $request) {
                             );
                             if ($fixedContents !== false) {
                                 $fixedContents = str_replace(
-                                    ['./DM1yaN1X.js?v=50', './DM1yaN1X.js'],
-                                    ['./DM1yaN1X-v3.js', './DM1yaN1X-v3.js'],
+                                    [
+                                        './DM1yaN1X.js?v=50',
+                                        './DM1yaN1X.js',
+                                        './DM1yaN1X-v3.js?v=50',
+                                        './DM1yaN1X-v3.js',
+                                        './DM1yaN1X-v2.js',
+                                    ],
+                                    [
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                        './DM1yaN1X-fresh.js',
+                                    ],
                                     $fixedContents
                                 );
                                 if (@file_put_contents($target, $fixedContents) === false) {
