@@ -236,6 +236,43 @@
     '隐私保护': 'Защита конфиденциальности', '免责声明': 'Отказ от ответственности', '条款变更': 'Изменение условий', '最后更新时间：2025年7月3日': 'Последнее обновление: 3 июля 2025 г.',
     '请输入\\Đăng kýEmail': 'Введите email для регистрации', '请输入Đăng kýEmail': 'Введите email для регистрации', 'Xác nhậnMật khẩu mới': 'Подтвердите новый пароль', 'Xác nhận Mật khẩu mới': 'Подтвердите новый пароль', 'Xác minh email码': 'Код подтверждения email', 'Xác minh email 码': 'Код подтверждения email', '验证 email码': 'Код подтверждения email', '验证 email 码': 'Код подтверждения email'
   });
+  // Network/validation notices are emitted by the pre-built theme as a mix
+  // of separate text nodes. Keep both the complete phrases and their pieces
+  // translated so they cannot render as strings such as "网络Lỗi".
+  Object.assign(en, {
+    '网络': 'Network', '错误': 'Error', '网络错误': 'Network error',
+    '网络连接失败，请检查网络后重试': 'Network connection failed. Check your network and try again.',
+    '信息': 'Information', '不完整': 'Incomplete', '信息不完整': 'Incomplete information',
+    'Nhập emailĐịa chỉ': 'Enter email address', 'Nhập email địa chỉ': 'Enter email address',
+    'Nhập mật khẩu': 'Enter password'
+  });
+  Object.assign(vi, {
+    '网络': 'Mạng', '错误': 'Lỗi', '网络错误': 'Lỗi mạng',
+    '网络连接失败，请检查网络后重试': 'Kết nối mạng thất bại, hãy kiểm tra mạng rồi thử lại',
+    '信息': 'Thông tin', '不完整': 'chưa đầy đủ', '信息不完整': 'Thông tin chưa đầy đủ',
+    'Nhập emailĐịa chỉ': 'Nhập địa chỉ email', 'Nhập email địa chỉ': 'Nhập địa chỉ email',
+    'Nhập mật khẩu': 'Nhập mật khẩu'
+  });
+  Object.assign(tw, {
+    '网络': '網路', '错误': '錯誤', '网络错误': '網路錯誤',
+    '网络连接失败，请检查网络后重试': '網路連線失敗，請檢查網路後重試', '信息不完整': '資訊不完整'
+  });
+  Object.assign(ja, {
+    '网络': 'ネットワーク', '错误': 'エラー', '网络错误': 'ネットワークエラー',
+    '网络连接失败，请检查网络后重试': 'ネットワーク接続に失敗しました。ネットワークを確認して再試行してください', '信息不完整': '情報が不完全です'
+  });
+  Object.assign(ko, {
+    '网络': '네트워크', '错误': '오류', '网络错误': '네트워크 오류',
+    '网络连接失败，请检查网络后重试': '네트워크 연결에 실패했습니다. 네트워크를 확인한 후 다시 시도하세요', '信息不完整': '정보가 불완전합니다'
+  });
+  Object.assign(fa, {
+    '网络': 'شبکه', '错误': 'خطا', '网络错误': 'خطای شبکه',
+    '网络连接失败，请检查网络后重试': 'اتصال شبکه ناموفق بود؛ شبکه را بررسی و دوباره تلاش کنید', '信息不完整': 'اطلاعات ناقص است'
+  });
+  Object.assign(ru, {
+    '网络': 'Сеть', '错误': 'Ошибка', '网络错误': 'Ошибка сети',
+    '网络连接失败，请检查网络后重试': 'Сбой сетевого подключения. Проверьте сеть и повторите попытку', '信息不完整': 'Неполная информация'
+  });
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': {} };
   // A partially translated locale must never fall back to Chinese.  English is
   // the complete safety net; the locale's own strings take precedence.
@@ -278,7 +315,15 @@
         .replace(/我已阅读并(?:同意|đồng ý)/g, 'Tôi đã đọc và đồng ý')
         .replace(/违反Terms of service/g, 'Vi phạm điều khoản dịch vụ')
         .replace(/恶意攻击Máy chủ/g, 'Tấn công máy chủ')
-        .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ');
+        .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ')
+        .replace(/网络Lỗi|MạngLỗi/g, 'Lỗi mạng')
+        .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
+        .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email');
+    } else if (locale === 'en-US') {
+      translatedCore = translatedCore
+        .replace(/网络Lỗi/g, 'Network error')
+        .replace(/信息不完整/g, 'Incomplete information')
+        .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Enter email address');
     }
     return translatedCore !== originalCore ? leading + translatedCore + trailing : text;
   }
@@ -310,7 +355,10 @@
           .replace(/我已阅读并(?:同意|đồng ý)/g, 'Tôi đã đọc và đồng ý')
           .replace(/违反Terms of service/g, 'Vi phạm điều khoản dịch vụ')
           .replace(/恶意攻击Máy chủ/g, 'Tấn công máy chủ')
-          .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ');
+          .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ')
+          .replace(/网络Lỗi|MạngLỗi/g, 'Lỗi mạng')
+          .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
+          .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email');
         if (normalized !== text) element.textContent = normalized;
       }
       normalizeLeaf(root);
