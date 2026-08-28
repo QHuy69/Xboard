@@ -111,7 +111,10 @@
       }, 8000);
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=3"></script>
+  <!-- Keep the entry URL identical to the URL imported by lazy route chunks.
+       Adding a query here creates a second module instance and breaks Router
+       component resolution on mobile transitions such as Orders -> Node. -->
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -146,7 +149,7 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=44"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=45"></script>
   <script>
     (function () {
       var app = document.getElementById('app');
