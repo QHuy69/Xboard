@@ -333,6 +333,9 @@
     '选择Thanh toán方式': 'Choose payment method', '请选择Thanh toán方式': 'Please choose a payment method', 'HủyThanh toán': 'Cancel payment',
     'Xác nhậnThanh toán': 'Confirm payment', '手续费': 'Service fee', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Order is unpaid. Continue to scan the payment code',
     '请Vui lòng xác nhận thông tin đơn hàng': 'Please confirm your order information',
+    '购买其他套餐将会': 'Buying another plan will affect', '重置您当前的流量使用情况': 'reset your current traffic usage', '，并立即生效新的套餐配置：': ' and immediately apply the new plan configuration:',
+    '礼品卡卡密': 'Gift card code', '请输入礼品卡卡密': 'Enter gift card code', '请输入16位礼品卡卡密，不区分大小写': 'Enter the 16-character gift card code (case-insensitive)', '礼品卡类型说明': 'Gift card type information',
+    '增加账户余额': 'Add account balance', '延长套餐有效期': 'Extend plan validity', '增加可用流量': 'Add traffic quota', '重置已用': 'Reset used traffic', '激活指定套餐': 'Activate selected plan', '礼品卡兑换': 'Redeem gift card', '兑换中...': 'Redeeming...', '立即兑换': 'Redeem now',
     '您有未付款或Đang kích hoạt的Đơn hàng，请稍后再试或将其Hủy': 'You have an unpaid or activating order. Please try again later or cancel it'
   });
   Object.assign(vi, {
@@ -340,6 +343,9 @@
     '选择Thanh toán方式': 'Chọn phương thức thanh toán', '请选择Thanh toán方式': 'Vui lòng chọn phương thức thanh toán', 'HủyThanh toán': 'Hủy thanh toán',
     'Xác nhậnThanh toán': 'Xác nhận thanh toán', '手续费': 'Phí dịch vụ', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán',
     '请Vui lòng xác nhận thông tin đơn hàng': 'Vui lòng xác nhận thông tin đơn hàng',
+    '购买其他套餐将会': 'Mua gói khác sẽ ảnh hưởng đến', '重置您当前的流量使用情况': 'đặt lại trạng thái lưu lượng hiện tại', '，并立即生效新的套餐配置：': ' và tạo cấu hình gói mới ngay:',
+    '礼品卡卡密': 'Mã thẻ quà tặng', '请输入礼品卡卡密': 'Nhập mã thẻ quà tặng', '请输入16位礼品卡卡密，不区分大小写': 'Nhập mã thẻ quà tặng 16 ký tự (không phân biệt hoa thường)', '礼品卡类型说明': 'Thông tin loại thẻ quà tặng',
+    '增加账户余额': 'Tăng số dư tài khoản', '延长套餐有效期': 'Gia hạn gói', '增加可用流量': 'Tăng hạn mức lưu lượng', '重置已用': 'Đặt lại lưu lượng đã dùng', '激活指定套餐': 'Kích hoạt gói đã chọn', '礼品卡兑换': 'Đổi thẻ quà tặng', '兑换中...': 'Đang đổi...', '立即兑换': 'Đổi ngay',
     '您有未付款或Đang kích hoạt的Đơn hàng，请稍后再试或将其Hủy': 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó'
   });
   Object.assign(zh, {
