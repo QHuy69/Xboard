@@ -96,14 +96,18 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         }
 
         $description = $prefix . ' ' . $order['trade_no'];
-        $qrUrl = 'https://vietqr.app/img?' . http_build_query([
-            'acc' => $account,
-            'bank' => $bank,
+        // Use VietQR's canonical image endpoint.  The old vietqr.app query
+        // endpoint accepts a PNG but can embed an invalid bank identifier,
+        // producing QR codes that banking apps reject.  VCB is the official
+        // short code for Vietcombank and compact2 is the interoperable layout.
+        $bankCode = strtoupper($bank);
+        if (in_array(strtolower($bank), ['vietcombank', 'vcb'], true)) {
+            $bankCode = 'VCB';
+        }
+        $qrUrl = 'https://img.vietqr.io/image/' . rawurlencode($bankCode . '-' . $account . '-compact2.png') . '?' . http_build_query([
             'amount' => $amountVnd,
-            'des' => $description,
-            'template' => 'compact',
-            'showinfo' => 'true',
-            'holder' => $accountName
+            'addInfo' => $description,
+            'accountName' => $accountName
         ]);
 
         return [

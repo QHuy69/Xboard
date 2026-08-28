@@ -273,6 +273,45 @@
     '网络': 'Сеть', '错误': 'Ошибка', '网络错误': 'Ошибка сети',
     '网络连接失败，请检查网络后重试': 'Сбой сетевого подключения. Проверьте сеть и повторите попытку', '信息不完整': 'Неполная информация'
   });
+  // Package cards, checkout dialogs and API toasts can arrive as adjacent
+  // text nodes. Translate the complete Chinese labels and their mixed forms.
+  Object.assign(en, {
+    '支持续费': 'Renewal supported', '流量配额': 'Traffic quota', '设备数量': 'Device limit', '设备限制': 'Device limit',
+    '网络速度': 'Network speed', '速度限制': 'Speed limit', '不限速': 'Unlimited speed', '月付': 'Monthly',
+    '选择订阅周期': 'Choose subscription period', '请输入Mã giảm giá代码': 'Enter discount code', '应用': 'Apply',
+    '原价': 'Original price', '最终Giá': 'Final price', '购买提示': 'Purchase notice', '重要提醒': 'Important notice',
+    '确认购买': 'Confirm purchase', '正在创建Đơn hàng...': 'Creating order...', '网络错误，请稍后重试': 'Network error. Please try again later',
+    'Máy chủ网关Lỗi，请稍后重试': 'Server gateway error. Please try again later', '网关错误，请稍后重试': 'Gateway error. Please try again later',
+    '购买其他Gói将会对当前的Tình trạng sử dụng lưu lượng，并立即生成新的Gói配置：': 'Buying another plan will affect your current traffic usage and immediately create a new plan configuration:',
+    '当前未使用的流量将会被清零': 'Unused traffic will be cleared', '新Gói的流量配额将立即生效': 'The new plan traffic quota takes effect immediately',
+    '设备限制和速度限制将按新Gói执行': 'Device and speed limits follow the new plan', '如果是降级Gói，请确认您的使用需求': 'If downgrading, please confirm your usage needs',
+    '建议在月初或流量即将用完时购买新Gói，以避免浪费。': 'We recommend buying a new plan at the start of the month or when traffic is nearly used up to avoid waste.',
+    '请确认您的Đơn hàngThông tin': 'Please confirm your order information', 'Gói名称': 'Plan name', '订阅周期': 'Subscription period',
+    'GóiGiá': 'Plan price', 'Hủy购买': 'Cancel purchase', 'Hỗ trợ续费': 'Renewal supported', '确认购买': 'Confirm purchase'
+    , '扫码Thanh toán': 'Scan to pay', 'Thanh toánSố tiền': 'Payment amount', 'Đơn hàng号': 'Order number',
+    '请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán': 'Use a payment app to scan the QR code above to complete payment',
+    '如果Mã QR无法显示，请点击下方链接：': 'If the QR code does not display, click the link below:', '打开Thanh toán链接': 'Open payment link',
+    'ĐóngThanh toán': 'Close payment', '检查Thanh toánTrang thái': 'Check payment status'
+  });
+  Object.assign(vi, {
+    '支持续费': 'Hỗ trợ gia hạn', '流量配额': 'Hạn mức lưu lượng', '设备数量': 'Giới hạn thiết bị', '设备限制': 'Giới hạn thiết bị',
+    '网络速度': 'Tốc độ mạng', '速度限制': 'Giới hạn tốc độ', '不限速': 'Không giới hạn tốc độ', '月付': 'Hàng tháng',
+    '选择订阅周期': 'Chọn chu kỳ gói', '请输入Mã giảm giá代码': 'Nhập mã giảm giá', '应用': 'Áp dụng', '原价': 'Giá gốc',
+    '最终Giá': 'Giá cuối', '购买提示': 'Lưu ý mua gói', '重要提醒': 'Lưu ý quan trọng', '确认购买': 'Xác nhận mua',
+    '正在创建Đơn hàng...': 'Đang tạo đơn hàng...', '网络错误，请稍后重试': 'Lỗi mạng, vui lòng thử lại sau',
+    'Máy chủ网关Lỗi，请稍后重试': 'Lỗi máy chủ, vui lòng thử lại sau', '网关错误，请稍后重试': 'Lỗi cổng kết nối, vui lòng thử lại sau',
+    '购买其他Gói将会对当前的Tình trạng sử dụng lưu量，并立即生成新的Gói配置：': 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:',
+    '购买其他Gói将会对当前的Tình trạng sử dụng lưu lượng，并立即生成新的Gói配置：': 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:',
+    '当前未使用的流量将会被清零': 'Lưu lượng chưa sử dụng hiện tại sẽ bị xóa', '新Gói的流量配额将立即生效': 'Hạn mức lưu lượng của gói mới có hiệu lực ngay',
+    '设备限制和速度限制将按新Gói执行': 'Giới hạn thiết bị và tốc độ sẽ áp dụng theo gói mới', '如果是降级Gói，请确认您的使用需求': 'Nếu hạ cấp gói, hãy xác nhận nhu cầu sử dụng',
+    '建议在月初或流量即将用完时购买新Gói，以避免浪费。': 'Nên mua gói mới đầu tháng hoặc khi sắp hết lưu lượng để tránh lãng phí.',
+    '请确认您的Đơn hàngThông tin': 'Vui lòng xác nhận thông tin đơn hàng', 'Gói名称': 'Tên gói', '订阅周期': 'Chu kỳ gói',
+    'GóiGiá': 'Giá gói', 'Hủy购买': 'Hủy mua', 'Hỗ trợ续费': 'Hỗ trợ gia hạn', '扫码Thanh toán': 'Quét mã thanh toán',
+    'Thanh toánSố tiền': 'Số tiền thanh toán', 'Đơn hàng号': 'Mã đơn hàng',
+    '请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán': 'Vui lòng dùng ứng dụng thanh toán quét mã QR ở trên để hoàn tất thanh toán',
+    '如果Mã QR无法显示，请点击下方链接：': 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:', '打开Thanh toán链接': 'Mở liên kết thanh toán',
+    'ĐóngThanh toán': 'Đóng thanh toán', '检查Thanh toánTrang thái': 'Kiểm tra trạng thái thanh toán'
+  });
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': {} };
   // A partially translated locale must never fall back to Chinese.  English is
   // the complete safety net; the locale's own strings take precedence.
@@ -318,12 +357,47 @@
         .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ')
         .replace(/网络Lỗi|MạngLỗi/g, 'Lỗi mạng')
         .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
-        .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email');
+        .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email')
+        .replace(/Mạng速度/g, 'Tốc độ mạng')
+        .replace(/Không giới hạn速/g, 'Không giới hạn tốc độ')
+        .replace(/Hỗ trợ续费/g, 'Hỗ trợ gia hạn')
+        .replace(/NhậpMã giảm giá代码|Nhập Mã giảm giá代码/g, 'Nhập mã giảm giá')
+        .replace(/Xác nhận购买/g, 'Xác nhận mua')
+        .replace(/Đang创建Đơn hàng\.\.\./g, 'Đang tạo đơn hàng...')
+        .replace(/Máy chủ网关Lỗi，?请稍后重试/g, 'Lỗi máy chủ, vui lòng thử lại sau')
+        .replace(/Xác nhận您的Đơn hàngThông tin/g, 'Vui lòng xác nhận thông tin đơn hàng')
+        .replace(/Gói名称/g, 'Tên gói')
+        .replace(/GóiGiá/g, 'Giá gói')
+        .replace(/Hủy购买/g, 'Hủy mua')
+        .replace(/最终Giá/g, 'Giá cuối')
+        .replace(/当前的Tình trạng sử dụng lưu lượng/g, 'trạng thái lưu lượng hiện tại')
+        .replace(/新的Gói配置/g, 'cấu hình gói mới')
+        .replace(/新Gói/g, 'gói mới')
+        .replace(/按新Gói执行/g, 'áp dụng theo gói mới')
+        .replace(/扫码Thanh toán/g, 'Quét mã thanh toán')
+        .replace(/Thanh toánSố tiền/g, 'Số tiền thanh toán')
+        .replace(/Đơn hàng号/g, 'Mã đơn hàng')
+        .replace(/请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán/g, 'Vui lòng dùng ứng dụng thanh toán quét mã QR ở trên để hoàn tất thanh toán')
+        .replace(/如果Mã QR无法显示，请点击下方链接：/g, 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:')
+        .replace(/打开Thanh toán链接/g, 'Mở liên kết thanh toán')
+        .replace(/ĐóngThanh toán/g, 'Đóng thanh toán')
+        .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán');
     } else if (locale === 'en-US') {
       translatedCore = translatedCore
         .replace(/网络Lỗi/g, 'Network error')
         .replace(/信息不完整/g, 'Incomplete information')
-        .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Enter email address');
+        .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Enter email address')
+        .replace(/Mạng速度/g, 'Network speed')
+        .replace(/Không giới hạn速/g, 'Unlimited speed')
+        .replace(/Hỗ trợ续费/g, 'Renewal supported')
+        .replace(/NhậpMã giảm giá代码|Nhập Mã giảm giá代码/g, 'Enter discount code')
+        .replace(/Xác nhận购买/g, 'Confirm purchase')
+        .replace(/Đang创建Đơn hàng\.\.\./g, 'Creating order...')
+        .replace(/Máy chủ网关Lỗi，?请稍后重试/g, 'Server gateway error. Please try again later')
+        .replace(/Xác nhận您的Đơn hàngThông tin/g, 'Please confirm your order information')
+        .replace(/Gói名称/g, 'Plan name')
+        .replace(/GóiGiá/g, 'Plan price')
+        .replace(/Hủy购买/g, 'Cancel purchase');
     }
     return translatedCore !== originalCore ? leading + translatedCore + trailing : text;
   }
@@ -358,7 +432,31 @@
           .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ')
           .replace(/网络Lỗi|MạngLỗi/g, 'Lỗi mạng')
           .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
-          .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email');
+          .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email')
+          .replace(/Mạng速度/g, 'Tốc độ mạng')
+          .replace(/Không giới hạn速/g, 'Không giới hạn tốc độ')
+          .replace(/Hỗ trợ续费/g, 'Hỗ trợ gia hạn')
+          .replace(/NhậpMã giảm giá代码|Nhập Mã giảm giá代码/g, 'Nhập mã giảm giá')
+          .replace(/Xác nhận购买/g, 'Xác nhận mua')
+          .replace(/Đang创建Đơn hàng\.\.\./g, 'Đang tạo đơn hàng...')
+          .replace(/Máy chủ网关Lỗi，?请稍后重试/g, 'Lỗi máy chủ, vui lòng thử lại sau')
+          .replace(/Xác nhận您的Đơn hàngThông tin/g, 'Vui lòng xác nhận thông tin đơn hàng')
+          .replace(/Gói名称/g, 'Tên gói')
+          .replace(/GóiGiá/g, 'Giá gói')
+          .replace(/Hủy购买/g, 'Hủy mua')
+          .replace(/最终Giá/g, 'Giá cuối')
+          .replace(/当前的Tình trạng sử dụng lưu lượng/g, 'trạng thái lưu lượng hiện tại')
+          .replace(/新的Gói配置/g, 'cấu hình gói mới')
+          .replace(/新Gói/g, 'gói mới')
+          .replace(/按新Gói执行/g, 'áp dụng theo gói mới')
+          .replace(/扫码Thanh toán/g, 'Quét mã thanh toán')
+          .replace(/Thanh toánSố tiền/g, 'Số tiền thanh toán')
+          .replace(/Đơn hàng号/g, 'Mã đơn hàng')
+          .replace(/请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán/g, 'Vui lòng dùng ứng dụng thanh toán quét mã QR ở trên để hoàn tất thanh toán')
+          .replace(/如果Mã QR无法显示，请点击下方链接：/g, 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:')
+          .replace(/打开Thanh toán链接/g, 'Mở liên kết thanh toán')
+          .replace(/ĐóngThanh toán/g, 'Đóng thanh toán')
+          .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán');
         if (normalized !== text) element.textContent = normalized;
       }
       normalizeLeaf(root);
