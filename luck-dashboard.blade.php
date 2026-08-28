@@ -73,42 +73,20 @@
     window.setTimeout(window.__LUCK_RELEASE_I18N_GUARD__, 1000);
   </script>
   <script>
-    /* A stale cached entry chunk can reject a lazy route import. Retry once
-       with a cache-busting query so a first visit never requires a manual F5;
-       the session flag prevents an endless reload loop if an origin is down. */
+    /* Never change routes in response to a global module/preload event. Some
+       mobile WebKit builds emit those events for optional preloads even after
+       the app mounted successfully, which previously caused a false reload
+       loop and appended luck_reload to the address bar. */
     (function () {
-      var retryKey = 'luck_chunk_retry_at';
-      var isChunkFailure = function (value) {
-        var message = value && (value.message || value.reason || value);
-        return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk|ChunkLoadError|Unable to preload CSS/i.test(String(message || ''));
-      };
-      var retry = function (value, confirmedChunkFailure) {
-        if (!confirmedChunkFailure && !isChunkFailure(value)) return;
-        var now = Date.now();
-        try {
-          var previous = Number(sessionStorage.getItem(retryKey) || 0);
-          if (previous && now - previous < 15000) return;
-          sessionStorage.setItem(retryKey, String(now));
-        } catch (ignore) {}
+      try {
+        sessionStorage.removeItem('luck_chunk_retry_at');
+        sessionStorage.removeItem('luck_boot_retry_at');
         var url = new URL(window.location.href);
-        url.searchParams.set('luck_reload', String(now));
-        window.setTimeout(function () { window.location.replace(url.toString()); }, 0);
-      };
-      window.addEventListener('error', function (event) { retry(event && (event.error || event.message)); });
-      window.addEventListener('unhandledrejection', function (event) { retry(event && event.reason); });
-      // Vite emits this event before Vue Router can swallow a failed lazy
-      // import. Recover only on a real preload failure; ordinary menu clicks
-      // remain in-app navigation and never reload the document.
-      window.addEventListener('vite:preloadError', function (event) {
-        if (event && event.preventDefault) event.preventDefault();
-        retry(event && event.payload, true);
-      });
-      window.addEventListener('luck:route-error', function (event) {
-        retry(event && event.detail);
-      });
-      window.setTimeout(function () {
-        try { if (document.getElementById('app') && document.getElementById('app').children.length) sessionStorage.removeItem(retryKey); } catch (ignore) {}
-      }, 8000);
+        var changed = url.searchParams.has('luck_reload') || url.searchParams.has('luck_boot');
+        url.searchParams.delete('luck_reload');
+        url.searchParams.delete('luck_boot');
+        if (changed) window.history.replaceState(window.history.state, '', url.toString());
+      } catch (ignore) {}
     }());
   </script>
   <!-- Every lazy chunk must resolve the same entry URL. The import map both
@@ -179,7 +157,6 @@
       var copy = bootstrapCopy[language] || bootstrapCopy['vi-VN'];
       status.textContent = copy.loading;
       retryButton.textContent = copy.retry;
-      var retryKey = 'luck_boot_retry_at';
       var ready = false;
       var observer;
       var hasMountedApp = function () {
@@ -190,7 +167,6 @@
         ready = true;
         document.documentElement.classList.add('luck-app-ready');
         if (observer) observer.disconnect();
-        try { sessionStorage.removeItem(retryKey); } catch (ignore) {}
       };
       window.__LUCK_MARK_APP_READY__ = markReady;
       observer = new MutationObserver(function () { if (hasMountedApp()) markReady(); });
@@ -198,22 +174,10 @@
       if (hasMountedApp()) markReady();
       window.setTimeout(function () {
         if (ready || hasMountedApp()) return markReady();
-        var now = Date.now();
-        try {
-          var previous = Number(sessionStorage.getItem(retryKey) || 0);
-          if (!previous || now - previous > 30000) {
-            sessionStorage.setItem(retryKey, String(now));
-            var url = new URL(window.location.href);
-            url.searchParams.set('luck_boot', String(now));
-            window.location.replace(url.toString());
-            return;
-          }
-        } catch (ignore) {}
         status.textContent = copy.failed;
         retryButton.hidden = false;
       }, 7000);
       retryButton.addEventListener('click', function () {
-        try { sessionStorage.removeItem(retryKey); } catch (ignore) {}
         window.location.reload();
       });
     }());
