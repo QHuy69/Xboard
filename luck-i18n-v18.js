@@ -740,50 +740,40 @@
   }
   function start() {
     translate(document.body);
-    // The compiled mobile shell can render the bottom navigation without
-    // wiring the click callback (this is most visible on the Node item).  Use
-    // a delegated fallback so dynamically mounted nav items still work.  If
-    // the app's own router handles the click, the pathname changes first and
-    // this fallback does nothing; otherwise it performs a normal SPA-safe
-    // navigation after the event has finished bubbling.
-    if (!window.__LUCK_MOBILE_NAV_FALLBACK__) {
-      window.__LUCK_MOBILE_NAV_FALLBACK__ = true;
+    // The Luck shell uses an in-app router. Never fall back to
+    // location.assign() here: a hard navigation flashes the whole page and
+    // makes slow phones look as if the application has gone blank. On the
+    // occasional first-tap miss while Vue is mounting, replay the same click
+    // once after the component has settled. This stays entirely inside the
+    // SPA and does not force a document reload.
+    function installSpaClickRetry(selector, expectedCount, flag) {
+      if (window[flag]) return;
+      window[flag] = true;
       document.addEventListener('click', function (event) {
         var target = event.target;
         if (!target || !target.closest) return;
-        var item = target.closest('.mobile-bottom-nav .nav-item');
+        var item = target.closest(selector);
         if (!item) return;
-        var items = Array.prototype.slice.call(document.querySelectorAll('.mobile-bottom-nav .nav-item'));
+        if (item.dataset.luckSpaRetry === '1') {
+          delete item.dataset.luckSpaRetry;
+          return;
+        }
+        var items = Array.prototype.slice.call(document.querySelectorAll(selector));
         var index = items.indexOf(item);
-        var routes = ['/dashboard', '/plans', '/servers', '/orders'];
-        var route = routes[index];
-        if (!route) return;
-        var pathBeforeClick = window.location.pathname;
+        if (index < 0 || index >= expectedCount) return;
+        var activeBefore = items.findIndex(function (entry) { return entry.classList.contains('active'); });
+        var pathBefore = window.location.pathname;
         window.setTimeout(function () {
-          if (window.location.pathname === pathBeforeClick && pathBeforeClick !== route) {
-            window.location.assign(route);
-          }
-        }, 120);
+          var currentItems = Array.prototype.slice.call(document.querySelectorAll(selector));
+          var activeNow = currentItems.findIndex(function (entry) { return entry.classList.contains('active'); });
+          if (window.location.pathname !== pathBefore || activeNow === index || activeBefore === index) return;
+          item.dataset.luckSpaRetry = '1';
+          item.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        }, 260);
       }, false);
     }
-    if (!window.__LUCK_DESKTOP_NAV_FALLBACK__) {
-      window.__LUCK_DESKTOP_NAV_FALLBACK__ = true;
-      document.addEventListener('click', function (event) {
-        var target = event.target;
-        if (!target || !target.closest) return;
-        var item = target.closest('.sidebar .menu-item');
-        if (!item) return;
-        var items = Array.prototype.slice.call(document.querySelectorAll('.sidebar .menu-item'));
-        var index = items.indexOf(item);
-        var routes = ['/dashboard', '/plans', '/servers', '/orders', '/tickets', '/traffic-details', '/invite', '/profile', '/docs'];
-        var route = routes[index];
-        if (!route) return;
-        var pathBeforeClick = window.location.pathname;
-        window.setTimeout(function () {
-          if (window.location.pathname === pathBeforeClick && pathBeforeClick !== route) window.location.assign(route);
-        }, 120);
-      }, false);
-    }
+    installSpaClickRetry('.mobile-bottom-nav .nav-item', 4, '__LUCK_MOBILE_NAV_RETRY__');
+    installSpaClickRetry('.sidebar .menu-item', 9, '__LUCK_DESKTOP_NAV_RETRY__');
     var guardReleaseRetries = 0;
     function releaseI18nGuard() {
       // Vietnamese/English pages must not reveal a newly mounted chunk while

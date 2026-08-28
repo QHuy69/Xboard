@@ -16,12 +16,54 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=5">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=6">
   <style>
     /* The translator runs after the Vue shell mounts. Never hide the app while
        waiting for an optional translation pass: on a slow mobile connection
        that turns a recoverable delay into a black/empty screen. */
     html.luck-i18n-pending #app { visibility: visible; }
+
+    /* This shell is deliberately inline. Even if a mobile browser loses a
+       module or stylesheet request mid-load, it sees a recovery screen rather
+       than an opaque black page. */
+    #luck-bootstrap {
+      position: fixed;
+      z-index: 2000;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #1e293b;
+      background: radial-gradient(circle at 50% 15%, #eff6ff 0%, #f8fafc 46%, #e2e8f0 100%);
+      transition: opacity .24s ease, visibility .24s ease;
+    }
+    html.luck-app-ready #luck-bootstrap {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .luck-bootstrap-card {
+      width: min(340px, 100%);
+      padding: 28px 24px;
+      border: 1px solid rgba(148, 163, 184, .28);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, .96);
+      box-shadow: 0 22px 60px rgba(15, 23, 42, .16);
+      text-align: center;
+    }
+    .luck-bootstrap-spinner {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 4px solid #dbeafe;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: luck-bootstrap-spin .8s linear infinite;
+    }
+    .luck-bootstrap-card p { margin: 16px 0 0; color: #475569; font: 600 15px/1.5 system-ui, sans-serif; }
+    .luck-bootstrap-card button { margin-top: 16px; padding: 10px 18px; border: 0; border-radius: 999px; color: #fff; background: #2563eb; font: 700 14px/1 system-ui, sans-serif; cursor: pointer; }
+    @keyframes luck-bootstrap-spin { to { transform: rotate(360deg); } }
   </style>
   <script>
     document.documentElement.classList.add('luck-i18n-pending');
@@ -38,7 +80,7 @@
       var retryKey = 'luck_chunk_retry_at';
       var isChunkFailure = function (value) {
         var message = value && (value.message || value.reason || value);
-        return /Failed to fetch dynamically imported module|Importing a module script failed|Loading chunk|ChunkLoadError|network/i.test(String(message || ''));
+        return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk|ChunkLoadError|Unable to preload CSS/i.test(String(message || ''));
       };
       var retry = function (value) {
         if (!isChunkFailure(value)) return;
@@ -59,10 +101,17 @@
       }, 8000);
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=1"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=2"></script>
 </head>
 <body>
   <div id="app"></div>
+  <div id="luck-bootstrap" role="status" aria-live="polite">
+    <div class="luck-bootstrap-card">
+      <span class="luck-bootstrap-spinner" aria-hidden="true"></span>
+      <p id="luck-bootstrap-status">Đang mở ZaoGuang Service…</p>
+      <button id="luck-bootstrap-retry" type="button" hidden>Thử lại</button>
+    </div>
+  </div>
   <button id="luck-donate-banner" class="luck-donate-banner" type="button" aria-haspopup="dialog">
     <span class="luck-donate-banner-label">Ủng hộ</span>
   </button>
@@ -72,6 +121,11 @@
         <h2 id="luck-donate-title">Bạn đang sử dụng gói chống lag mùa đứt cáp</h2>
         <p id="luck-donate-message" class="luck-donate-message">Ủng hộ mình tại đây để duy trì đường truyền ổn định.</p>
         <img class="luck-donate-qr" src="/luck-donate-qr.svg" alt="Mã QR ủng hộ" decoding="async">
+        <dl class="luck-donate-bank" aria-label="Thông tin tài khoản nhận ủng hộ">
+          <div><dt id="luck-donate-bank-label">Ngân hàng</dt><dd>ACB</dd></div>
+          <div><dt id="luck-donate-account-label">Số tài khoản</dt><dd>35333297</dd></div>
+          <div><dt id="luck-donate-owner-label">Chủ tài khoản</dt><dd>NGUYEN HOANG QUANG HUY</dd></div>
+        </dl>
         <p id="luck-donate-thanks" class="luck-donate-thanks">Cảm ơn bạn đã đóng góp và đồng hành.</p>
       </div>
       <div class="luck-donate-actions">
@@ -82,7 +136,67 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=40"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=41"></script>
+  <script>
+    (function () {
+      var app = document.getElementById('app');
+      var shell = document.getElementById('luck-bootstrap');
+      var status = document.getElementById('luck-bootstrap-status');
+      var retryButton = document.getElementById('luck-bootstrap-retry');
+      if (!app || !shell || !status || !retryButton) return;
+      var language = ((window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || navigator.language || 'vi-VN').replace('_', '-');
+      var bootstrapCopy = {
+        'vi-VN': { loading: 'Đang mở ZaoGuang Service…', retry: 'Thử lại', failed: 'Kết nối giao diện đang chậm. Hãy thử lại.' },
+        'en-US': { loading: 'Opening ZaoGuang Service…', retry: 'Try again', failed: 'The interface is taking too long to connect. Please try again.' },
+        'zh-CN': { loading: '正在打开 ZaoGuang Service…', retry: '重试', failed: '界面连接时间过长，请重试。' },
+        'zh-TW': { loading: '正在開啟 ZaoGuang Service…', retry: '重試', failed: '介面連線時間過長，請重試。' },
+        'ja-JP': { loading: 'ZaoGuang Service を開いています…', retry: '再試行', failed: '画面の接続に時間がかかっています。もう一度お試しください。' },
+        'ko-KR': { loading: 'ZaoGuang Service를 여는 중…', retry: '다시 시도', failed: '화면 연결에 시간이 오래 걸리고 있습니다. 다시 시도해 주세요.' },
+        'fa-IR': { loading: 'در حال باز کردن ZaoGuang Service…', retry: 'تلاش دوباره', failed: 'اتصال رابط بیش از حد طول کشیده است. دوباره تلاش کنید.' },
+        'ru-RU': { loading: 'Открываем ZaoGuang Service…', retry: 'Повторить', failed: 'Подключение интерфейса занимает слишком много времени. Повторите попытку.' }
+      };
+      var copy = bootstrapCopy[language] || bootstrapCopy['vi-VN'];
+      status.textContent = copy.loading;
+      retryButton.textContent = copy.retry;
+      var retryKey = 'luck_boot_retry_at';
+      var ready = false;
+      var observer;
+      var hasMountedApp = function () {
+        return app.children.length > 0 && String(app.textContent || '').trim().length > 20;
+      };
+      var markReady = function () {
+        if (ready) return;
+        ready = true;
+        document.documentElement.classList.add('luck-app-ready');
+        if (observer) observer.disconnect();
+        try { sessionStorage.removeItem(retryKey); } catch (ignore) {}
+      };
+      window.__LUCK_MARK_APP_READY__ = markReady;
+      observer = new MutationObserver(function () { if (hasMountedApp()) markReady(); });
+      observer.observe(app, { childList: true, characterData: true, subtree: true });
+      if (hasMountedApp()) markReady();
+      window.setTimeout(function () {
+        if (ready || hasMountedApp()) return markReady();
+        var now = Date.now();
+        try {
+          var previous = Number(sessionStorage.getItem(retryKey) || 0);
+          if (!previous || now - previous > 30000) {
+            sessionStorage.setItem(retryKey, String(now));
+            var url = new URL(window.location.href);
+            url.searchParams.set('luck_boot', String(now));
+            window.location.replace(url.toString());
+            return;
+          }
+        } catch (ignore) {}
+        status.textContent = copy.failed;
+        retryButton.hidden = false;
+      }, 7000);
+      retryButton.addEventListener('click', function () {
+        try { sessionStorage.removeItem(retryKey); } catch (ignore) {}
+        window.location.reload();
+      });
+    }());
+  </script>
   <script>
     (function () {
       var banner = document.getElementById('luck-donate-banner');
@@ -101,49 +215,49 @@
           title: 'Bạn đang sử dụng gói chống lag mùa đứt cáp',
           message: 'Ủng hộ mình tại đây để duy trì đường truyền ổn định.',
           thanks: 'Cảm ơn bạn đã đóng góp và đồng hành.',
-          qr: 'Mã QR ủng hộ'
+          qr: 'Mã QR ủng hộ', bank: 'Ngân hàng', account: 'Số tài khoản', owner: 'Chủ tài khoản'
         },
         'en-US': {
           title: 'You are using the cable-outage anti-lag plan',
           message: 'Support me here to help keep the connection stable.',
           thanks: 'Thank you for your contribution and support.',
-          qr: 'Donation QR code'
+          qr: 'Donation QR code', bank: 'Bank', account: 'Account number', owner: 'Account holder'
         },
         'zh-CN': {
           title: '您正在使用断缆抗延迟套餐',
           message: '欢迎在此支持我们，帮助维持稳定连接。',
           thanks: '感谢您的支持与捐助。',
-          qr: '捐赠二维码'
+          qr: '捐赠二维码', bank: '银行', account: '账号', owner: '账户名'
         },
         'zh-TW': {
           title: '您正在使用斷纜抗延遲方案',
           message: '歡迎在此支持我們，幫助維持穩定連線。',
           thanks: '感謝您的支持與捐助。',
-          qr: '贊助 QR Code'
+          qr: '贊助 QR Code', bank: '銀行', account: '帳號', owner: '帳戶名稱'
         },
         'ja-JP': {
           title: '海底ケーブル障害対策プランをご利用中です',
           message: '安定した接続を維持するため、こちらからご支援いただけます。',
           thanks: 'ご支援ありがとうございます。',
-          qr: '支援用 QR コード'
+          qr: '支援用 QR コード', bank: '銀行', account: '口座番号', owner: '口座名義'
         },
         'ko-KR': {
           title: '해저 케이블 장애 대비 저지연 플랜을 이용 중입니다',
           message: '안정적인 연결 유지를 위해 여기에서 후원하실 수 있습니다.',
           thanks: '후원해 주셔서 감사합니다.',
-          qr: '후원 QR 코드'
+          qr: '후원 QR 코드', bank: '은행', account: '계좌 번호', owner: '예금주'
         },
         'fa-IR': {
           title: 'شما از طرح کاهش تأخیر در زمان قطعی کابل استفاده می‌کنید',
           message: 'برای کمک به پایدار ماندن اتصال، از اینجا حمایت کنید.',
           thanks: 'از حمایت و همراهی شما سپاسگزاریم.',
-          qr: 'کد QR حمایت'
+          qr: 'کد QR حمایت', bank: 'بانک', account: 'شماره حساب', owner: 'نام صاحب حساب'
         },
         'ru-RU': {
           title: 'Вы используете тариф для снижения задержки при обрыве кабеля',
           message: 'Поддержите нас здесь, чтобы соединение оставалось стабильным.',
           thanks: 'Спасибо за вашу поддержку.',
-          qr: 'QR-код для поддержки'
+          qr: 'QR-код для поддержки', bank: 'Банк', account: 'Номер счёта', owner: 'Получатель'
         }
       };
       copy = copy[lang] || copy['vi-VN'];
@@ -154,10 +268,16 @@
       var message = document.getElementById('luck-donate-message');
       var thanks = document.getElementById('luck-donate-thanks');
       var qr = modal.querySelector('.luck-donate-qr');
+      var bankLabel = document.getElementById('luck-donate-bank-label');
+      var accountLabel = document.getElementById('luck-donate-account-label');
+      var ownerLabel = document.getElementById('luck-donate-owner-label');
       if (title) title.textContent = copy.title;
       if (message) message.textContent = copy.message;
       if (thanks) thanks.textContent = copy.thanks;
       if (qr) qr.alt = copy.qr;
+      if (bankLabel) bankLabel.textContent = copy.bank;
+      if (accountLabel) accountLabel.textContent = copy.account;
+      if (ownerLabel) ownerLabel.textContent = copy.owner;
       var open = function () {
         modal.hidden = false;
         document.body.classList.add('luck-donate-open');
