@@ -41,11 +41,29 @@
 
 /* Donation entry point and the small, readable bank-information card that
    accompanies the supplied QR image. */
-.luck-donate-banner {
+.luck-shell-actions {
   position: fixed;
   top: 14px;
   right: 14px;
   z-index: 2200;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.luck-donate-banner,
+.luck-app-download {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  text-decoration: none;
+}
+
+.luck-donate-banner {
   border: 0;
   border-radius: 999px;
   padding: 10px 16px;
@@ -59,16 +77,53 @@
   cursor: pointer;
 }
 
-.luck-donate-banner:hover {
+.luck-app-download {
+  border: 1px solid rgba(255, 255, 255, .42);
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #0ea5e9);
+  box-shadow: 0 8px 24px rgba(14, 165, 233, .24);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.luck-app-download svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.luck-donate-banner:hover,
+.luck-app-download:hover {
   filter: brightness(1.05);
 }
 
-.luck-donate-banner:focus-visible {
+.luck-donate-banner:focus-visible,
+.luck-app-download:focus-visible {
   outline: 3px solid rgba(59, 130, 246, .35);
   outline-offset: 3px;
 }
 
+.luck-donate-banner[hidden],
 .luck-donate-modal[hidden] {
+  display: none !important;
+}
+
+/* The generated dashboard uses an inline image for the Clash card and a
+   generic document icon in its modal. Both are normalized to one local asset
+   by the shell script, which avoids third-party/CSP failures. */
+.subscription-icon.clash .subscription-logo,
+.luck-clash-dialog-logo {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.subscription-dialog[data-luck-subscription="clash"] .dialog-icon > svg {
   display: none !important;
 }
 
@@ -202,11 +257,31 @@ body.luck-donate-open {
 }
 
 @media (max-width: 768px) {
-  .luck-donate-banner {
+  .luck-shell-actions {
     top: 10px;
     right: 10px;
+    gap: 6px;
+  }
+
+  .luck-donate-banner {
     padding: 9px 13px;
     font-size: 13px;
+  }
+
+  .luck-app-download {
+    position: fixed;
+    left: 12px;
+    right: auto;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    z-index: 2200;
+    min-height: 36px;
+    padding: 8px 11px;
+    font-size: 12px;
+  }
+
+  .luck-app-download svg {
+    width: 15px;
+    height: 15px;
   }
 
   .luck-donate-modal {

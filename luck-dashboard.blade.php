@@ -16,7 +16,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=7">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=8">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -38,9 +38,15 @@
 </head>
 <body>
   <div id="app"></div>
-  <button id="luck-donate-banner" class="luck-donate-banner" type="button" aria-haspopup="dialog">
-    <span class="luck-donate-banner-label">Ủng hộ</span>
-  </button>
+  <div class="luck-shell-actions">
+    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.domain.com') }}" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="luck-app-download-label">Tải ứng dụng</span>
+    </a>
+    <button id="luck-donate-banner" class="luck-donate-banner" type="button" aria-haspopup="dialog" hidden>
+      <span class="luck-donate-banner-label">Ủng hộ</span>
+    </button>
+  </div>
   <div id="luck-donate-modal" class="luck-donate-modal" hidden role="dialog" aria-modal="true" aria-labelledby="luck-donate-title">
     <div class="luck-donate-modal-card">
       <div class="luck-donate-modal-content">
@@ -68,14 +74,23 @@
       var banner = document.getElementById('luck-donate-banner');
       var modal = document.getElementById('luck-donate-modal');
       var close = document.getElementById('luck-donate-close');
+      var download = document.getElementById('luck-app-download');
       if (!banner || !modal || !close || banner.dataset.bound === '1') return;
       banner.dataset.bound = '1';
+      var TARGET_PLAN_ID = 1;
+      var ELIGIBILITY_ENDPOINT = '/api/v1/user/getSubscribe';
+      var SEEN_KEY = 'luck_donate_seen_plan_' + TARGET_PLAN_ID;
+      var CLASH_ICON = '/theme/{{$theme}}/assets/luck-clash.svg?v=1';
       var lang = (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || document.documentElement.lang || 'vi-VN';
       var labels = {
         'vi-VN': 'Ủng hộ', 'en-US': 'Donate', 'zh-CN': '捐赠', 'zh-TW': '捐贈',
         'ja-JP': '寄付', 'ko-KR': '후원', 'fa-IR': 'حمایت', 'ru-RU': 'Поддержать'
       };
       var label = labels[lang] || labels['vi-VN'];
+      var downloadLabels = {
+        'vi-VN': 'Tải ứng dụng', 'en-US': 'Download app', 'zh-CN': '下载应用', 'zh-TW': '下載應用',
+        'ja-JP': 'アプリをダウンロード', 'ko-KR': '앱 다운로드', 'fa-IR': 'دانلود برنامه', 'ru-RU': 'Скачать приложение'
+      };
       var copy = {
         'vi-VN': {
           title: 'Bạn đang sử dụng gói chống lag mùa đứt cáp',
@@ -130,6 +145,8 @@
       var labelNode = banner.querySelector('.luck-donate-banner-label');
       if (labelNode) labelNode.textContent = label;
       banner.setAttribute('aria-label', label);
+      var downloadLabel = download && download.querySelector('.luck-app-download-label');
+      if (downloadLabel) downloadLabel.textContent = downloadLabels[lang] || downloadLabels['vi-VN'];
       var title = document.getElementById('luck-donate-title');
       var message = document.getElementById('luck-donate-message');
       var thanks = document.getElementById('luck-donate-thanks');
@@ -145,6 +162,7 @@
       if (accountLabel) accountLabel.textContent = copy.account;
       if (ownerLabel) ownerLabel.textContent = copy.owner;
       var open = function () {
+        if (banner.hidden) return;
         modal.hidden = false;
         document.body.classList.add('luck-donate-open');
         close.focus();
@@ -152,7 +170,96 @@
       var dismiss = function () {
         modal.hidden = true;
         document.body.classList.remove('luck-donate-open');
-        banner.focus();
+        if (!banner.hidden) banner.focus();
+      };
+      var hideDonation = function () {
+        banner.hidden = true;
+        modal.hidden = true;
+        document.body.classList.remove('luck-donate-open');
+      };
+      var normalizeToken = function () {
+        try {
+          var token = localStorage.getItem('v2board_token') || '';
+          if (!token) return '';
+          if (token.charAt(0) === '"') token = JSON.parse(token);
+          return typeof token === 'string' ? token.trim() : '';
+        } catch (ignore) {
+          return '';
+        }
+      };
+      var lastEligibilityKey = '';
+      var eligibilityRequest = 0;
+      var checkEligibility = function (force) {
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        var token = normalizeToken();
+        if (path === '/login' || path === '/register' || !token) {
+          eligibilityRequest += 1;
+          hideDonation();
+          lastEligibilityKey = '';
+          if (path === '/login' || path === '/register') {
+            try { sessionStorage.removeItem(SEEN_KEY); } catch (ignore) {}
+          }
+          return;
+        }
+        var eligibilityKey = path + '|' + token;
+        if (!force && eligibilityKey === lastEligibilityKey) return;
+        lastEligibilityKey = eligibilityKey;
+        var requestId = ++eligibilityRequest;
+        fetch(ELIGIBILITY_ENDPOINT, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json', 'Authorization': token }
+        }).then(function (response) {
+          if (!response.ok) throw new Error('Subscription check failed');
+          return response.json();
+        }).then(function (payload) {
+          if (requestId !== eligibilityRequest) return;
+          var subscription = payload && payload.data;
+          var expiresAt = subscription && Number(subscription.expired_at || 0);
+          var active = !expiresAt || expiresAt > Math.floor(Date.now() / 1000);
+          var eligible = subscription && Number(subscription.plan_id) === TARGET_PLAN_ID && active;
+          if (!eligible) {
+            hideDonation();
+            return;
+          }
+          banner.hidden = false;
+          try {
+            if (sessionStorage.getItem(SEEN_KEY) !== '1') {
+              sessionStorage.setItem(SEEN_KEY, '1');
+              open();
+            }
+          } catch (ignore) {
+            open();
+          }
+        }).catch(function () {
+          if (requestId === eligibilityRequest) hideDonation();
+        });
+      };
+      var syncClashIcons = function () {
+        document.querySelectorAll('.subscription-icon.clash img.subscription-logo').forEach(function (image) {
+          if (image.getAttribute('src') !== CLASH_ICON) image.setAttribute('src', CLASH_ICON);
+          image.setAttribute('alt', 'Clash');
+        });
+        document.querySelectorAll('.subscription-dialog').forEach(function (dialog) {
+          var titleNode = dialog.querySelector('.dialog-title');
+          var isClash = titleNode && /clash/i.test(titleNode.textContent || '');
+          if (!isClash) {
+            dialog.removeAttribute('data-luck-subscription');
+            var previous = dialog.querySelector('.luck-clash-dialog-logo');
+            if (previous) previous.remove();
+            return;
+          }
+          dialog.setAttribute('data-luck-subscription', 'clash');
+          var iconHost = dialog.querySelector('.dialog-icon');
+          if (iconHost && !iconHost.querySelector('.luck-clash-dialog-logo')) {
+            var icon = document.createElement('img');
+            icon.className = 'luck-clash-dialog-logo';
+            icon.src = CLASH_ICON;
+            icon.alt = 'Clash';
+            iconHost.appendChild(icon);
+          }
+        });
       };
       banner.addEventListener('click', open);
       close.addEventListener('click', dismiss);
@@ -162,7 +269,41 @@
       document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.hidden) dismiss();
       });
-      window.setTimeout(open, 0);
+      var refreshTimer = 0;
+      var scheduleRefresh = function () {
+        window.clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(function () {
+          syncClashIcons();
+          checkEligibility(false);
+        }, 120);
+      };
+      var app = document.getElementById('app');
+      if (app && window.MutationObserver) {
+        new MutationObserver(scheduleRefresh).observe(app, { childList: true, subtree: true });
+      }
+      window.addEventListener('popstate', scheduleRefresh);
+      window.addEventListener('pageshow', scheduleRefresh);
+      window.addEventListener('storage', function (event) {
+        if (event.key === 'v2board_token') checkEligibility(true);
+      });
+      window.setTimeout(function () {
+        syncClashIcons();
+        checkEligibility(true);
+      }, 0);
+    }());
+  </script>
+  <script>
+    (function () {
+      var websiteId = @json((string) (admin_setting('crisp_website_id', env('CRISP_WEBSITE_ID', ''))));
+      if (!websiteId || !/^[0-9a-f-]{36}$/i.test(websiteId) || window.__luckCrispLoaded) return;
+      window.__luckCrispLoaded = true;
+      window.$crisp = window.$crisp || [];
+      window.CRISP_WEBSITE_ID = websiteId;
+      var script = document.createElement('script');
+      script.src = 'https://client.crisp.chat/l.js';
+      script.async = true;
+      script.setAttribute('data-luck-integration', 'crisp');
+      document.head.appendChild(script);
     }());
   </script>
   <script>

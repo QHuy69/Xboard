@@ -88,6 +88,7 @@ $renderTheme = function (Request $request) {
                 'i18n-v18.js',
                 'dashboard.blade.php',
                 'assets/luck-overrides.css',
+                'assets/luck-clash.svg',
                 'assets/oPGsis9D-v3.js',
                 'assets/oPGsis9D-v2.js',
                 'assets/BBbuoBq5.js',
