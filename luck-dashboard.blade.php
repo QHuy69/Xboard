@@ -17,6 +17,19 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=3">
+  <style>
+    /* Keep the first paint hidden while the runtime translator normalizes
+       asynchronously mounted Luck chunks. A bounded fallback below prevents
+       a failed optional script from leaving the app invisible. */
+    html.luck-i18n-pending #app { visibility: hidden; }
+  </style>
+  <script>
+    document.documentElement.classList.add('luck-i18n-pending');
+    window.__LUCK_RELEASE_I18N_GUARD__ = function () {
+      document.documentElement.classList.remove('luck-i18n-pending');
+    };
+    window.setTimeout(window.__LUCK_RELEASE_I18N_GUARD__, 2500);
+  </script>
   <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v8.js?v=1"></script>
 </head>
 <body>

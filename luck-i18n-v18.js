@@ -713,7 +713,14 @@
         }, 120);
       }, false);
     }
-    new MutationObserver(function (records) {
+    function releaseI18nGuard() {
+      if (typeof window.__LUCK_RELEASE_I18N_GUARD__ === 'function') {
+        window.__LUCK_RELEASE_I18N_GUARD__();
+      } else if (document.documentElement) {
+        document.documentElement.classList.remove('luck-i18n-pending');
+      }
+    }
+    var observer = new MutationObserver(function (records) {
       records.forEach(function (record) {
         if (record.type === 'characterData' && record.target.parentElement) translate(record.target.parentElement);
         record.addedNodes.forEach(function (node) {
@@ -721,7 +728,13 @@
           if (node.nodeType === Node.ELEMENT_NODE) translate(node);
         });
       });
+      // Release the guard only after the first mounted chunk has gone through
+      // translation, preventing a visible flash of source-language loading
+      // text on slow/mobile connections.
+      releaseI18nGuard();
     }).observe(document.body, { childList: true, characterData: true, subtree: true });
+    if (document.getElementById('app') && document.getElementById('app').childNodes.length) releaseI18nGuard();
+    window.setTimeout(releaseI18nGuard, 2200);
   }
   if (document.body) start(); else document.addEventListener('DOMContentLoaded', start, { once: true });
 })();
