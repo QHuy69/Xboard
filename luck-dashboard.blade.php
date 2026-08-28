@@ -82,8 +82,8 @@
         var message = value && (value.message || value.reason || value);
         return /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk|ChunkLoadError|Unable to preload CSS/i.test(String(message || ''));
       };
-      var retry = function (value) {
-        if (!isChunkFailure(value)) return;
+      var retry = function (value, confirmedChunkFailure) {
+        if (!confirmedChunkFailure && !isChunkFailure(value)) return;
         var now = Date.now();
         try {
           var previous = Number(sessionStorage.getItem(retryKey) || 0);
@@ -96,12 +96,22 @@
       };
       window.addEventListener('error', function (event) { retry(event && (event.error || event.message)); });
       window.addEventListener('unhandledrejection', function (event) { retry(event && event.reason); });
+      // Vite emits this event before Vue Router can swallow a failed lazy
+      // import. Recover only on a real preload failure; ordinary menu clicks
+      // remain in-app navigation and never reload the document.
+      window.addEventListener('vite:preloadError', function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        retry(event && event.payload, true);
+      });
+      window.addEventListener('luck:route-error', function (event) {
+        retry(event && event.detail);
+      });
       window.setTimeout(function () {
         try { if (document.getElementById('app') && document.getElementById('app').children.length) sessionStorage.removeItem(retryKey); } catch (ignore) {}
       }, 8000);
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=2"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/luck-entry-v42.js?v=1"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -136,7 +146,7 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=41"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=42"></script>
   <script>
     (function () {
       var app = document.getElementById('app');

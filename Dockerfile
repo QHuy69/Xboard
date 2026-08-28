@@ -20,7 +20,7 @@ COPY .docker /
 # upstream application. The clone intentionally replaces /www, so copying
 # these files into a temporary build directory makes them available below.
 RUN mkdir -p /tmp/luck-custom
-COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg /tmp/luck-custom/
+COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg patch-luck-assets.php /tmp/luck-custom/
 
 # Add build arguments
 ARG CACHEBUST=1
@@ -37,6 +37,7 @@ RUN echo "Attempting to clone branch: ${BRANCH_NAME} from ${REPO_URL} with CACHE
 # Keep custom Luck runtime files in the image's public tree. Static JS is
 # served from public/theme while compose mounts storage/theme for templates.
 RUN mkdir -p public/theme/Luck/assets storage/theme/Luck/assets && \
+    php /tmp/luck-custom/patch-luck-assets.php public/theme/Luck/assets && \
     cp /tmp/luck-custom/luck-i18n-v18.js public/theme/Luck/i18n-v18.js && \
     cp /tmp/luck-custom/luck-i18n-v18.js storage/theme/Luck/i18n-v18.js && \
     cp /tmp/luck-custom/luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php && \

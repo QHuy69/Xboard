@@ -2,13 +2,13 @@
 (function () {
   var brandTitle = 'ZaoGuang Service';
   var supported = ['zh-CN', 'zh-TW', 'en-US', 'vi-VN', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-RU'];
-  // The server receives the real Accept-Language header.  Use it first because
-  // some Chromium setups expose only en-US through navigator.language.
+  // Prefer the language selected on the device. The server's Accept-Language
+  // list remains a fallback for browsers that expose only a generic locale.
   var serverLanguages = Array.isArray(window.LUCK_SERVER_LANGUAGES) ? window.LUCK_SERVER_LANGUAGES : [];
   var browserLanguages = (navigator.languages || [navigator.language || '']).map(function (value) {
     return String(value || '').replace('_', '-');
   });
-  var raw = serverLanguages.concat(browserLanguages).map(function (value) {
+  var raw = browserLanguages.concat(serverLanguages).map(function (value) {
     return String(value || '').replace('_', '-');
   }).filter(Boolean);
   var locale = raw.find(function (value) { return supported.indexOf(value) !== -1; }) ||
@@ -129,8 +129,9 @@
     'Email验证': 'Email verification', '获取验证码': 'Get verification code',
     '请输入验证码': 'Enter verification code', '请输入Email': 'Enter email',
     '请输入Email地址': 'Enter email address', '流量使用趋势（最近30天）': 'Traffic usage trend (last 30 days)',
-    '流量使用趋势(最近30天)': 'Traffic usage trend (last 30 days)', '流量 (GB)': 'Traffic (GB)',
-    '流量（GB）': 'Traffic (GB)', '上传流量': 'Upload traffic', '下载流量': 'Download traffic'
+    '流量使用趋势(最近30天)': 'Traffic usage trend (last 30 days)', '流量使用趋势 (最近30天)': 'Traffic usage trend (last 30 days)',
+    '流量 (GB)': 'Traffic (GB)', '流量（GB）': 'Traffic (GB)', '上传流量': 'Upload traffic', '下载流量': 'Download traffic',
+    '获取节点列表失败': 'Failed to load the node list'
   });
   Object.assign(vi, {
     '节点名称': 'Tên node', '地址': 'Địa chỉ', '倍率': 'Tỷ lệ', '标签': 'Nhãn',
@@ -145,8 +146,9 @@
     'Email验证': 'Xác minh email', '获取验证码': 'Lấy mã xác minh',
     '请输入验证码': 'Nhập mã xác minh', '请输入Email': 'Nhập email',
     '请输入Email地址': 'Nhập địa chỉ email', '流量使用趋势（最近30天）': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)',
-    '流量使用趋势(最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)', '流量 (GB)': 'Lưu lượng (GB)',
-    '流量（GB）': 'Lưu lượng (GB)', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống'
+    '流量使用趋势(最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)', '流量使用趋势 (最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)',
+    '流量 (GB)': 'Lưu lượng (GB)', '流量（GB）': 'Lưu lượng (GB)', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống',
+    '获取节点列表失败': 'Không tải được danh sách node'
   });
   Object.assign(tw, {
     '节点名称': '節點名稱', '地址': '地址', '倍率': '倍率', '标签': '標籤',
@@ -643,6 +645,12 @@
     }
     return translatedCore !== originalCore ? leading + translatedCore + trailing : text;
   }
+  // Chart labels are drawn into a canvas, outside the DOM observer. Expose the
+  // same translator to patched Luck chart assets so every surface uses one
+  // locale and one dictionary.
+  window.__LUCK_T__ = function (value) {
+    return translateText(String(value == null ? '' : value));
+  };
   function normalizeInlineBoundaries(root) {
     if (locale !== 'vi-VN') return;
     var scope = root || document;
@@ -670,8 +678,8 @@
       var next = translateText(node.nodeValue);
       if (next !== node.nodeValue) node.nodeValue = next;
     }
-    (root || document).querySelectorAll('[placeholder],[title],[aria-label],[alt]').forEach(function (element) {
-      ['placeholder','title','aria-label','alt'].forEach(function (attribute) {
+    (root || document).querySelectorAll('[placeholder],[title],[aria-label],[alt],[data-label]').forEach(function (element) {
+      ['placeholder','title','aria-label','alt','data-label'].forEach(function (attribute) {
         if (element.hasAttribute(attribute)) element.setAttribute(attribute, translateText(element.getAttribute(attribute)));
       });
     });
