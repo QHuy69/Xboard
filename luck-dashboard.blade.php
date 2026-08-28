@@ -46,7 +46,7 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=39"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=40"></script>
   <script>
     (function () {
       var banner = document.getElementById('luck-donate-banner');

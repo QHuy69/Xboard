@@ -500,6 +500,14 @@
       .replace(/(\d+)\s*台/g, '$1' + deviceUnit)
       .replace(/Hủy后如使用Thanh toán bằng số dư，Số dư将自动退回到您的Tài khoản/g, cancelNotice)
       .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại')
+      // Chart labels are rendered asynchronously by the chart component and
+      // may include either full-width or ASCII parentheses (sometimes with a
+      // space before the opening parenthesis). Normalize every form here so
+      // the SVG/canvas-adjacent text cannot leak the source language.
+      .replace(/流量使用趋势\s*[（(]\s*最近30天\s*[）)]/g, viLocale ? 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)' : 'Traffic usage trend (last 30 days)')
+      .replace(/流量\s*[（(]\s*GB\s*[）)]/g, viLocale ? 'Lưu lượng (GB)' : 'Traffic (GB)')
+      .replace(/上传流量/g, viLocale ? 'Lưu lượng tải lên' : 'Upload traffic')
+      .replace(/下载流量/g, viLocale ? 'Lưu lượng tải xuống' : 'Download traffic')
       .replace(/正在加载图表数据\.\.\./g, chartLoading)
       .replace(/正在加载Lưu lượng数据表\.\.\./g, trafficTableLoading)
       .replace(/正在加载主页数据\.\.\./g, viLocale ? 'Đang tải dữ liệu trang chủ...' : 'Loading dashboard data...')
