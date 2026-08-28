@@ -26,7 +26,12 @@ RUN echo "Attempting to clone branch: ${BRANCH_NAME} from ${REPO_URL} with CACHE
     rm -rf .git && \
     git config --global --add safe.directory /www && \
     git clone --depth 1 --branch ${BRANCH_NAME} ${REPO_URL} . && \
-    git submodule update --init --recursive --force
+    git submodule update --init --recursive --force && \
+    # Keep the custom Luck runtime translation in the image's public tree.
+    # The host compose mounts storage/theme, but static JS is served from
+    # public/theme and otherwise survives only until the next container recreate.
+    if [ -f luck-i18n-v18.js ]; then cp luck-i18n-v18.js public/theme/Luck/i18n-v18.js; fi && \
+    if [ -f luck-dashboard.blade.php ]; then cp luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php; fi
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile
