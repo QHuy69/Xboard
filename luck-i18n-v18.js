@@ -467,6 +467,13 @@
     var deviceUnit = viLocale ? ' thiết bị' : ' devices';
     var chartLoading = viLocale ? 'Đang tải dữ liệu biểu đồ...' : 'Loading chart data...';
     var trafficTableLoading = viLocale ? 'Đang tải bảng dữ liệu lưu lượng...' : 'Loading traffic data...';
+    var ticketSubject = viLocale ? 'Chủ đề ticket' : 'Ticket subject';
+    var ticketPriority = viLocale ? 'Mức độ ưu tiên' : 'Priority';
+    var ticketLow = viLocale ? 'Thấp - Vấn đề thông thường' : 'Low - General issue';
+    var ticketMedium = viLocale ? 'Trung bình - Vấn đề quan trọng' : 'Medium - Important issue';
+    var ticketHigh = viLocale ? 'Cao - Vấn đề khẩn cấp' : 'High - Urgent issue';
+    var ticketDescription = viLocale ? 'Mô tả vấn đề' : 'Issue description';
+    var ticketPlaceholder = viLocale ? 'Hãy mô tả chi tiết vấn đề bạn gặp phải...' : 'Describe the issue you encountered...';
     var cancelNotice = viLocale
       ? 'Nếu hủy đơn khi thanh toán bằng số dư, số dư sẽ tự động được hoàn lại vào tài khoản.'
       : 'If you cancel an order paid from your balance, the balance will be returned automatically.';
@@ -488,7 +495,15 @@
       .replace(/Hủy后如使用Thanh toán bằng số dư，Số dư将自动退回到您的Tài khoản/g, cancelNotice)
       .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại')
       .replace(/正在加载图表数据\.\.\./g, chartLoading)
-      .replace(/正在加载Lưu lượng数据表\.\.\./g, trafficTableLoading);
+      .replace(/正在加载Lưu lượng数据表\.\.\./g, trafficTableLoading)
+      .replace(/请输入TicketChủ đề/g, viLocale ? 'Nhập chủ đề ticket' : 'Enter ticket subject')
+      .replace(/TicketChủ đề/g, ticketSubject)
+      .replace(/优先级/g, ticketPriority)
+      .replace(/低\s*-\s*一般问题/g, ticketLow)
+      .replace(/中\s*-\s*重要问题/g, ticketMedium)
+      .replace(/高\s*-\s*紧急问题/g, ticketHigh)
+      .replace(/问题描述/g, ticketDescription)
+      .replace(/请详细描述您遇到的问题\.\.\./g, ticketPlaceholder);
   }
 
   function translateText(text) {
