@@ -465,6 +465,8 @@
     var planCost = viLocale ? 'Chi phí gói' : 'Plan cost';
     var paidAmount = viLocale ? 'Số tiền đã thanh toán' : 'Paid amount';
     var deviceUnit = viLocale ? ' thiết bị' : ' devices';
+    var chartLoading = viLocale ? 'Đang tải dữ liệu biểu đồ...' : 'Loading chart data...';
+    var trafficTableLoading = viLocale ? 'Đang tải bảng dữ liệu lưu lượng...' : 'Loading traffic data...';
     var cancelNotice = viLocale
       ? 'Nếu hủy đơn khi thanh toán bằng số dư, số dư sẽ tự động được hoàn lại vào tài khoản.'
       : 'If you cancel an order paid from your balance, the balance will be returned automatically.';
@@ -484,7 +486,9 @@
       .replace(/Đã thanh toánSố tiền/g, paidAmount)
       .replace(/(\d+)\s*台/g, '$1' + deviceUnit)
       .replace(/Hủy后如使用Thanh toán bằng số dư，Số dư将自动退回到您的Tài khoản/g, cancelNotice)
-      .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại');
+      .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại')
+      .replace(/正在加载图表数据\.\.\./g, chartLoading)
+      .replace(/正在加载Lưu lượng数据表\.\.\./g, trafficTableLoading);
   }
 
   function translateText(text) {
