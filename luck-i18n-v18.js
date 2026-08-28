@@ -386,6 +386,10 @@
     'Gói V2Ray链接': 'V2Ray subscription link', 'Dùng cho ứng dụng V2Ray客户端': 'For V2Ray clients',
     'Gói Shadowsocks链接': 'Shadowsocks subscription link', '适用于 Shadowsocks 系列客户端': 'For Shadowsocks clients',
     'Gói Hiddify链接': 'Hiddify subscription link', 'Dùng cho ứng dụng Hiddify客户端': 'For Hiddify clients',
+    'Clash 订阅链接': 'Clash subscription link', 'V2Ray 订阅链接': 'V2Ray subscription link',
+    'Shadowsocks 订阅链接': 'Shadowsocks subscription link', 'Hiddify 订阅链接': 'Hiddify subscription link',
+    '适用于 Clash 系列客户端': 'For Clash clients', '适用于 V2Ray 系列客户端': 'For V2Ray clients',
+    '适用于 SingBox 系列客户端': 'For SingBox clients', '适用于 Hiddify 系列客户端': 'For Hiddify clients',
     '链接': 'link', '客户端': 'clients', '客户端订阅': 'client subscription'
   };
   var extraVi = {
@@ -404,6 +408,10 @@
     'Gói V2Ray链接': 'Liên kết đăng ký V2Ray', 'Dùng cho ứng dụng V2Ray客户端': 'Dùng cho ứng dụng V2Ray',
     'Gói Shadowsocks链接': 'Liên kết đăng ký Shadowsocks', '适用于 Shadowsocks 系列客户端': 'Dùng cho ứng dụng Shadowsocks',
     'Gói Hiddify链接': 'Liên kết đăng ký Hiddify', 'Dùng cho ứng dụng Hiddify客户端': 'Dùng cho ứng dụng Hiddify',
+    'Clash 订阅链接': 'Liên kết đăng ký Clash', 'V2Ray 订阅链接': 'Liên kết đăng ký V2Ray',
+    'Shadowsocks 订阅链接': 'Liên kết đăng ký Shadowsocks', 'Hiddify 订阅链接': 'Liên kết đăng ký Hiddify',
+    '适用于 Clash 系列客户端': 'Dùng cho ứng dụng Clash', '适用于 V2Ray 系列客户端': 'Dùng cho ứng dụng V2Ray',
+    '适用于 SingBox 系列客户端': 'Dùng cho ứng dụng SingBox', '适用于 Hiddify 系列客户端': 'Dùng cho ứng dụng Hiddify',
     '链接': 'liên kết', '客户端': 'ứng dụng', '客户端订阅': 'liên kết ứng dụng'
   };
   var extraZh = {
@@ -423,6 +431,10 @@
     'Gói V2Ray链接': 'V2Ray 订阅链接', 'Dùng cho ứng dụng V2Ray客户端': '适用于 V2Ray 客户端',
     'Gói Shadowsocks链接': 'Shadowsocks 订阅链接', '适用于 Shadowsocks 系列客户端': '适用于 Shadowsocks 客户端',
     'Gói Hiddify链接': 'Hiddify 订阅链接', 'Dùng cho ứng dụng Hiddify客户端': '适用于 Hiddify 客户端',
+    'Clash 订阅链接': 'Clash 订阅链接', 'V2Ray 订阅链接': 'V2Ray 订阅链接',
+    'Shadowsocks 订阅链接': 'Shadowsocks 订阅链接', 'Hiddify 订阅链接': 'Hiddify 订阅链接',
+    '适用于 Clash 系列客户端': '适用于 Clash 客户端', '适用于 V2Ray 系列客户端': '适用于 V2Ray 客户端',
+    '适用于 SingBox 系列客户端': '适用于 SingBox 客户端', '适用于 Hiddify 系列客户端': '适用于 Hiddify 客户端',
     '链接': '链接', '客户端': '客户端', '客户端订阅': '客户端订阅'
   };
   Object.assign(en, extraEn); Object.assign(vi, extraVi); Object.assign(zh, extraZh);
