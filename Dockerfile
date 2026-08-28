@@ -30,7 +30,7 @@ RUN echo "Attempting to clone branch: ${BRANCH_NAME} from ${REPO_URL} with CACHE
 
 # Keep custom Luck runtime files in the image's public tree. Static JS is
 # served from public/theme while compose mounts storage/theme for templates.
-RUN mkdir -p public/theme/Luck && \
+RUN mkdir -p public/theme/Luck/assets && \
     if [ -f luck-i18n-v18.js ]; then cp luck-i18n-v18.js public/theme/Luck/i18n-v18.js; fi && \
     if [ -f luck-dashboard.blade.php ]; then cp luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php; fi && \
     if [ -f luck-overrides.css ]; then cp luck-overrides.css public/theme/Luck/assets/luck-overrides.css; fi
