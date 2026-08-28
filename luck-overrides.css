@@ -3,6 +3,42 @@
   padding: 0 24px 22px !important;
 }
 
+/* The compiled orders stylesheet renders these mobile labels through
+   pseudo-elements, so the DOM translator cannot see or replace them. */
+@media (max-width: 768px) {
+  html[lang^="vi"] .order-info[data-v-95571e5b]::before {
+    content: "Mã đơn hàng" !important;
+  }
+
+  html[lang^="vi"] .plan-info[data-v-95571e5b]::before {
+    content: "Chi tiết gói" !important;
+  }
+
+  html[lang^="vi"] .amount-info[data-v-95571e5b]::before {
+    content: "Số tiền thanh toán" !important;
+  }
+
+  html[lang^="vi"] .time-info[data-v-95571e5b]::before {
+    content: "Thời gian tạo" !important;
+  }
+
+  html[lang^="en"] .order-info[data-v-95571e5b]::before {
+    content: "Order number" !important;
+  }
+
+  html[lang^="en"] .plan-info[data-v-95571e5b]::before {
+    content: "Plan details" !important;
+  }
+
+  html[lang^="en"] .amount-info[data-v-95571e5b]::before {
+    content: "Payment amount" !important;
+  }
+
+  html[lang^="en"] .time-info[data-v-95571e5b]::before {
+    content: "Created at" !important;
+  }
+}
+
 /* Donation entry point and the small, readable bank-information card that
    accompanies the supplied QR image. */
 .luck-donate-banner {
