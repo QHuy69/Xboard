@@ -6,6 +6,14 @@
     $text = function (string $vi, string $en, string $zh, string $ja, string $ko) use ($isVi, $isZh, $isJa, $isKo): string {
         return $isVi ? $vi : ($isZh ? $zh : ($isJa ? $ja : ($isKo ? $ko : $en)));
     };
+    $scriptLabels = [
+        'remaining' => $text('Thời gian còn lại để thanh toán', 'Time remaining to pay', '剩余支付时间', '支払い残り時間', '결제 남은 시간'),
+        'expired' => $text('Đơn hàng đã hết thời gian thanh toán.', 'This order has expired.', '订单已过期。', 'この注文の支払い期限が切れました。', '주문 결제 시간이 만료되었습니다.'),
+        'checking' => $text('Đang kiểm tra...', 'Checking...', '检查中...', '確認中...', '확인 중...'),
+        'pending' => $text('Chưa nhận được thanh toán.', 'Payment has not been received yet.', '尚未收到付款。', 'まだ支払いを確認できません。', '아직 결제가 확인되지 않았습니다.'),
+        'paid' => $text('Thanh toán thành công.', 'Payment successful.', '支付成功。', '支払いが完了しました。', '결제가 완료되었습니다.'),
+        'cancelled' => $text('Đơn hàng đã bị hủy.', 'This order was cancelled.', '订单已取消。', '注文はキャンセルされました。', '주문이 취소되었습니다.')
+    ];
 @endphp
 <!doctype html>
 <html lang="{{ $locale }}">
@@ -70,14 +78,7 @@
     const countdown = document.getElementById('countdown');
     const status = document.getElementById('status');
     const check = document.getElementById('check');
-    const labels = {
-        remaining: @json($text('Thời gian còn lại để thanh toán', 'Time remaining to pay', '剩余支付时间', '支払い残り時間', '결제 남은 시간')),
-        expired: @json($text('Đơn hàng đã hết thời gian thanh toán.', 'This order has expired.', '订单已过期。', 'この注文の支払い期限が切れました。', '주문 결제 시간이 만료되었습니다.')),
-        checking: @json($text('Đang kiểm tra...', 'Checking...', '检查中...', '確認中...', '확인 중...')),
-        pending: @json($text('Chưa nhận được thanh toán.', 'Payment has not been received yet.', '尚未收到付款。', 'まだ支払いを確認できません。', '아직 결제가 확인되지 않았습니다.')),
-        paid: @json($text('Thanh toán thành công.', 'Payment successful.', '支付成功。', '支払いが完了しました。', '결제가 완료되었습니다.')),
-        cancelled: @json($text('Đơn hàng đã bị hủy.', 'This order was cancelled.', '订单已取消。', '注文はキャンセルされました。', '주문이 취소되었습니다.'))
-    };
+    const labels = @json($scriptLabels);
     const formatRemaining = () => {
         const seconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
         if (seconds <= 0) {

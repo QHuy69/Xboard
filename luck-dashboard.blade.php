@@ -24,7 +24,7 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=31"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=32"></script>
   <script>
     window.V2BOARD_CONFIG = window.V2BOARD_CONFIG || {};
     window.V2BOARD_CONFIG.DEFAULT_API_URL = window.location.origin;
