@@ -697,7 +697,10 @@
     }
     (root || document).querySelectorAll('[placeholder],[title],[aria-label],[alt],[data-label]').forEach(function (element) {
       ['placeholder','title','aria-label','alt','data-label'].forEach(function (attribute) {
-        if (element.hasAttribute(attribute)) element.setAttribute(attribute, translateText(element.getAttribute(attribute)));
+        if (!element.hasAttribute(attribute)) return;
+        var currentValue = element.getAttribute(attribute);
+        var nextValue = translateText(currentValue);
+        if (nextValue !== currentValue) element.setAttribute(attribute, nextValue);
       });
     });
     if (locale === 'vi-VN') {
@@ -827,6 +830,7 @@
     var observer = new MutationObserver(function (records) {
       records.forEach(function (record) {
         if (record.type === 'characterData' && record.target.parentElement) translate(record.target.parentElement);
+        if (record.type === 'attributes' && record.target.nodeType === Node.ELEMENT_NODE) translate(record.target);
         record.addedNodes.forEach(function (node) {
           if (node.nodeType === Node.TEXT_NODE && node.parentElement) translate(node.parentElement);
           if (node.nodeType === Node.ELEMENT_NODE) translate(node);
@@ -837,7 +841,13 @@
       // translation, preventing a visible flash of source-language loading
       // text on slow/mobile connections.
       releaseI18nGuard();
-    }).observe(document.body, { childList: true, characterData: true, subtree: true });
+    }).observe(document.body, {
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['placeholder','title','aria-label','alt','data-label'],
+      subtree: true
+    });
     if (document.getElementById('app') && document.getElementById('app').childNodes.length) releaseI18nGuard();
     window.setTimeout(releaseI18nGuard, 2200);
   }
