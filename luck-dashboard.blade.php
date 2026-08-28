@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#3b82f6">
   <link rel="icon" type="image/svg+xml" href="/theme/{{$theme}}/favicon.svg">
   <title>ZaoGuang Service</title>
-  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/DM1yaN1X-v2.js">
-  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/BEq_qS6Y-v2.js">
+  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/DM1yaN1X.js">
+  <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/BEq_qS6Y.js">
   <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/0I8bmyai.js">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/DmSyTPzn.css">
   <!-- Keep the shell and dashboard styles render-blocking. Vite normally
@@ -17,61 +17,6 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=6">
-  <style>
-    /* The translator runs after the Vue shell mounts. Never hide the app while
-       waiting for an optional translation pass: on a slow mobile connection
-       that turns a recoverable delay into a black/empty screen. */
-    html.luck-i18n-pending #app { visibility: visible; }
-
-    /* This shell is deliberately inline. Even if a mobile browser loses a
-       module or stylesheet request mid-load, it sees a recovery screen rather
-       than an opaque black page. */
-    #luck-bootstrap {
-      position: fixed;
-      z-index: 2000;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      color: #1e293b;
-      background: radial-gradient(circle at 50% 15%, #eff6ff 0%, #f8fafc 46%, #e2e8f0 100%);
-      transition: opacity .24s ease, visibility .24s ease;
-    }
-    html.luck-app-ready #luck-bootstrap {
-      visibility: hidden;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .luck-bootstrap-card {
-      width: min(340px, 100%);
-      padding: 28px 24px;
-      border: 1px solid rgba(148, 163, 184, .28);
-      border-radius: 22px;
-      background: rgba(255, 255, 255, .96);
-      box-shadow: 0 22px 60px rgba(15, 23, 42, .16);
-      text-align: center;
-    }
-    .luck-bootstrap-spinner {
-      display: inline-block;
-      width: 32px;
-      height: 32px;
-      border: 4px solid #dbeafe;
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: luck-bootstrap-spin .8s linear infinite;
-    }
-    .luck-bootstrap-card p { margin: 16px 0 0; color: #475569; font: 600 15px/1.5 system-ui, sans-serif; }
-    .luck-bootstrap-card button { margin-top: 16px; padding: 10px 18px; border: 0; border-radius: 999px; color: #fff; background: #2563eb; font: 700 14px/1 system-ui, sans-serif; cursor: pointer; }
-    @keyframes luck-bootstrap-spin { to { transform: rotate(360deg); } }
-  </style>
-  <script>
-    document.documentElement.classList.add('luck-i18n-pending');
-    window.__LUCK_RELEASE_I18N_GUARD__ = function () {
-      document.documentElement.classList.remove('luck-i18n-pending');
-    };
-    window.setTimeout(window.__LUCK_RELEASE_I18N_GUARD__, 1000);
-  </script>
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -89,28 +34,10 @@
       } catch (ignore) {}
     }());
   </script>
-  <!-- Every lazy chunk must resolve the same entry URL. The import map both
-       preserves module identity and gives repaired route chunks a fresh URL. -->
-  <script type="importmap">
-    {"imports":{
-      "/theme/{{$theme}}/assets/BBbuoBq5-v12.js":"/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=46",
-      "/theme/{{$theme}}/assets/CO5Ntz5l-v3.js":"/theme/{{$theme}}/assets/CO5Ntz5l-v3.js?v=46",
-      "/theme/{{$theme}}/assets/oPGsis9D-v7.js":"/theme/{{$theme}}/assets/oPGsis9D-v7.js?v=46",
-      "/theme/{{$theme}}/assets/lsrL0SOU-v2.js":"/theme/{{$theme}}/assets/lsrL0SOU-v2.js?v=46",
-      "/theme/{{$theme}}/assets/BR9H_Zte.js":"/theme/{{$theme}}/assets/BR9H_Zte.js?v=46"
-    }}
-  </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=46"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5.js?v=47"></script>
 </head>
 <body>
   <div id="app"></div>
-  <div id="luck-bootstrap" role="status" aria-live="polite">
-    <div class="luck-bootstrap-card">
-      <span class="luck-bootstrap-spinner" aria-hidden="true"></span>
-      <p id="luck-bootstrap-status">Đang mở ZaoGuang Service…</p>
-      <button id="luck-bootstrap-retry" type="button" hidden>Thử lại</button>
-    </div>
-  </div>
   <button id="luck-donate-banner" class="luck-donate-banner" type="button" aria-haspopup="dialog">
     <span class="luck-donate-banner-label">Ủng hộ</span>
   </button>
@@ -136,52 +63,6 @@
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
   <script src="/theme/{{$theme}}/i18n-v18.js?v=45"></script>
-  <script>
-    (function () {
-      var app = document.getElementById('app');
-      var shell = document.getElementById('luck-bootstrap');
-      var status = document.getElementById('luck-bootstrap-status');
-      var retryButton = document.getElementById('luck-bootstrap-retry');
-      if (!app || !shell || !status || !retryButton) return;
-      var language = ((window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || navigator.language || 'vi-VN').replace('_', '-');
-      var bootstrapCopy = {
-        'vi-VN': { loading: 'Đang mở ZaoGuang Service…', retry: 'Thử lại', failed: 'Kết nối giao diện đang chậm. Hãy thử lại.' },
-        'en-US': { loading: 'Opening ZaoGuang Service…', retry: 'Try again', failed: 'The interface is taking too long to connect. Please try again.' },
-        'zh-CN': { loading: '正在打开 ZaoGuang Service…', retry: '重试', failed: '界面连接时间过长，请重试。' },
-        'zh-TW': { loading: '正在開啟 ZaoGuang Service…', retry: '重試', failed: '介面連線時間過長，請重試。' },
-        'ja-JP': { loading: 'ZaoGuang Service を開いています…', retry: '再試行', failed: '画面の接続に時間がかかっています。もう一度お試しください。' },
-        'ko-KR': { loading: 'ZaoGuang Service를 여는 중…', retry: '다시 시도', failed: '화면 연결에 시간이 오래 걸리고 있습니다. 다시 시도해 주세요.' },
-        'fa-IR': { loading: 'در حال باز کردن ZaoGuang Service…', retry: 'تلاش دوباره', failed: 'اتصال رابط بیش از حد طول کشیده است. دوباره تلاش کنید.' },
-        'ru-RU': { loading: 'Открываем ZaoGuang Service…', retry: 'Повторить', failed: 'Подключение интерфейса занимает слишком много времени. Повторите попытку.' }
-      };
-      var copy = bootstrapCopy[language] || bootstrapCopy['vi-VN'];
-      status.textContent = copy.loading;
-      retryButton.textContent = copy.retry;
-      var ready = false;
-      var observer;
-      var hasMountedApp = function () {
-        return app.children.length > 0 && String(app.textContent || '').trim().length > 20;
-      };
-      var markReady = function () {
-        if (ready) return;
-        ready = true;
-        document.documentElement.classList.add('luck-app-ready');
-        if (observer) observer.disconnect();
-      };
-      window.__LUCK_MARK_APP_READY__ = markReady;
-      observer = new MutationObserver(function () { if (hasMountedApp()) markReady(); });
-      observer.observe(app, { childList: true, characterData: true, subtree: true });
-      if (hasMountedApp()) markReady();
-      window.setTimeout(function () {
-        if (ready || hasMountedApp()) return markReady();
-        status.textContent = copy.failed;
-        retryButton.hidden = false;
-      }, 7000);
-      retryButton.addEventListener('click', function () {
-        window.location.reload();
-      });
-    }());
-  </script>
   <script>
     (function () {
       var banner = document.getElementById('luck-donate-banner');

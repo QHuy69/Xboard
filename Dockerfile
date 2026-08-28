@@ -20,7 +20,7 @@ COPY .docker /
 # upstream application. The clone intentionally replaces /www, so copying
 # these files into a temporary build directory makes them available below.
 RUN mkdir -p /tmp/luck-custom
-COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg patch-luck-runtime-assets.php /tmp/luck-custom/
+COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg /tmp/luck-custom/
 
 # Add build arguments
 ARG CACHEBUST=1
@@ -75,7 +75,6 @@ ENV ENABLE_WEB=true \
 
 EXPOSE 7001
 COPY .docker/entrypoint.sh /entrypoint.sh
-COPY patch-luck-runtime-assets.php /usr/local/bin/patch-luck-runtime-assets.php
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"] 
