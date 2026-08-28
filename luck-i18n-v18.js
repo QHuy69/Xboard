@@ -333,6 +333,7 @@
     '选择Thanh toán方式': 'Choose payment method', '请选择Thanh toán方式': 'Please choose a payment method', 'HủyThanh toán': 'Cancel payment',
     'Xác nhậnThanh toán': 'Confirm payment', '手续费': 'Service fee', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Order is unpaid. Continue to scan the payment code',
     '请Vui lòng xác nhận thông tin đơn hàng': 'Please confirm your order information',
+    '您有一笔未付款的订单': 'You have one unpaid order', '您有一笔未Thanh toán的Đơn hàng': 'You have one unpaid order',
     '购买其他套餐将会': 'Buying another plan will affect', '重置您当前的流量使用情况': 'reset your current traffic usage', '，并立即生效新的套餐配置：': ' and immediately apply the new plan configuration:',
     '礼品卡卡密': 'Gift card code', '请输入礼品卡卡密': 'Enter gift card code', '请输入16位礼品卡卡密，不区分大小写': 'Enter the 16-character gift card code (case-insensitive)', '礼品卡类型说明': 'Gift card type information',
     '增加账户余额': 'Add account balance', '延长套餐有效期': 'Extend plan validity', '增加可用流量': 'Add traffic quota', '重置已用': 'Reset used traffic', '激活指定套餐': 'Activate selected plan', '礼品卡兑换': 'Redeem gift card', '兑换中...': 'Redeeming...', '立即兑换': 'Redeem now',
@@ -343,6 +344,7 @@
     '选择Thanh toán方式': 'Chọn phương thức thanh toán', '请选择Thanh toán方式': 'Vui lòng chọn phương thức thanh toán', 'HủyThanh toán': 'Hủy thanh toán',
     'Xác nhậnThanh toán': 'Xác nhận thanh toán', '手续费': 'Phí dịch vụ', 'Đơn hàng尚未Thanh toán，请继续Quét mã thanh toán': 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán',
     '请Vui lòng xác nhận thông tin đơn hàng': 'Vui lòng xác nhận thông tin đơn hàng',
+    '您有一笔未付款的订单': 'Bạn có một đơn hàng chưa thanh toán', '您有一笔未Thanh toán的Đơn hàng': 'Bạn có một đơn hàng chưa thanh toán',
     '购买其他套餐将会': 'Mua gói khác sẽ ảnh hưởng đến', '重置您当前的流量使用情况': 'đặt lại trạng thái lưu lượng hiện tại', '，并立即生效新的套餐配置：': ' và tạo cấu hình gói mới ngay:',
     '礼品卡卡密': 'Mã thẻ quà tặng', '请输入礼品卡卡密': 'Nhập mã thẻ quà tặng', '请输入16位礼品卡卡密，不区分大小写': 'Nhập mã thẻ quà tặng 16 ký tự (không phân biệt hoa thường)', '礼品卡类型说明': 'Thông tin loại thẻ quà tặng',
     '增加账户余额': 'Tăng số dư tài khoản', '延长套餐有效期': 'Gia hạn gói', '增加可用流量': 'Tăng hạn mức lưu lượng', '重置已用': 'Đặt lại lưu lượng đã dùng', '激活指定套餐': 'Kích hoạt gói đã chọn', '礼品卡兑换': 'Đổi thẻ quà tặng', '兑换中...': 'Đang đổi...', '立即兑换': 'Đổi ngay',
@@ -353,6 +355,7 @@
     'Chọn phương thức thanh toán': '选择支付方式', 'Vui lòng chọn phương thức thanh toán': '请选择支付方式', 'Hủy thanh toán': '取消支付',
     'Xác nhận thanh toán': '确认支付', 'Phí dịch vụ': '手续费', 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán': '订单尚未支付，请继续扫描支付码',
     'Vui lòng xác nhận thông tin đơn hàng': '请确认您的订单信息',
+    'Bạn có một đơn hàng chưa thanh toán': '您有一笔未付款的订单',
     'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó': '您有未付款或正在开通的订单，请稍后再试或取消该订单'
   });
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
@@ -409,6 +412,7 @@
         .replace(/Đang创建Đơn hàng\.\.\./g, 'Đang tạo đơn hàng...')
         .replace(/Máy chủ网关Lỗi，?请稍后重试/g, 'Lỗi máy chủ, vui lòng thử lại sau')
         .replace(/Xác nhận您的Đơn hàngThông tin/g, 'Vui lòng xác nhận thông tin đơn hàng')
+        .replace(/您有一笔未付款的订单|您有一笔未Thanh toán的Đơn hàng/g, 'Bạn có một đơn hàng chưa thanh toán')
         .replace(/Gói名称/g, 'Tên gói')
         .replace(/GóiGiá/g, 'Giá gói')
         .replace(/Hủy购买/g, 'Hủy mua')
@@ -492,6 +496,7 @@
           .replace(/Đang创建Đơn hàng\.\.\./g, 'Đang tạo đơn hàng...')
           .replace(/Máy chủ网关Lỗi，?请稍后重试/g, 'Lỗi máy chủ, vui lòng thử lại sau')
           .replace(/Xác nhận您的Đơn hàngThông tin/g, 'Vui lòng xác nhận thông tin đơn hàng')
+          .replace(/您有一笔未付款的订单|您有一笔未Thanh toán的Đơn hàng/g, 'Bạn có một đơn hàng chưa thanh toán')
           .replace(/Gói名称/g, 'Tên gói')
           .replace(/GóiGiá/g, 'Giá gói')
           .replace(/Hủy购买/g, 'Hủy mua')
