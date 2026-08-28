@@ -143,6 +143,12 @@ else
     fi
 fi
 
+# Installed themes live on the persistent storage mount and are therefore not
+# available during the image build. Repair incompatible Luck route imports
+# after xboard:update has restored the mounted theme assets.
+php /usr/local/bin/patch-luck-runtime-assets.php || \
+    echo "[entrypoint] WARNING: Luck runtime asset patch failed; continuing startup." >&2
+
 echo "[entrypoint] Starting services (caddy=${ENABLE_CADDY} web=${ENABLE_WEB} horizon=${ENABLE_HORIZON} ws=${ENABLE_WS_SERVER})..."
 # Drop stale Octane/WorkerMan state files so the new master does not signal
 # PIDs left over from a previous container run (causes Swoole kill EPERM).

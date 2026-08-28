@@ -111,10 +111,18 @@
       }, 8000);
     }());
   </script>
-  <!-- Keep the entry URL identical to the URL imported by lazy route chunks.
-       Adding a query here creates a second module instance and breaks Router
-       component resolution on mobile transitions such as Orders -> Node. -->
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js"></script>
+  <!-- Every lazy chunk must resolve the same entry URL. The import map both
+       preserves module identity and gives repaired route chunks a fresh URL. -->
+  <script type="importmap">
+    {"imports":{
+      "/theme/{{$theme}}/assets/BBbuoBq5-v12.js":"/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=46",
+      "/theme/{{$theme}}/assets/CO5Ntz5l-v3.js":"/theme/{{$theme}}/assets/CO5Ntz5l-v3.js?v=46",
+      "/theme/{{$theme}}/assets/oPGsis9D-v7.js":"/theme/{{$theme}}/assets/oPGsis9D-v7.js?v=46",
+      "/theme/{{$theme}}/assets/lsrL0SOU-v2.js":"/theme/{{$theme}}/assets/lsrL0SOU-v2.js?v=46",
+      "/theme/{{$theme}}/assets/BR9H_Zte.js":"/theme/{{$theme}}/assets/BR9H_Zte.js?v=46"
+    }}
+  </script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=46"></script>
 </head>
 <body>
   <div id="app"></div>
