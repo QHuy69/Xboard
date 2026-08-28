@@ -143,9 +143,17 @@ else
     fi
 fi
 
-# Installed themes live on the persistent storage mount and are therefore not
-# available during the image build. Repair incompatible Luck route imports
-# after xboard:update has restored the mounted theme assets.
+# Installed themes live on the persistent storage mount and xboard:update can
+# restore its bundled copy on every container start. Reapply the maintained
+# shell/translator after that update so restarts cannot resurrect stale text.
+for luck_root in /www/public/theme/Luck /www/storage/theme/Luck; do
+    mkdir -p "$luck_root/assets"
+    cp /tmp/luck-custom/luck-i18n-v18.js "$luck_root/i18n-v18.js"
+    cp /tmp/luck-custom/luck-dashboard.blade.php "$luck_root/dashboard.blade.php"
+    cp /tmp/luck-custom/luck-overrides.css "$luck_root/assets/luck-overrides.css"
+done
+
+# Repair incompatible imports in the mounted compiled Order route.
 php /usr/local/bin/patch-luck-runtime-assets.php || \
     echo "[entrypoint] WARNING: Luck runtime asset patch failed; continuing startup." >&2
 
