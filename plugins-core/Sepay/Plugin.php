@@ -216,18 +216,39 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             throw new ApiException('SePay webhook API key is not configured', 400);
         }
 
-        $headers = function_exists('getallheaders') ? getallheaders() : [];
-        $provided = '';
-        foreach ($headers as $name => $value) {
-            if (strtolower((string) $name) === 'authorization') {
-                $provided = trim((string) $value);
-                break;
+        // Under Octane/Swoole and some reverse proxies, getallheaders() does
+        // not contain Authorization even though the web server forwards it.
+        // Prefer the CGI variables, then fall back to the PSR/header helper.
+        $provided = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
+        if ($provided === '') {
+            $provided = trim((string) ($_SERVER['HTTP_X_API_KEY'] ?? $_SERVER['HTTP_API_KEY'] ?? ''));
+        }
+        if ($provided === '' && function_exists('getallheaders')) {
+            foreach ((array) getallheaders() as $name => $value) {
+                $headerName = strtolower(str_replace('_', '-', (string) $name));
+                if (in_array($headerName, ['authorization', 'x-api-key', 'api-key'], true)) {
+                    $provided = trim((string) $value);
+                    break;
+                }
             }
         }
-        if (stripos($provided, 'apikey ') === 0) {
-            $provided = trim(substr($provided, 7));
+        if ($provided === '' && function_exists('request')) {
+            $request = request();
+            foreach (['Authorization', 'X-API-Key', 'API-Key'] as $header) {
+                $value = $request?->header($header);
+                if (is_string($value) && trim($value) !== '') {
+                    $provided = trim($value);
+                    break;
+                }
+            }
         }
-        if ($provided === '' || !hash_equals($expected, $provided)) {
+        // Accept the exact SePay API-key format and tolerate a key copied
+        // with its scheme prefix into the plugin settings.
+        $provided = preg_replace('/^(?:apikey|bearer)\s+/i', '', $provided) ?? $provided;
+        $expected = preg_replace('/^(?:apikey|bearer)\s+/i', '', $expected) ?? $expected;
+        $provided = trim($provided, " \t\r\n\"'");
+        $expected = trim($expected, " \t\r\n\"'");
+        if ($provided === '' || $expected === '' || !hash_equals($expected, $provided)) {
             throw new ApiException('SePay webhook authorization failed', 401);
         }
     }
