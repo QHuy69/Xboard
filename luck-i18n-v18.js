@@ -496,6 +496,10 @@
       .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại')
       .replace(/正在加载图表数据\.\.\./g, chartLoading)
       .replace(/正在加载Lưu lượng数据表\.\.\./g, trafficTableLoading)
+      .replace(/正在加载主页数据\.\.\./g, viLocale ? 'Đang tải dữ liệu trang chủ...' : 'Loading dashboard data...')
+      .replace(/加载Gói列表中\.\.\./g, viLocale ? 'Đang tải danh sách gói...' : 'Loading plans...')
+      .replace(/加载Đơn hàng中\.\.\./g, viLocale ? 'Đang tải đơn hàng...' : 'Loading orders...')
+      .replace(/正在加载Tài liệu\.\.\./g, viLocale ? 'Đang tải tài liệu...' : 'Loading documentation...')
       .replace(/请输入TicketChủ đề/g, viLocale ? 'Nhập chủ đề ticket' : 'Enter ticket subject')
       .replace(/TicketChủ đề/g, ticketSubject)
       .replace(/优先级/g, ticketPriority)
@@ -749,6 +753,22 @@
       }, false);
     }
     function releaseI18nGuard() {
+      // Vietnamese/English pages must not reveal a newly mounted chunk while
+      // it still contains source CJK text. The observer can receive the DOM
+      // mutation before the component's final text node, so retry briefly
+      // until the translation pass has settled (the blade guard has a bounded
+      // timeout as a safety net).
+      if ((locale === 'vi-VN' || locale === 'en-US') && document.body) {
+        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        var textNode;
+        while ((textNode = walker.nextNode())) {
+          if (textNode.parentElement && /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA)$/.test(textNode.parentElement.tagName)) continue;
+          if (/[\u3400-\u9fff]/.test(textNode.nodeValue || '')) {
+            window.setTimeout(releaseI18nGuard, 50);
+            return;
+          }
+        }
+      }
       if (typeof window.__LUCK_RELEASE_I18N_GUARD__ === 'function') {
         window.__LUCK_RELEASE_I18N_GUARD__();
       } else if (document.documentElement) {
