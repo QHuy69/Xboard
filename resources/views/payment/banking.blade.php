@@ -57,6 +57,7 @@
     <section class="body">
         <div class="summary">
             <div class="row"><span class="label">{{ $text('Ngân hàng', 'Bank', '银行', '銀行', '은행') }}</span><span class="value">{{ $bankName }}</span></div>
+            <div class="row"><span class="label">{{ $text('Tài khoản nhận', 'Receiving account', '收款账户', '受取口座', '입금 계좌') }}</span><span class="value">{{ $paymentAccount }}</span></div>
             <div class="row"><span class="label">{{ $text('Chủ tài khoản', 'Account name', '账户名称', '口座名義', '예금주') }}</span><span class="value">{{ $accountName }}</span></div>
             <div class="row"><span class="label">{{ $text('Số tiền', 'Amount', '金额', '金額', '금액') }}</span><span class="value amount">{{ number_format($amountVnd) }} VND</span></div>
             <div class="row"><span class="label">{{ $text('Giá gốc', 'Original price', '原价', '元の価格', '원래 금액') }}</span><span class="value">¥{{ $amountCny }}</span></div>

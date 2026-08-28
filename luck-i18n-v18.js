@@ -58,7 +58,7 @@
     '个人资料':'Hồ sơ cá nhân','账户与安全管理':'Quản lý tài khoản và bảo mật','账户设置与安全管理':'Cài đặt tài khoản và quản lý bảo mật','安全设置':'Cài đặt bảo mật','当前密码':'Mật khẩu hiện tại','请输入当前密码':'Nhập mật khẩu hiện tại','新密码':'Mật khẩu mới','请输入新密码':'Nhập mật khẩu mới','确认密码':'Xác nhận mật khẩu','请再次输入新密码':'Nhập lại mật khẩu mới','通知设置':'Cài đặt thông báo','到期邮件提醒':'Nhắc hạn qua email','开启后，服务到期前24小时会发送邮件提醒':'Khi bật, email nhắc hạn sẽ được gửi trước 24 giờ','流量邮件提醒':'Nhắc lưu lượng qua email','开启后，流量使用达到95%时会发送邮件提醒':'Khi bật, email sẽ được gửi khi lưu lượng đạt 95%','订阅管理':'Quản lý đăng ký','重置订阅链接':'Đặt lại liên kết đăng ký','重置后原有的订阅链接将失效，请及时更新客户端配置。':'Liên kết đăng ký cũ sẽ hết hiệu lực sau khi đặt lại. Hãy cập nhật ứng dụng của bạn.','用户头像':'Ảnh đại diện người dùng',
     '邀请':'Mời bạn bè','推广-奖励与佣金管理':'Quản lý giới thiệu, thưởng và hoa hồng','推广奖励与佣金管理':'Quản lý giới thiệu, thưởng và hoa hồng','我的邀请':'Lời mời của tôi','当前剩余佣金':'Hoa hồng khả dụng','划转到余额':'Chuyển vào số dư','推广 /佣金提现':'Giới thiệu / rút hoa hồng','推广佣金提现':'Giới thiệu / rút hoa hồng','已注册用户':'Người dùng đã đăng ký','佣金比例':'Tỷ lệ hoa hồng','确认中佣金':'Hoa hồng chờ xác nhận','累计佣金':'Tổng hoa hồng','邀请管理':'Quản lý lời mời','邀请码管理':'Quản lý mã mời','佣金发放记录':'Lịch sử chi trả hoa hồng','点击上方按钮生成邀请码':'Nhấn nút phía trên để tạo mã mời','邀请好友注册付费后获得佣金':'Nhận hoa hồng khi bạn bè được mời đăng ký và thanh toán',
     '购买订阅':'Mua gói đăng ký','套餐':'Gói','服务':'Dịch vụ','查看详情':'Xem chi tiết','保存':'Lưu','提交':'Gửi','返回':'Quay lại','删除':'Xóa','编辑':'Chỉnh sửa','关闭':'Đóng','确定':'Đồng ý','错误':'Lỗi','成功':'Thành công','加载中...':'Đang tải...','暂无数据':'Chưa có dữ liệu',
-    'Commission':'Hoa hồng','Account':'Tài khoản','Total':'Tổng','天':'ngày','天前':'ngày trước','月':'tháng','年':'năm','COMMISSION':'HOA HỒNG','ACCOUNT':'TÀI KHOẢN','TOTAL':'TỔNG','Traffic available':'Lưu lượng còn đủ','MAIN FEATURES':'TÍNH NĂNG CHÍNH','Home':'Trang chủ','Plans':'Gói đăng ký','Nodes':'Danh sách node','Orders':'Quản lý đơn hàng','Tickets':'Hệ thống ticket','Traffic details':'Chi tiết lưu lượng','Referral':'Giới thiệu bạn bè','Profile':'Hồ sơ cá nhân','Documentation':'Tài liệu','Dashboard':'Bảng điều khiển','Change password':'Đổi mật khẩu','Generate invitation code':'Tạo mã mời','No invitation code':'Chưa có mã mời','No commission records':'Chưa có lịch sử hoa hồng','No documents':'Chưa có tài liệu','Administrator':'Quản trị viên','Redeem gift card':'Đổi thẻ quà tặng'
+    'Commission':'Hoa hồng','Account':'Tài khoản','Total':'Tổng','天':'ngày','天前':'ngày trước','月':'tháng','年':'năm','COMMISSION':'HOA HỒNG','ACCOUNT':'TÀI KHOẢN','TOTAL':'TỔNG','Traffic available':'Lưu lượng còn đủ','MAIN FEATURES':'TÍNH NĂNG CHÍNH','Home':'Trang chủ','Plans':'Gói đăng ký','Nodes':'Danh sách node','Orders':'Quản lý đơn hàng','Tickets':'Hệ thống ticket','Traffic details':'Chi tiết lưu lượng','Referral':'Giới thiệu bạn bè','Profile':'Hồ sơ cá nhân','Documentation':'Tài liệu','Dashboard':'Bảng điều khiển','Change password':'Đổi mật khẩu','Generate invitation code':'Tạo mã mời','No invitation code':'Chưa có mã mời','No commission records':'Chưa có lịch sử hoa hồng','No documents':'Chưa có tài liệu','Administrator':'Quản trị viên','Redeem gift card':'Đổi thẻ quà tặng','更多':'Thêm','协议':'Giao thức','总计':'Tổng cộng','总计:':'Tổng cộng:','最近7天流量':'Lưu lượng 7 ngày gần đây','最近7天':'7 ngày gần đây','日':'ngày','月':'tháng','年':'năm'
   });
   Object.assign(en, {
     '订阅方案':'Plans','选择最适合您的服务套餐':'Choose the service plan that suits you best','常规套餐':'Standard plans','不限时套餐':'Unlimited plans','暂无可用套餐':'No plans available','服务器':'Servers','全球节点实时状态监控':'Real-time global node status','全球节点分布':'Global node distribution','暂无节点数据':'No node data','工单':'Tickets','技术支持与问题反馈':'Technical support and feedback','创建工单':'Create ticket','主题':'Subject','级别':'Priority','最后回复':'Last reply','流量统计':'Traffic statistics','详细的使用数据分析':'Detailed usage analysis','今日流量':'Today\'s traffic','本月流量':'This month\'s traffic','流量使用趋势':'Traffic usage trend','上传':'Upload','记录时间':'Recorded at','流量明细记录':'Traffic detail records','上传流量':'Upload traffic','下载流量':'Download traffic','服务器倍率':'Server multiplier','暂无流量记录':'No traffic records','余额':'Balance','订单':'Orders','交易记录与订单管理':'Transaction and order management','全部':'All','待支付':'Pending payment','开通中':'Activating','已取消':'Cancelled','已完成':'Completed','已折抵':'Deducted','暂无订单':'No orders','您还没有任何订单记录':'You have no order history'
@@ -390,7 +390,9 @@
     'Shadowsocks 订阅链接': 'Shadowsocks subscription link', 'Hiddify 订阅链接': 'Hiddify subscription link',
     '适用于 Clash 系列客户端': 'For Clash clients', '适用于 V2Ray 系列客户端': 'For V2Ray clients',
     '适用于 SingBox 系列客户端': 'For SingBox clients', '适用于 Hiddify 系列客户端': 'For Hiddify clients',
-    '链接': 'link', '客户端': 'clients', '客户端订阅': 'client subscription'
+    '链接': 'link', '客户端': 'clients', '客户端订阅': 'client subscription',
+    '更多': 'More', '协议': 'Protocol', '总计': 'Total', '总计:': 'Total:',
+    '最近7天流量': 'Traffic for the last 7 days', '最近7天': 'last 7 days', '日': 'day', '月': 'month', '年': 'year'
   };
   var extraVi = {
     '购买': 'Mua', '提示': 'Lưu ý', '升级': 'Nâng cấp', '基本信息': 'Thông tin cơ bản', '周期': 'Chu kỳ',
@@ -525,7 +527,10 @@
         .replace(/ĐóngThanh toán/g, 'Đóng thanh toán')
         .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán')
         .replace(/您有未付款或Đang kích hoạt的Đơn hàng，请稍后再试或将其Hủy/g, 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó')
-        .replace(/您有未付款或Đang kích hoạt的Đơn hàng/g, 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt');
+        .replace(/您有未付款或Đang kích hoạt的Đơn hàng/g, 'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt')
+        .replace(/最近\s*(\d+)\s*(?:天|ngày)\s*(?:流量|Lưu lượng)/g, 'Lưu lượng $1 ngày gần đây')
+        .replace(/总计/g, 'Tổng cộng')
+        .replace(/(\d+)\s*(?:月|tháng)\s*(\d+)\s*(?:日|ngày)/g, '$2/$1');
     } else if (locale === 'en-US') {
       translatedCore = translatedCore
         .replace(/网络Lỗi/g, 'Network error')
@@ -541,7 +546,10 @@
         .replace(/Xác nhận您的Đơn hàngThông tin/g, 'Please confirm your order information')
         .replace(/Gói名称/g, 'Plan name')
         .replace(/GóiGiá/g, 'Plan price')
-        .replace(/Hủy购买/g, 'Cancel purchase');
+        .replace(/Hủy购买/g, 'Cancel purchase')
+        .replace(/最近\s*(\d+)\s*(?:天|days?)\s*(?:流量|Traffic)/g, 'Traffic for the last $1 days')
+        .replace(/总计/g, 'Total')
+        .replace(/(\d+)\s*(?:月|month)\s*(\d+)\s*(?:日|day)/g, '$1/$2');
     }
     // Apply Chinese fragments after the mixed-language normalizers too. The
     // pre-built bundle can translate one half of a label before this script
@@ -618,7 +626,11 @@
           .replace(/如果Mã QR无法显示，请点击下方链接：/g, 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:')
           .replace(/打开Thanh toán链接/g, 'Mở liên kết thanh toán')
           .replace(/ĐóngThanh toán/g, 'Đóng thanh toán')
-          .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán');
+          .replace(/检查Thanh toánTrang thái/g, 'Kiểm tra trạng thái thanh toán')
+          .replace(/协议/g, 'Giao thức')
+          .replace(/最近\s*(\d+)\s*(?:天|ngày)\s*(?:流量|Lưu lượng)/g, 'Lưu lượng $1 ngày gần đây')
+          .replace(/总计/g, 'Tổng cộng')
+          .replace(/(\d+)\s*(?:月|tháng)\s*(\d+)\s*(?:日|ngày)/g, '$2/$1');
         if (normalized !== text) element.textContent = normalized;
       }
       normalizeLeaf(root);

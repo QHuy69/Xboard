@@ -38,7 +38,14 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                 'label' => 'Vietcombank account number',
                 'type' => 'string',
                 'required' => true,
-                'description' => 'The Vietcombank account that receives customer transfers.'
+                'description' => 'The linked bank account used by SePay for incoming transfers. Keep this private.'
+            ],
+            'sepay_virtual_account_number' => [
+                'label' => 'SePay virtual account (VA)',
+                'type' => 'string',
+                'required' => false,
+                'default' => '',
+                'description' => 'Optional SePay VA used in VietQR. When set, the real bank account is not shown or encoded in customer QR codes.'
             ],
             'sepay_account_name' => [
                 'label' => 'Account holder name',
@@ -113,11 +120,21 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     }
 
     /**
+     * Return the customer-facing account. A SePay virtual account takes
+     * precedence so the linked bank account remains private.
+     */
+    public function paymentAccountNumber(): string
+    {
+        return trim((string) $this->getConfig('sepay_virtual_account_number', ''))
+            ?: trim((string) $this->getConfig('sepay_account_number', ''));
+    }
+
+    /**
      * Build a canonical VietQR image URL for the dedicated payment page.
      */
     public function qrUrl(array $order): string
     {
-        $account = trim((string) $this->getConfig('sepay_account_number', ''));
+        $account = $this->paymentAccountNumber();
         $accountName = trim((string) $this->getConfig('sepay_account_name', ''));
         $bank = trim((string) $this->getConfig('sepay_bank_code', 'Vietcombank'));
         $rate = (float) $this->getConfig('sepay_cny_vnd_rate', 0);

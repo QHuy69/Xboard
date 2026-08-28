@@ -164,6 +164,7 @@ Route::get('/pay/{tradeNo}', function (Request $request, string $tradeNo) {
         'locale' => $locale,
         'amountVnd' => $amountVnd,
         'amountCny' => number_format($totalAmount / 100, 2),
+        'paymentAccount' => $plugin->paymentAccountNumber(),
         'accountName' => (string) ($config['sepay_account_name'] ?? ''),
         'bankName' => (string) ($config['sepay_bank_code'] ?? ''),
         'transferDescription' => trim((string) ($config['sepay_transfer_prefix'] ?? 'XBOARD')) . ' ' . $order->trade_no,

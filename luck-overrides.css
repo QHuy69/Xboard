@@ -45,6 +45,137 @@
 }
 
 @media (max-width: 768px) {
+  /* Keep the mobile shell inside the viewport. The generated Luck rules keep
+     desktop flex rows for the alert/profile blocks, which makes actions and
+     translated values overflow on narrow screens. */
+  .mobile-content {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .dashboard-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px 12px 32px !important;
+  }
+
+  .unpaid-order-alert {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 14px !important;
+  }
+
+  .unpaid-order-alert .alert-content {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .unpaid-order-alert .alert-icon {
+    display: none !important;
+  }
+
+  .unpaid-order-alert .alert-info {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .unpaid-order-alert .alert-title {
+    width: 100% !important;
+    min-width: 0 !important;
+    line-height: 1.45 !important;
+  }
+
+  .unpaid-order-alert .alert-details {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .unpaid-order-alert .alert-actions {
+    width: 100% !important;
+    min-width: 0 !important;
+    display: flex !important;
+    justify-content: stretch !important;
+    gap: 8px !important;
+  }
+
+  .unpaid-order-alert .alert-actions > button:first-child {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .unpaid-order-alert .alert-actions > button:last-child {
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    padding: 0 !important;
+  }
+
+  .user-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px !important;
+    overflow: visible !important;
+  }
+
+  .user-main-info,
+  .user-profile,
+  .user-details,
+  .user-email-container,
+  .subscription-items {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .user-profile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .user-profile .avatar-container {
+    align-self: center !important;
+  }
+
+  .user-email-wrapper {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+
+  .user-subscription-item {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    gap: 8px !important;
+  }
+
+  .user-subscription-item .subscription-label {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .user-subscription-item .subscription-value {
+    flex: 0 1 auto !important;
+    width: auto !important;
+    max-width: 58% !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    text-align: right !important;
+  }
+
+  .mobile-bottom-nav .nav-label {
+    white-space: nowrap !important;
+    font-size: 11px !important;
+  }
+
   .plan-card .plan-features {
     padding: 0 16px 18px !important;
   }
