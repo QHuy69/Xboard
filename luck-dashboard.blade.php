@@ -111,7 +111,7 @@
       }, 8000);
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/luck-entry-v42.js?v=1"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-v12.js?v=3"></script>
 </head>
 <body>
   <div id="app"></div>

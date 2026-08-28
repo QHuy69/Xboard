@@ -651,6 +651,23 @@
   window.__LUCK_T__ = function (value) {
     return translateText(String(value == null ? '' : value));
   };
+  // ECharts paints its labels directly onto a canvas, so no DOM observer can
+  // see them. Translate text at the canvas boundary before the first chart is
+  // created. Numeric axes and QR/image drawing are left untouched.
+  if (typeof window.CanvasRenderingContext2D !== 'undefined') {
+    var canvasPrototype = window.CanvasRenderingContext2D.prototype;
+    ['fillText', 'strokeText'].forEach(function (method) {
+      var original = canvasPrototype[method];
+      if (typeof original !== 'function' || original.__luckTranslated) return;
+      var translated = function (text) {
+        var args = Array.prototype.slice.call(arguments);
+        if (typeof text === 'string') args[0] = window.__LUCK_T__(text);
+        return original.apply(this, args);
+      };
+      translated.__luckTranslated = true;
+      canvasPrototype[method] = translated;
+    });
+  }
   function normalizeInlineBoundaries(root) {
     if (locale !== 'vi-VN') return;
     var scope = root || document;
