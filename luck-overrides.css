@@ -3,6 +3,109 @@
   padding: 0 24px 22px !important;
 }
 
+/* Optional donation entry point. The modal intentionally contains only the
+   supplied QR image so no account or bank details are exposed in the UI. */
+.luck-donate-banner {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 2200;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  box-shadow: 0 8px 24px rgba(30, 64, 175, .28);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.luck-donate-banner:hover {
+  filter: brightness(1.05);
+}
+
+.luck-donate-banner:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, .35);
+  outline-offset: 3px;
+}
+
+.luck-donate-modal[hidden] {
+  display: none !important;
+}
+
+body.luck-donate-open {
+  overflow: hidden;
+}
+
+.luck-donate-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .62);
+  backdrop-filter: blur(3px);
+}
+
+.luck-donate-modal-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(440px, calc(100vw - 40px));
+  min-height: 180px;
+  padding: 26px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .35);
+}
+
+.luck-donate-qr {
+  display: block;
+  width: min(360px, 100%);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.luck-donate-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  color: #334155;
+  background: rgba(15, 23, 42, .08);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .luck-donate-banner {
+    top: 10px;
+    right: 10px;
+    padding: 9px 13px;
+    font-size: 13px;
+  }
+
+  .luck-donate-modal {
+    padding: 14px;
+  }
+
+  .luck-donate-modal-card {
+    width: min(360px, calc(100vw - 28px));
+    padding: 24px 18px;
+    border-radius: 18px;
+  }
+}
+
 .plan-card .feature-row {
   width: 100% !important;
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr) !important;

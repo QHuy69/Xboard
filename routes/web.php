@@ -93,12 +93,44 @@ $renderTheme = function (Request $request) {
                 'assets/lsrL0SOU-v2.js',
                 'assets/C6e3mGRa-v4.js',
                 'assets/BBbuoBq5-v8.js',
+                // Cache-busted Luck chunks used by the repaired mobile shell.
+                // They are copied on demand so a persistent theme volume is
+                // refreshed after an image update without a manual step.
+                'assets/DM1yaN1X-v2.js',
+                'assets/BEq_qS6Y-v2.js',
+                'assets/3u1s8V6K-v2.js',
+                'assets/CO5Ntz5l-v3.js',
+                'assets/C6e3mGRa-v6.js',
+                'assets/oPGsis9D-v7.js',
+                'assets/BBbuoBq5-v12.js',
             ] as $runtimeFile) {
                 $source = $themePath . '/' . $runtimeFile;
                 $target = $publicThemePath . '/' . $runtimeFile;
                 if (File::exists($source)) {
                     try {
                         File::ensureDirectoryExists(dirname($target));
+                        // Luck's generated world-map chunk has occasionally
+                        // shipped with one extra closing brace around the
+                        // country aggregation callback.  A browser then
+                        // rejects the lazy chunk and the Nodes route stays
+                        // blank (especially visible on mobile).  Repair only
+                        // that exact generated fragment before publishing;
+                        // all other assets continue through a byte-for-byte
+                        // copy.
+                        if ($runtimeFile === 'assets/oPGsis9D-v3.js') {
+                            $assetContents = @file_get_contents($source);
+                            $fixedContents = $assetContents === false ? false : str_replace(
+                                "\n            }\n          }\n        }\n      });\n      return countryMap;",
+                                "\n            }\n          }\n      });\n      return countryMap;",
+                                $assetContents
+                            );
+                            if ($fixedContents !== false) {
+                                if (@file_put_contents($target, $fixedContents) === false) {
+                                    Log::warning('Theme world-map asset could not be repaired', ['target' => $target]);
+                                }
+                                continue;
+                            }
+                        }
                         // A read-only/publicly prebuilt theme must not turn a
                         // normal page request into a 500 just because an
                         // optional runtime override cannot be copied.

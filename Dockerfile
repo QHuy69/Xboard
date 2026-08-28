@@ -35,6 +35,11 @@ RUN mkdir -p public/theme/Luck/assets && \
     if [ -f luck-dashboard.blade.php ]; then cp luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php; fi && \
     if [ -f luck-overrides.css ]; then cp luck-overrides.css public/theme/Luck/assets/luck-overrides.css; fi
 
+# The donation entry point deliberately serves the QR artwork only; keeping it
+# at a stable public path lets the Blade shell reference it without exposing
+# the underlying bank details.
+COPY luck-donate-qr.svg /www/public/luck-donate-qr.svg
+
 # Overlay the customized runtime files on top of the upstream checkout. The
 # image deliberately clones upstream for normal updates, but these files are
 # part of the maintained custom branch and must be present in every build.

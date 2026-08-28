@@ -465,6 +465,7 @@
     var planCost = viLocale ? 'Chi phí gói' : 'Plan cost';
     var paidAmount = viLocale ? 'Số tiền đã thanh toán' : 'Paid amount';
     var deviceUnit = viLocale ? ' thiết bị' : ' devices';
+    var duration = viLocale ? 'Thời hạn' : 'Duration';
     var chartLoading = viLocale ? 'Đang tải dữ liệu biểu đồ...' : 'Loading chart data...';
     var trafficTableLoading = viLocale ? 'Đang tải bảng dữ liệu lưu lượng...' : 'Loading traffic data...';
     var ticketSubject = viLocale ? 'Chủ đề ticket' : 'Ticket subject';
@@ -485,6 +486,11 @@
       .replace(/Giới hạn thiết bị\s*和\s*Giới hạn tốc độ\s*将按(?:gói mới|新Gói)执行/g, limits)
       .replace(/建议在(?:月初|tháng初)或(?:流量|Lưu lượng)即将用完时(?:购买|Mua)gói mới，以避免浪费。/g, advice)
       .replace(/建议在月初或流量即将用完时购买Gói mới，以避免浪费。/g, advice)
+      .replace(/Gói\s*(Clash|V2RayN|Shadowsocks|SingBox|Hiddify)liên kết/g, function (_, client) {
+        return viLocale ? 'Liên kết đăng ký ' + client : client + ' subscription link';
+      })
+      .replace(/Đặt lạiĐã dùng/g, viLocale ? 'Đặt lại đã dùng' : 'Reset already used')
+      .replace(/时长/g, duration)
       .replace(/Hủy\s*購入|HủyMua|Hủy购买/g, viLocale ? 'Hủy mua' : 'Cancel purchase')
       .replace(/Đơn hàngChi tiết/g, orderDetails)
       .replace(/基本Thông tin/g, basicInfo)
