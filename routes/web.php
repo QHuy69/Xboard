@@ -99,6 +99,7 @@ $renderTheme = function (Request $request) {
                 // They are copied on demand so a persistent theme volume is
                 // refreshed after an image update without a manual step.
                 'assets/DM1yaN1X-v2.js',
+                'assets/DM1yaN1X-v3.js',
                 'assets/BEq_qS6Y-v2.js',
                 'assets/3u1s8V6K-v2.js',
                 'assets/CO5Ntz5l-v3.js',
@@ -133,7 +134,7 @@ $renderTheme = function (Request $request) {
                             if ($fixedContents !== false) {
                                 $fixedContents = str_replace(
                                     ['assets/DM1yaN1X.js', 'assets/BEq_qS6Y.js', 'assets/oPGsis9D-v2.js'],
-                                    ['assets/DM1yaN1X.js?v=50', 'assets/BEq_qS6Y.js?v=50', 'assets/oPGsis9D-v2.js?v=50'],
+                                    ['assets/DM1yaN1X-v3.js', 'assets/BEq_qS6Y.js?v=50', 'assets/oPGsis9D-v2.js?v=50'],
                                     $fixedContents
                                 );
                             }
@@ -144,7 +145,7 @@ $renderTheme = function (Request $request) {
                                 // mobile browser cache for several hours.
                                 $fixedContents = str_replace(
                                     './DM1yaN1X.js',
-                                    './DM1yaN1X.js?v=50',
+                                    './DM1yaN1X-v3.js',
                                     $fixedContents
                                 );
                                 if (@file_put_contents($target, $fixedContents) === false) {
@@ -161,6 +162,11 @@ $renderTheme = function (Request $request) {
                                 $assetContents
                             );
                             if ($fixedContents !== false) {
+                                $fixedContents = str_replace(
+                                    ['./DM1yaN1X.js?v=50', './DM1yaN1X.js'],
+                                    ['./DM1yaN1X-v3.js', './DM1yaN1X-v3.js'],
+                                    $fixedContents
+                                );
                                 if (@file_put_contents($target, $fixedContents) === false) {
                                     Log::warning('Theme world-map asset could not be repaired', ['target' => $target]);
                                 }
