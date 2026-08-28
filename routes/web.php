@@ -332,7 +332,7 @@ Route::get('/payment/status/{tradeNo}', function (string $tradeNo) {
 // The Luck theme is a history-mode SPA. Serve its shell for client-side
 // routes as well, so refreshing /servers, /profile, /orders, etc. does not
 // fall through to Laravel's 404 page before Vue Router can boot.
-Route::get('/{path}', $renderTheme)->where('path', 'dashboard|plans|plans/purchase/[^/]+|servers|orders|tickets|traffic-details|invite|profile|docs');
+Route::get('/{path}', $renderTheme)->where('path', 'login|register|dashboard|plans|plans/purchase/[^/]+|servers|orders|tickets|traffic-details|invite|profile|docs');
 
 //TODO:: 兼容
 Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))), function () {
