@@ -131,7 +131,7 @@
     '请输入Email地址': 'Enter email address', '流量使用趋势（最近30天）': 'Traffic usage trend (last 30 days)',
     '流量使用趋势(最近30天)': 'Traffic usage trend (last 30 days)', '流量使用趋势 (最近30天)': 'Traffic usage trend (last 30 days)',
     '流量 (GB)': 'Traffic (GB)', '流量（GB）': 'Traffic (GB)', '上传流量': 'Upload traffic', '下载流量': 'Download traffic',
-    '获取节点列表失败': 'Failed to load the node list'
+    '获取节点列表失败': 'Failed to load the node list', '时间': 'Time'
   });
   Object.assign(vi, {
     '节点名称': 'Tên node', '地址': 'Địa chỉ', '倍率': 'Tỷ lệ', '标签': 'Nhãn',
@@ -148,7 +148,7 @@
     '请输入Email地址': 'Nhập địa chỉ email', '流量使用趋势（最近30天）': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)',
     '流量使用趋势(最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)', '流量使用趋势 (最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)',
     '流量 (GB)': 'Lưu lượng (GB)', '流量（GB）': 'Lưu lượng (GB)', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống',
-    '获取节点列表失败': 'Không tải được danh sách node'
+    '获取节点列表失败': 'Không tải được danh sách node', '时间': 'Thời gian'
   });
   Object.assign(tw, {
     '节点名称': '節點名稱', '地址': '地址', '倍率': '倍率', '标签': '標籤',
