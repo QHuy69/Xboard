@@ -131,6 +131,15 @@ $renderTheme = function (Request $request) {
                                 $assetContents
                             );
                             if ($fixedContents !== false) {
+                                // The map route imports Vue's runtime by a
+                                // bare URL. Bust that dependency too, since a
+                                // previous broken response may still be in a
+                                // mobile browser cache for several hours.
+                                $fixedContents = str_replace(
+                                    './DM1yaN1X.js',
+                                    './DM1yaN1X.js?v=48',
+                                    $fixedContents
+                                );
                                 if (@file_put_contents($target, $fixedContents) === false) {
                                     Log::warning('Theme entry asset could not be cache-busted', ['target' => $target]);
                                 }
