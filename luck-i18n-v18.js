@@ -416,7 +416,14 @@
     'Shadowsocks 订阅链接': 'Liên kết đăng ký Shadowsocks', 'Hiddify 订阅链接': 'Liên kết đăng ký Hiddify',
     '适用于 Clash 系列客户端': 'Dùng cho ứng dụng Clash', '适用于 V2Ray 系列客户端': 'Dùng cho ứng dụng V2Ray',
     '适用于 SingBox 系列客户端': 'Dùng cho ứng dụng SingBox', '适用于 Hiddify 系列客户端': 'Dùng cho ứng dụng Hiddify',
-    '链接': 'liên kết', '客户端': 'ứng dụng', '客户端订阅': 'liên kết ứng dụng'
+    '链接': 'liên kết', '客户端': 'ứng dụng', '客户端订阅': 'liên kết ứng dụng',
+    // Fallback labels used by the stock shell and by API error states. Keep
+    // these whole phrases here so a partial response can never leave a CJK
+    // fragment in an otherwise Vietnamese message.
+    '用户': 'Người dùng', '页面': 'Trang', '信息': 'thông tin', '加载订阅信息失败': 'Không tải được thông tin gói đăng ký',
+    '页面Tải thất bại，请Làm mới重试': 'Trang tải thất bại, vui lòng làm mới để thử lại',
+    '请Làm mới重试': 'Vui lòng làm mới để thử lại', '请重试': 'Vui lòng thử lại', '重试': 'thử lại',
+    '加载': 'Tải', '失败': 'thất bại'
   };
   var extraZh = {
     'Mua': '购买', 'Lưu ý': '提示', 'Nâng cấp': '升级', 'Thông tin cơ bản': '基本信息', 'Chu kỳ': '周期', 'Chi tiết giá': '费用明细',
