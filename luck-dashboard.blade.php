@@ -16,7 +16,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=4">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=5">
   <style>
     /* The translator runs after the Vue shell mounts. Never hide the app while
        waiting for an optional translation pass: on a slow mobile connection
@@ -66,10 +66,17 @@
   <button id="luck-donate-banner" class="luck-donate-banner" type="button" aria-haspopup="dialog">
     <span class="luck-donate-banner-label">Ủng hộ</span>
   </button>
-  <div id="luck-donate-modal" class="luck-donate-modal" hidden role="dialog" aria-modal="true" aria-label="Donation QR code">
+  <div id="luck-donate-modal" class="luck-donate-modal" hidden role="dialog" aria-modal="true" aria-labelledby="luck-donate-title">
     <div class="luck-donate-modal-card">
-      <button id="luck-donate-close" class="luck-donate-close" type="button" aria-label="Close">×</button>
-      <img class="luck-donate-qr" src="/luck-donate-qr.svg" alt="Donation QR code" decoding="async">
+      <div class="luck-donate-modal-content">
+        <h2 id="luck-donate-title">Bạn đang sử dụng gói chống lag mùa đứt cáp</h2>
+        <p id="luck-donate-message" class="luck-donate-message">Ủng hộ mình tại đây để duy trì đường truyền ổn định.</p>
+        <img class="luck-donate-qr" src="/luck-donate-qr.svg" alt="Mã QR ủng hộ" decoding="async">
+        <p id="luck-donate-thanks" class="luck-donate-thanks">Cảm ơn bạn đã đóng góp và đồng hành.</p>
+      </div>
+      <div class="luck-donate-actions">
+        <button id="luck-donate-close" class="luck-donate-close" type="button">OK</button>
+      </div>
     </div>
   </div>
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
@@ -89,9 +96,68 @@
         'ja-JP': '寄付', 'ko-KR': '후원', 'fa-IR': 'حمایت', 'ru-RU': 'Поддержать'
       };
       var label = labels[lang] || labels['vi-VN'];
+      var copy = {
+        'vi-VN': {
+          title: 'Bạn đang sử dụng gói chống lag mùa đứt cáp',
+          message: 'Ủng hộ mình tại đây để duy trì đường truyền ổn định.',
+          thanks: 'Cảm ơn bạn đã đóng góp và đồng hành.',
+          qr: 'Mã QR ủng hộ'
+        },
+        'en-US': {
+          title: 'You are using the cable-outage anti-lag plan',
+          message: 'Support me here to help keep the connection stable.',
+          thanks: 'Thank you for your contribution and support.',
+          qr: 'Donation QR code'
+        },
+        'zh-CN': {
+          title: '您正在使用断缆抗延迟套餐',
+          message: '欢迎在此支持我们，帮助维持稳定连接。',
+          thanks: '感谢您的支持与捐助。',
+          qr: '捐赠二维码'
+        },
+        'zh-TW': {
+          title: '您正在使用斷纜抗延遲方案',
+          message: '歡迎在此支持我們，幫助維持穩定連線。',
+          thanks: '感謝您的支持與捐助。',
+          qr: '贊助 QR Code'
+        },
+        'ja-JP': {
+          title: '海底ケーブル障害対策プランをご利用中です',
+          message: '安定した接続を維持するため、こちらからご支援いただけます。',
+          thanks: 'ご支援ありがとうございます。',
+          qr: '支援用 QR コード'
+        },
+        'ko-KR': {
+          title: '해저 케이블 장애 대비 저지연 플랜을 이용 중입니다',
+          message: '안정적인 연결 유지를 위해 여기에서 후원하실 수 있습니다.',
+          thanks: '후원해 주셔서 감사합니다.',
+          qr: '후원 QR 코드'
+        },
+        'fa-IR': {
+          title: 'شما از طرح کاهش تأخیر در زمان قطعی کابل استفاده می‌کنید',
+          message: 'برای کمک به پایدار ماندن اتصال، از اینجا حمایت کنید.',
+          thanks: 'از حمایت و همراهی شما سپاسگزاریم.',
+          qr: 'کد QR حمایت'
+        },
+        'ru-RU': {
+          title: 'Вы используете тариф для снижения задержки при обрыве кабеля',
+          message: 'Поддержите нас здесь, чтобы соединение оставалось стабильным.',
+          thanks: 'Спасибо за вашу поддержку.',
+          qr: 'QR-код для поддержки'
+        }
+      };
+      copy = copy[lang] || copy['vi-VN'];
       var labelNode = banner.querySelector('.luck-donate-banner-label');
       if (labelNode) labelNode.textContent = label;
       banner.setAttribute('aria-label', label);
+      var title = document.getElementById('luck-donate-title');
+      var message = document.getElementById('luck-donate-message');
+      var thanks = document.getElementById('luck-donate-thanks');
+      var qr = modal.querySelector('.luck-donate-qr');
+      if (title) title.textContent = copy.title;
+      if (message) message.textContent = copy.message;
+      if (thanks) thanks.textContent = copy.thanks;
+      if (qr) qr.alt = copy.qr;
       var open = function () {
         modal.hidden = false;
         document.body.classList.add('luck-donate-open');
@@ -110,6 +176,7 @@
       document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && !modal.hidden) dismiss();
       });
+      window.setTimeout(open, 0);
     }());
   </script>
   <script>

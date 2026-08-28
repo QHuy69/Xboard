@@ -54,36 +54,69 @@ body.luck-donate-open {
 
 .luck-donate-modal-card {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: min(440px, calc(100vw - 40px));
-  min-height: 180px;
-  padding: 26px;
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 24px 70px rgba(15, 23, 42, .35);
+  overflow: hidden;
+  text-align: center;
+}
+
+.luck-donate-modal-content {
+  padding: 30px 30px 24px;
+}
+
+.luck-donate-modal-content h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: clamp(20px, 5vw, 25px);
+  font-weight: 750;
+  line-height: 1.34;
+}
+
+.luck-donate-message {
+  margin: 12px auto 20px;
+  max-width: 330px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .luck-donate-qr {
   display: block;
-  width: min(360px, 100%);
+  width: min(290px, 100%);
+  margin: 0 auto;
   height: auto;
   image-rendering: pixelated;
 }
 
+.luck-donate-thanks {
+  margin: 18px 0 0;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.luck-donate-actions {
+  display: flex;
+  justify-content: center;
+  padding: 16px 28px 22px;
+  border-top: 1px solid #e2e8f0;
+}
+
 .luck-donate-close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
+  min-width: 116px;
+  min-height: 42px;
+  padding: 10px 28px;
   border: 0;
-  border-radius: 50%;
-  color: #334155;
-  background: rgba(15, 23, 42, .08);
-  font-size: 24px;
-  line-height: 1;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #34c88a, #69bfe8);
+  box-shadow: 0 8px 18px rgba(52, 200, 138, .26);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
 }
 
@@ -101,8 +134,20 @@ body.luck-donate-open {
 
   .luck-donate-modal-card {
     width: min(360px, calc(100vw - 28px));
-    padding: 24px 18px;
     border-radius: 18px;
+  }
+
+  .luck-donate-modal-content {
+    padding: 25px 18px 20px;
+  }
+
+  .luck-donate-message {
+    margin-bottom: 17px;
+    font-size: 14px;
+  }
+
+  .luck-donate-qr {
+    width: min(260px, 100%);
   }
 }
 
