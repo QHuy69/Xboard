@@ -32,7 +32,15 @@ RUN echo "Attempting to clone branch: ${BRANCH_NAME} from ${REPO_URL} with CACHE
 # served from public/theme while compose mounts storage/theme for templates.
 RUN mkdir -p public/theme/Luck && \
     if [ -f luck-i18n-v18.js ]; then cp luck-i18n-v18.js public/theme/Luck/i18n-v18.js; fi && \
-    if [ -f luck-dashboard.blade.php ]; then cp luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php; fi
+    if [ -f luck-dashboard.blade.php ]; then cp luck-dashboard.blade.php public/theme/Luck/dashboard.blade.php; fi && \
+    if [ -f luck-overrides.css ]; then cp luck-overrides.css public/theme/Luck/assets/luck-overrides.css; fi
+
+# Overlay the customized runtime files on top of the upstream checkout. The
+# image deliberately clones upstream for normal updates, but these files are
+# part of the maintained custom branch and must be present in every build.
+COPY routes/web.php /www/routes/web.php
+COPY plugins-core/Sepay/Plugin.php /www/plugins-core/Sepay/Plugin.php
+COPY resources/views/payment/banking.blade.php /www/resources/views/payment/banking.blade.php
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile
