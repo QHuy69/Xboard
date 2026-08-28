@@ -1,0 +1,8 @@
+{
+    "name": "SePay",
+    "code": "sepay",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "SePay Vietcombank QR and webhook payment plugin",
+    "author": "ZaoGuang Service"
+}
