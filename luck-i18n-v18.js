@@ -366,6 +366,48 @@
     'Số node:': '节点数量:', 'Trạng thái online:': '在线状态:', 'Tính khả dụng:': '可用性:', 'Chưa có node': '暂无节点',
     'Bạn có đơn hàng chưa thanh toán hoặc đang kích hoạt, vui lòng thử lại sau hoặc hủy đơn đó': '您有未付款或正在开通的订单，请稍后再试或取消该订单'
   });
+  // The compiled Luck chunks sometimes split labels into separate text nodes
+  // (for example "Đơn hàng" + "Chi tiết" or "佣" + "HOA HỒNG"). Keep a
+  // complete fragment dictionary so every supported locale renders whole
+  // words instead of leaking source-language pieces.
+  var extraEn = {
+    '购买': 'Purchase', '提示': 'Notice', '升级': 'Upgrade', '基本信息': 'Basic information', '周期': 'Billing cycle',
+    '费用明细': 'Price details', '实付': 'Paid amount', '选择支付方式': 'Choose payment method', '请选择支付方式': 'Please choose a payment method',
+    '订单类型': 'Order type', '保留订单': 'Keep order', '确认取消': 'Confirm cancellation', '取消订单': 'Cancel order',
+    '登录中...': 'Signing in...', '检查支付状态': 'Check payment status', '订单尚未支付，请继续扫描支付码': 'Order is unpaid. Continue scanning the payment code',
+    '账户': 'Account', '佣': 'Commission', '佣金': 'Commission', '节点': 'Node', '暂无解锁信息': 'No unlock data',
+    '服务器地址': 'Server address', '节点标签': 'Node tags', '流媒体解锁': 'Streaming unlocks', '二维码生成失败': 'QR code generation failed',
+    '订阅链接已复制到剪贴板': 'Subscription link copied', '复制失败': 'Copy failed', '流量使用趋势': 'Traffic usage trend',
+    '最近30天': 'last 30 days', '流量': 'Traffic', '上传流量': 'Upload traffic', '下载流量': 'Download traffic',
+    '订单详情': 'Order details', '套餐信息': 'Plan information', '关闭支付': 'Close payment', '打开支付链接': 'Open payment link',
+    '付款方式': 'Payment method', '网银': 'Bank transfer', '银行卡': 'Bank card', '支付金额': 'Payment amount',
+    '购买套餐': 'Purchase plan', '返回套餐列表': 'Back to plans', '确认支付': 'Confirm payment'
+  };
+  var extraVi = {
+    '购买': 'Mua', '提示': 'Lưu ý', '升级': 'Nâng cấp', '基本信息': 'Thông tin cơ bản', '周期': 'Chu kỳ',
+    '费用明细': 'Chi tiết giá', '实付': 'Đã thanh toán', '选择支付方式': 'Chọn phương thức thanh toán', '请选择支付方式': 'Vui lòng chọn phương thức thanh toán',
+    '订单类型': 'Loại đơn hàng', '保留订单': 'Giữ đơn hàng', '确认取消': 'Xác nhận hủy', '取消订单': 'Hủy đơn hàng',
+    '登录中...': 'Đang đăng nhập...', '检查支付状态': 'Kiểm tra trạng thái thanh toán', '订单尚未支付，请继续扫描支付码': 'Đơn hàng chưa thanh toán, vui lòng tiếp tục quét mã thanh toán',
+    '账户': 'Tài khoản', '佣': 'Hoa hồng', '佣金': 'Hoa hồng', '节点': 'Node', '暂无解锁信息': 'Chưa có thông tin mở khóa',
+    '服务器地址': 'Địa chỉ máy chủ', '节点标签': 'Nhãn node', '流媒体解锁': 'Mở khóa dịch vụ streaming', '二维码生成失败': 'Tạo mã QR thất bại',
+    '订阅链接已复制到剪贴板': 'Đã sao chép liên kết đăng ký', '复制失败': 'Sao chép thất bại', '流量使用趋势': 'Xu hướng sử dụng lưu lượng',
+    '最近30天': '30 ngày gần đây', '流量': 'Lưu lượng', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống',
+    '订单详情': 'Chi tiết đơn hàng', '套餐信息': 'Thông tin gói', '关闭支付': 'Đóng thanh toán', '打开支付链接': 'Mở liên kết thanh toán',
+    '付款方式': 'Phương thức thanh toán', '网银': 'Chuyển khoản ngân hàng', '银行卡': 'Thẻ ngân hàng', '支付金额': 'Số tiền thanh toán',
+    '购买套餐': 'Mua gói', '返回套餐列表': 'Quay lại danh sách gói', '确认支付': 'Xác nhận thanh toán'
+  };
+  var extraZh = {
+    'Mua': '购买', 'Lưu ý': '提示', 'Nâng cấp': '升级', 'Thông tin cơ bản': '基本信息', 'Chu kỳ': '周期', 'Chi tiết giá': '费用明细',
+    'Đã thanh toán': '实付', 'Chọn phương thức thanh toán': '选择支付方式', 'Vui lòng chọn phương thức thanh toán': '请选择支付方式',
+    'Loại đơn hàng': '订单类型', 'Giữ đơn hàng': '保留订单', 'Xác nhận hủy': '确认取消', 'Hủy đơn hàng': '取消订单',
+    'Đang đăng nhập...': '登录中...', 'Tài khoản': '账户', 'Hoa hồng': '佣金', 'Địa chỉ máy chủ': '服务器地址', 'Nhãn node': '节点标签',
+    'Xu hướng sử dụng lưu lượng': '流量使用趋势', '30 ngày gần đây': '最近30天', 'Lưu lượng': '流量', 'Lưu lượng tải lên': '上传流量',
+    'Lưu lượng tải xuống': '下载流量', 'Chi tiết đơn hàng': '订单详情', 'Thông tin gói': '套餐信息', 'Đóng thanh toán': '关闭支付',
+    'Mở liên kết thanh toán': '打开支付链接', 'Phương thức thanh toán': '付款方式', 'Số tiền thanh toán': '支付金额', 'Mua gói': '购买套餐',
+    'Quay lại danh sách gói': '返回套餐列表', 'Xác nhận thanh toán': '确认支付'
+  };
+  Object.assign(en, extraEn); Object.assign(vi, extraVi); Object.assign(zh, extraZh);
+  Object.assign(tw, extraEn); Object.assign(ja, extraEn); Object.assign(ko, extraEn); Object.assign(fa, extraEn); Object.assign(ru, extraEn);
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
   // A partially translated locale must never fall back to Chinese.  English is
   // the complete safety net; the locale's own strings take precedence.
@@ -469,6 +511,17 @@
         .replace(/Gói名称/g, 'Plan name')
         .replace(/GóiGiá/g, 'Plan price')
         .replace(/Hủy购买/g, 'Cancel purchase');
+    }
+    // Apply Chinese fragments after the mixed-language normalizers too. The
+    // pre-built bundle can translate one half of a label before this script
+    // sees the other half, so an exact-key-only pass is not sufficient.
+    if (locale !== 'zh-CN') {
+      Object.keys(dictionary).filter(function (key) {
+        return key.length >= 1 && /[\u3400-\u9fff]/.test(key) && translatedCore.indexOf(key) !== -1;
+      }).sort(function (a, b) { return b.length - a.length; }).forEach(function (key) {
+        translatedCore = translatedCore.split(key).join(dictionary[key]);
+      });
+      translatedCore = translatedCore.replace(/(\d+)\s*(ngày trước|ngày|days ago|day|日前|日|일 전|일|روز قبل|روز)/g, '$1 $2');
     }
     return translatedCore !== originalCore ? leading + translatedCore + trailing : text;
   }

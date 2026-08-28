@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
+use App\Models\Order;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,10 +65,18 @@ $renderTheme = function (Request $request) {
         // mounted theme directory. Keep their public copies fresh even when
         // the rest of the theme assets were already published.
         if ($themePath) {
-            foreach (['i18n-v18.js', 'dashboard.blade.php'] as $runtimeFile) {
+            foreach ([
+                'i18n-v18.js',
+                'dashboard.blade.php',
+                'assets/oPGsis9D-v2.js',
+                'assets/C0KnXkt1.js',
+                'assets/lsrL0SOU.js',
+                'assets/C6e3mGRa-v3.js',
+            ] as $runtimeFile) {
                 $source = $themePath . '/' . $runtimeFile;
                 $target = $publicThemePath . '/' . $runtimeFile;
                 if (File::exists($source)) {
+                    File::ensureDirectoryExists(dirname($target));
                     File::copy($source, $target);
                 }
             }
@@ -92,6 +101,76 @@ $renderTheme = function (Request $request) {
 };
 
 Route::get('/', $renderTheme);
+
+// Dedicated VietQR payment page. The checkout endpoint returns this URL for
+// SePay orders so customers can pay on the banking subdomain.
+Route::get('/pay/{tradeNo}', function (Request $request, string $tradeNo) {
+    $order = Order::with(['payment', 'plan'])
+        ->where('trade_no', $tradeNo)
+        ->first();
+    if (!$order || !$order->payment || strtolower((string) $order->payment->payment) !== 'sepay') {
+        abort(404);
+    }
+
+    $config = is_array($order->payment->config) ? $order->payment->config : [];
+    $totalAmount = (int) $order->total_amount + (int) ($order->handling_amount ?? 0);
+    $rate = (float) ($config['sepay_cny_vnd_rate'] ?? 0);
+    $amountVnd = (int) round(($totalAmount / 100) * $rate);
+    $expiresAt = (int) $order->created_at + (2 * 60 * 60);
+
+    if (!class_exists(\Plugin\Sepay\Plugin::class)) {
+        abort(503, 'Payment gateway is unavailable');
+    }
+    $plugin = new \Plugin\Sepay\Plugin('sepay');
+    $plugin->setConfig($config);
+    $qrUrl = $plugin->qrUrl([
+        'trade_no' => $order->trade_no,
+        'total_amount' => $totalAmount,
+    ]);
+
+    $languages = collect($request->getLanguages())
+        ->map(fn ($language) => strtolower(str_replace('_', '-', (string) $language)))
+        ->all();
+    $locale = 'en-US';
+    foreach ($languages as $language) {
+        if (str_starts_with($language, 'vi')) { $locale = 'vi-VN'; break; }
+        if (str_starts_with($language, 'zh')) { $locale = 'zh-CN'; break; }
+        if (str_starts_with($language, 'ja')) { $locale = 'ja-JP'; break; }
+        if (str_starts_with($language, 'ko')) { $locale = 'ko-KR'; break; }
+    }
+    if ($request->filled('lang')) {
+        $requested = str_replace('_', '-', (string) $request->input('lang'));
+        if (in_array($requested, ['vi-VN', 'en-US', 'zh-CN', 'ja-JP', 'ko-KR'], true)) {
+            $locale = $requested;
+        }
+    }
+
+    $panelUrl = rtrim((string) admin_setting('app_url', 'https://zaoguang-vpn.com'), '/');
+    return view('payment.banking', [
+        'order' => $order,
+        'qrUrl' => $qrUrl,
+        'expiresAt' => $expiresAt,
+        'locale' => $locale,
+        'amountVnd' => $amountVnd,
+        'amountCny' => number_format($totalAmount / 100, 2),
+        'accountName' => (string) ($config['sepay_account_name'] ?? ''),
+        'bankName' => (string) ($config['sepay_bank_code'] ?? ''),
+        'transferDescription' => trim((string) ($config['sepay_transfer_prefix'] ?? 'XBOARD')) . ' ' . $order->trade_no,
+        'statusUrl' => url('/payment/status/' . rawurlencode($order->trade_no)),
+        'returnUrl' => $panelUrl . '/orders?trade_no=' . rawurlencode($order->trade_no),
+    ]);
+})->where('tradeNo', '[A-Za-z0-9_-]+');
+
+Route::get('/payment/status/{tradeNo}', function (string $tradeNo) {
+    $order = Order::where('trade_no', $tradeNo)->first();
+    if (!$order) {
+        return response()->json(['message' => 'Order not found'], 404);
+    }
+    return response()->json([
+        'status' => (int) $order->status,
+        'expires_at' => (int) $order->created_at + (2 * 60 * 60),
+    ]);
+})->where('tradeNo', '[A-Za-z0-9_-]+');
 
 // The Luck theme is a history-mode SPA. Serve its shell for client-side
 // routes as well, so refreshing /servers, /profile, /orders, etc. does not

@@ -22,6 +22,9 @@ class OrderResource extends JsonResource
         return [
             ...parent::toArray($request),
             'period' => PlanService::getLegacyPeriod((string)$this->period),
+            // Pending orders are cancelled by CheckOrder after two hours.
+            // Expose the same deadline so clients can show an accurate timer.
+            'expires_at' => (int) $this->created_at + (2 * 60 * 60),
             'plan' => $this->whenLoaded('plan', fn() => PlanResource::make($this->plan)),
             'payment' => $this->whenLoaded('payment', fn() => $this->payment ? [
                 'id' => $this->payment->id,

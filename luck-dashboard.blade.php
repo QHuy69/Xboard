@@ -16,14 +16,14 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5.js?v=7"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5.js?v=8"></script>
 </head>
 <body>
   <div id="app"></div>
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=30"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=31"></script>
   <script>
     window.V2BOARD_CONFIG = window.V2BOARD_CONFIG || {};
     window.V2BOARD_CONFIG.DEFAULT_API_URL = window.location.origin;

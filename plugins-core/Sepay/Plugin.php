@@ -71,6 +71,13 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                 'required' => true,
                 'default' => 'XBOARD',
                 'description' => 'Customers must keep this prefix and the order number in the transfer description.'
+            ],
+            'sepay_payment_domain' => [
+                'label' => 'Payment page domain',
+                'type' => 'string',
+                'required' => false,
+                'default' => 'https://banking-vietqr.zaoguang-vpn.com',
+                'description' => 'Dedicated domain where customers are redirected to complete VietQR payment.'
             ]
         ];
     }
@@ -90,30 +97,53 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             throw new ApiException('SePay CNY to VND exchange rate is not configured');
         }
 
+        $qrUrl = $this->qrUrl($order);
+        $paymentDomain = rtrim(trim((string) $this->getConfig('sepay_payment_domain', 'https://banking-vietqr.zaoguang-vpn.com')), '/');
+        if ($paymentDomain === '') {
+            return [
+                'type' => 0,
+                'data' => $qrUrl
+            ];
+        }
+
+        return [
+            'type' => 1,
+            'data' => $paymentDomain . '/pay/' . rawurlencode((string) $order['trade_no'])
+        ];
+    }
+
+    /**
+     * Build a canonical VietQR image URL for the dedicated payment page.
+     */
+    public function qrUrl(array $order): string
+    {
+        $account = trim((string) $this->getConfig('sepay_account_number', ''));
+        $accountName = trim((string) $this->getConfig('sepay_account_name', ''));
+        $bank = trim((string) $this->getConfig('sepay_bank_code', 'Vietcombank'));
+        $rate = (float) $this->getConfig('sepay_cny_vnd_rate', 0);
+        $prefix = trim((string) $this->getConfig('sepay_transfer_prefix', 'XBOARD'));
+        if ($account === '' || $accountName === '' || $bank === '' || $prefix === '' || $rate <= 0) {
+            throw new ApiException('SePay bank account settings are incomplete');
+        }
+
         $amountVnd = (int) round(((int) $order['total_amount'] / 100) * $rate);
         if ($amountVnd < 1) {
             throw new ApiException('SePay payment amount is invalid');
         }
 
         $description = $prefix . ' ' . $order['trade_no'];
-        // Use VietQR's canonical image endpoint.  The old vietqr.app query
-        // endpoint accepts a PNG but can embed an invalid bank identifier,
-        // producing QR codes that banking apps reject.  VCB is the official
-        // short code for Vietcombank and compact2 is the interoperable layout.
+        // Use VietQR's canonical image endpoint. The old vietqr.app query
+        // endpoint can produce QR codes that banking apps reject.
         $bankCode = strtoupper($bank);
         if (in_array(strtolower($bank), ['vietcombank', 'vcb'], true)) {
             $bankCode = 'VCB';
         }
-        $qrUrl = 'https://img.vietqr.io/image/' . rawurlencode($bankCode . '-' . $account . '-compact2.png') . '?' . http_build_query([
+
+        return 'https://img.vietqr.io/image/' . rawurlencode($bankCode . '-' . $account . '-compact2.png') . '?' . http_build_query([
             'amount' => $amountVnd,
             'addInfo' => $description,
             'accountName' => $accountName
         ]);
-
-        return [
-            'type' => 0,
-            'data' => $qrUrl
-        ];
     }
 
     public function notify($params): array|string
