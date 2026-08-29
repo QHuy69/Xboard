@@ -471,7 +471,7 @@ Route::get('/payment/status/{tradeNo}', function (string $tradeNo) {
 Route::get('/{path}', $renderTheme)->where('path', 'login|register|dashboard|plans|plans/purchase/[^/]+|servers|orders|tickets|traffic-details|invite|profile|docs');
 
 //TODO:: 兼容
-Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))), function () {
+Route::get('/' . admin_setting('secure_path', 'Huy2006'), function () {
     return view('admin', [
         'title' => admin_setting('app_name', 'XBoard'),
         'theme_sidebar' => admin_setting('frontend_theme_sidebar', 'light'),
@@ -480,7 +480,7 @@ Route::get('/' . admin_setting('secure_path', admin_setting('frontend_admin_path
         'background_url' => admin_setting('frontend_background_url'),
         'version' => app(UpdateService::class)->getCurrentVersion(),
         'logo' => admin_setting('logo'),
-        'secure_path' => admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key'))))
+        'secure_path' => admin_setting('secure_path', 'Huy2006')
     ]);
 });
 

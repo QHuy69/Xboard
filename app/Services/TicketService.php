@@ -96,6 +96,7 @@ class TicketService
             Cache::put($cacheKey, 1, 1800);
             SendEmailJob::dispatch([
                 'email' => $user->email,
+                'language' => $user->locale,
                 'subject' => '您在' . admin_setting('app_name', 'XBoard') . '的工单得到了回复',
                 'template_name' => 'notify',
                 'template_value' => [

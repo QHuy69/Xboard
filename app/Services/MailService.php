@@ -68,7 +68,7 @@ class MailService
             'skipped' => 0,
         ];
 
-        User::select('id', 'email', 'expired_at', 'transfer_enable', 'u', 'd', 'remind_expire', 'remind_traffic')
+        User::select('id', 'email', 'locale', 'expired_at', 'transfer_enable', 'u', 'd', 'remind_expire', 'remind_traffic')
             ->where(function ($query) {
                 $query->where('remind_expire', true)
                     ->orWhere('remind_traffic', true);
@@ -177,6 +177,7 @@ class MailService
 
         SendEmailJob::dispatch([
             'email' => $user->email,
+            'language' => $user->locale,
             'subject' => __('The traffic usage in :app_name has reached 80%', [
                 'app_name' => admin_setting('app_name', 'XBoard')
             ]),
@@ -196,6 +197,7 @@ class MailService
 
         SendEmailJob::dispatch([
             'email' => $user->email,
+            'language' => $user->locale,
             'subject' => __('The service in :app_name is about to expire', [
                 'app_name' => admin_setting('app_name', 'XBoard')
             ]),
@@ -251,6 +253,7 @@ class MailService
         $email = $params['email'];
         $subject = $params['subject'];
         $templateName = $params['template_name'];
+        $language = self::resolveLanguage($params, $email);
 
         $templateValue = $params['template_value'] ?? [];
         $vars = is_array($templateValue) ? ($templateValue['vars'] ?? []) : [];
@@ -272,36 +275,32 @@ class MailService
 
         // Check for DB template override (cached to avoid per-email queries in bulk sends).
         // Cache 'none' sentinel for templates that don't exist in DB.
-        $cacheKey = "mail_template:{$templateName}";
+        $cacheKey = "mail_template:{$templateName}:{$language}";
         $cached = Cache::get($cacheKey);
         if ($cached === null) {
-            $dbTemplate = MailTemplate::where('name', $templateName)->first();
+            $dbTemplate = MailTemplate::where('name', $templateName)
+                ->where('language', $language)
+                ->first();
             Cache::put($cacheKey, $dbTemplate ?: 'none', 3600);
         } else {
             $dbTemplate = ($cached === 'none') ? null : $cached;
         }
 
         try {
-            if ($dbTemplate) {
-                $renderVars = self::buildSafeVars($templateValue);
-                $renderedSubject = self::renderPlaceholders($dbTemplate->subject, $renderVars);
-                $renderedContent = self::renderPlaceholders($dbTemplate->content, $renderVars);
-                $subject = $renderedSubject ?: $subject;
+            $renderVars = self::buildSafeVars($templateValue);
+            $appName = (string) ($renderVars['name'] ?? admin_setting('app_name', 'XBoard'));
+            $subjectTemplate = $dbTemplate?->subject
+                ?? MailTemplate::defaultSubject($templateName, $language, strip_tags($appName));
+            $contentTemplate = $dbTemplate?->content
+                ?? MailTemplate::defaultContent($templateName, $language);
+            $renderedSubject = self::renderPlaceholders($subjectTemplate, $renderVars);
+            $renderedContent = self::renderPlaceholders($contentTemplate, $renderVars);
+            $subject = $renderedSubject ?: $subject;
 
-                Mail::html($renderedContent, function ($message) use ($email, $subject) {
-                    $message->to($email)->subject($subject);
-                });
-                $params['template_name'] = 'db:' . $templateName;
-            } else {
-                $params['template_name'] = 'mail.default.' . $templateName;
-                Mail::send(
-                    $params['template_name'],
-                    $params['template_value'],
-                    function ($message) use ($email, $subject) {
-                        $message->to($email)->subject($subject);
-                    }
-                );
-            }
+            Mail::html($renderedContent, function ($message) use ($email, $subject) {
+                $message->to($email)->subject($subject);
+            });
+            $params['template_name'] = ($dbTemplate ? 'db:' : 'localized:') . $templateName . ':' . $language;
             $error = null;
         } catch (\Exception $e) {
             Log::error($e);
@@ -309,7 +308,7 @@ class MailService
         }
         $log = [
             'email' => $params['email'],
-            'subject' => $params['subject'],
+            'subject' => $subject,
             'template_name' => $params['template_name'],
             'error' => $error,
             'config' => config('mail')
@@ -324,6 +323,10 @@ class MailService
     private static function buildSafeVars(array $templateValue): array
     {
         $safe = [];
+        if (isset($templateValue['vars']) && is_array($templateValue['vars'])) {
+            $templateValue = array_merge($templateValue, $templateValue['vars']);
+            unset($templateValue['vars']);
+        }
         foreach ($templateValue as $key => $value) {
             if (is_scalar($value)) {
                 $safe[$key] = e((string) $value);
@@ -338,5 +341,15 @@ class MailService
             $safe['content'] = ($contentMode === 'text') ? nl2br($content) : $content;
         }
         return $safe;
+    }
+
+    private static function resolveLanguage(array $params, string $email): string
+    {
+        $language = $params['language'] ?? $params['locale'] ?? null;
+        if (!$language) {
+            $language = User::byEmail($email)->value('locale');
+        }
+
+        return MailTemplate::normalizeLanguage(is_string($language) ? $language : null);
     }
 }

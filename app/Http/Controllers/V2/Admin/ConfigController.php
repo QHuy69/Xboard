@@ -37,6 +37,9 @@ class ConfigController extends Controller
     {
         $mailLog = MailService::sendEmail([
             'email' => $request->user()->email,
+            'language' => $request->header('content-language')
+                ?: $request->cookie('luck_locale')
+                ?: $request->user()->locale,
             'subject' => 'This is xboard test email',
             'template_name' => 'notify',
             'template_value' => [
@@ -170,9 +173,9 @@ class ConfigController extends Controller
                 'android_download_url' => admin_setting('android_download_url', '')
             ],
             'safe' => [
-                'email_verify' => (bool) admin_setting('email_verify', 0),
+                'email_verify' => (bool) admin_setting('email_verify', 1),
                 'safe_mode_enable' => (bool) admin_setting('safe_mode_enable', 0),
-                'secure_path' => admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))),
+                'secure_path' => admin_setting('secure_path', 'Huy2006'),
                 'email_whitelist_enable' => (bool) admin_setting('email_whitelist_enable', 0),
                 'email_whitelist_suffix' => admin_setting('email_whitelist_suffix', Dict::EMAIL_WHITELIST_SUFFIX_DEFAULT),
                 'email_gmail_limit_enable' => (bool) admin_setting('email_gmail_limit_enable', 0),

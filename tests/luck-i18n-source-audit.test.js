@@ -28,6 +28,22 @@ vm.runInNewContext(runtimeSource, sandbox);
 const translate = sandbox.window.__LUCK_T__;
 
 const expected = {
+  '注册失败': 'Đăng ký thất bại',
+  'Đăng kýthất bại': 'Đăng ký thất bại',
+  '请检查输入信息': 'Vui lòng kiểm tra thông tin đã nhập',
+  '请检查输入Thông tin': 'Vui lòng kiểm tra thông tin đã nhập',
+  '免费': '0đ',
+  '请输入Chủ đề ticket': 'Nhập chủ đề ticket',
+  '订阅链接已重置，请及时更新客户端配置': 'Liên kết đăng ký đã được đặt lại. Vui lòng cập nhật cấu hình ứng dụng.',
+  'Liên kết đăng ký已Đặt lại，请及时更新ứng dụng配置': 'Liên kết đăng ký đã được đặt lại. Vui lòng cập nhật cấu hình ứng dụng.',
+  '正在Tải图表数据...': 'Đang tải dữ liệu biểu đồ...',
+  '正在TảiLưu lượng数据表...': 'Đang tải bảng dữ liệu lưu lượng...',
+  '自动续费已开启': 'Đã bật tự động gia hạn',
+  'Tự động gia hạn已开启': 'Đã bật tự động gia hạn',
+  '流量邮件提醒已开启': 'Đã bật nhắc lưu lượng qua email',
+  'Nhắc lưu lượng qua email已开启': 'Đã bật nhắc lưu lượng qua email',
+  '到期邮件提醒已开启': 'Đã bật nhắc hạn qua email',
+  'Nhắc hạn qua email已开启': 'Đã bật nhắc hạn qua email',
   '续费': 'Gia hạn',
   '确认续费': 'Xác nhận gia hạn',
   'Xác nhận续费': 'Xác nhận gia hạn',

@@ -72,12 +72,25 @@ COPY .docker/php/zz-xboard.ini /usr/local/etc/php/conf.d/zz-xboard.ini
 
 RUN php -l routes/web.php \
     && php -l app/Http/Controllers/ResourcePortalController.php \
+    && php -l app/Console/Commands/XboardInstall.php \
+    && php -l app/Http/Controllers/V1/Guest/CommController.php \
+    && php -l app/Http/Controllers/V1/Passport/CommController.php \
+    && php -l app/Http/Controllers/V2/Admin/ConfigController.php \
+    && php -l app/Http/Controllers/V2/Admin/MailTemplateController.php \
+    && php -l app/Http/Requests/Admin/ConfigSave.php \
     && php -l app/Http/Routes/V2/AdminRoute.php \
     && php -l app/Http/Requests/Admin/PlanSave.php \
+    && php -l app/Models/MailTemplate.php \
     && php -l app/Models/Plan.php \
+    && php -l app/Services/Auth/MailLinkService.php \
+    && php -l app/Services/Auth/RegisterService.php \
+    && php -l app/Services/MailService.php \
     && php -l app/Services/PlanService.php \
+    && php -l app/Services/TicketService.php \
     && php -l app/Http/Controllers/V1/User/ServerController.php \
     && php -l app/Http/Resources/NodeResource.php \
+    && php -l database/migrations/2026_08_29_000002_add_language_to_mail_templates.php \
+    && php -l database/migrations/2026_08_29_000003_enable_email_verification_and_set_admin_path.php \
     && composer install --no-cache --no-dev --no-security-blocking \
     && php tests/smoke-node-access-url.php \
     && php artisan storage:link \

@@ -552,6 +552,22 @@
     '最近7天流量': 'Traffic for the last 7 days', '最近7天': 'last 7 days', '日': 'day', '月': 'month', '年': 'year'
   };
   var extraVi = {
+    '注册失败': 'Đăng ký thất bại',
+    'Đăng kýthất bại': 'Đăng ký thất bại',
+    '请检查输入信息': 'Vui lòng kiểm tra thông tin đã nhập',
+    '请检查输入Thông tin': 'Vui lòng kiểm tra thông tin đã nhập',
+    '免费': '0đ',
+    '请输入Chủ đề ticket': 'Nhập chủ đề ticket',
+    '订阅链接已重置，请及时更新客户端配置': 'Liên kết đăng ký đã được đặt lại. Vui lòng cập nhật cấu hình ứng dụng.',
+    'Liên kết đăng ký已Đặt lại，请及时更新ứng dụng配置': 'Liên kết đăng ký đã được đặt lại. Vui lòng cập nhật cấu hình ứng dụng.',
+    '正在Tải图表数据...': 'Đang tải dữ liệu biểu đồ...',
+    '正在TảiLưu lượng数据表...': 'Đang tải bảng dữ liệu lưu lượng...',
+    '自动续费已开启': 'Đã bật tự động gia hạn',
+    'Tự động gia hạn已开启': 'Đã bật tự động gia hạn',
+    '流量邮件提醒已开启': 'Đã bật nhắc lưu lượng qua email',
+    'Nhắc lưu lượng qua email已开启': 'Đã bật nhắc lưu lượng qua email',
+    '到期邮件提醒已开启': 'Đã bật nhắc hạn qua email',
+    'Nhắc hạn qua email已开启': 'Đã bật nhắc hạn qua email',
     '购买': 'Mua', '提示': 'Lưu ý', '升级': 'Nâng cấp', '基本信息': 'Thông tin cơ bản', '周期': 'Chu kỳ',
     '费用明细': 'Chi tiết giá', '实付': 'Đã thanh toán', '选择支付方式': 'Chọn phương thức thanh toán', '请选择支付方式': 'Vui lòng chọn phương thức thanh toán',
     '订单类型': 'Loại đơn hàng', '保留订单': 'Giữ đơn hàng', '确认取消': 'Xác nhận hủy', '取消订单': 'Hủy đơn hàng',
@@ -673,13 +689,13 @@
       .replace(/流量\s*[（(]\s*GB\s*[）)]/g, viLocale ? 'Lưu lượng (GB)' : 'Traffic (GB)')
       .replace(/上传流量/g, viLocale ? 'Lưu lượng tải lên' : 'Upload traffic')
       .replace(/下载流量/g, viLocale ? 'Lưu lượng tải xuống' : 'Download traffic')
-      .replace(/正在加载图表数据\.\.\./g, chartLoading)
-      .replace(/正在加载Lưu lượng数据表\.\.\./g, trafficTableLoading)
+      .replace(/正在(?:加载|Tải)图表数据\.\.\./g, chartLoading)
+      .replace(/正在(?:加载|Tải)Lưu lượng数据表\.\.\./g, trafficTableLoading)
       .replace(/正在加载主页数据\.\.\./g, viLocale ? 'Đang tải dữ liệu trang chủ...' : 'Loading dashboard data...')
       .replace(/加载Gói列表中\.\.\./g, viLocale ? 'Đang tải danh sách gói...' : 'Loading plans...')
       .replace(/加载Đơn hàng中\.\.\./g, viLocale ? 'Đang tải đơn hàng...' : 'Loading orders...')
       .replace(/正在加载Tài liệu\.\.\./g, viLocale ? 'Đang tải tài liệu...' : 'Loading documentation...')
-      .replace(/请输入TicketChủ đề/g, viLocale ? 'Nhập chủ đề ticket' : 'Enter ticket subject')
+      .replace(/请输入(?:TicketChủ đề|Chủ đề ticket)/g, viLocale ? 'Nhập chủ đề ticket' : 'Enter ticket subject')
       .replace(/TicketChủ đề/g, ticketSubject)
       .replace(/优先级/g, ticketPriority)
       .replace(/低\s*-\s*一般问题/g, ticketLow)
@@ -730,6 +746,8 @@
     }
     if (locale === 'vi-VN') {
       translatedCore = translatedCore
+        .replace(/Đăng ký\s*thất bại|注册失败/g, 'Đăng ký thất bại')
+        .replace(/请检查输入(?:Thông tin|信息)/g, 'Vui lòng kiểm tra thông tin đã nhập')
         .replace(/ChungLiên kết đăng ký/g, 'Liên kết đăng ký chung')
         .replace(/Dùng ứng dụng để quétMã QRNhập nhanh/g, 'Dùng ứng dụng để quét mã QR để nhập nhanh')
         .replace(/Dùng ứng dụng để quétMã QR/g, 'Dùng ứng dụng để quét mã QR')

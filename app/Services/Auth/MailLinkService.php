@@ -60,6 +60,7 @@ class MailLinkService
     {
         SendEmailJob::dispatch([
             'email' => $user->email,
+            'language' => $user->locale,
             'subject' => __('Login to :name', [
                 'name' => admin_setting('app_name', 'XBoard')
             ]),

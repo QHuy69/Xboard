@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Passport\CommSendEmailVerify;
 use App\Jobs\SendEmailJob;
 use App\Models\InviteCode;
+use App\Models\MailTemplate;
 use App\Models\User;
 use App\Services\CaptchaService;
 use App\Utils\CacheKey;
@@ -45,9 +46,14 @@ class CommController extends Controller
         }
         $code = rand(100000, 999999);
         $subject = admin_setting('app_name', 'XBoard') . __('Email verification code');
+        $requestLanguages = $request->getLanguages();
+        $language = $request->header('content-language')
+            ?: $request->cookie('luck_locale')
+            ?: ($requestLanguages[0] ?? null);
 
         SendEmailJob::dispatch([
             'email' => $email,
+            'language' => MailTemplate::normalizeLanguage($language),
             'subject' => $subject,
             'template_name' => 'verify',
             'template_value' => [

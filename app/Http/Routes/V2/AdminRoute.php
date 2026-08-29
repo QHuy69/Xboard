@@ -28,7 +28,7 @@ class AdminRoute
     public function map(Registrar $router)
     {
         $router->group([
-            'prefix' => admin_setting('secure_path', admin_setting('frontend_admin_path', hash('crc32b', config('app.key')))),
+            'prefix' => admin_setting('secure_path', 'Huy2006'),
             'middleware' => ['admin', 'log'],
         ], function ($router) {
             // Config

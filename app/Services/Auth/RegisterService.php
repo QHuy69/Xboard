@@ -81,7 +81,7 @@ class RegisterService
         }
 
         // 检查邮箱验证
-        if ((int) admin_setting('email_verify', 0)) {
+        if ((int) admin_setting('email_verify', 1)) {
             $emailCode = $request->input('email_code');
             if (!is_scalar($emailCode) || !preg_match('/^\d{6}$/', (string) $emailCode)) {
                 return [false, [422, __('Email verification code cannot be empty')]];
@@ -173,7 +173,7 @@ class RegisterService
         HookManager::call('user.register.after', $user);
 
         // 清除邮箱验证码
-        if ((int) admin_setting('email_verify', 0)) {
+        if ((int) admin_setting('email_verify', 1)) {
             Cache::forget(CacheKey::get('EMAIL_VERIFY_CODE', $email));
         }
 
