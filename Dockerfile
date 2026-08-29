@@ -60,6 +60,9 @@ COPY app/Http/Routes/V2/AdminRoute.php /www/app/Http/Routes/V2/AdminRoute.php
 COPY plugins-core/Sepay/Plugin.php /www/plugins-core/Sepay/Plugin.php
 COPY resources/views/payment/banking.blade.php /www/resources/views/payment/banking.blade.php
 COPY resources/views/resources/ /www/resources/views/resources/
+COPY app/Http/Requests/Admin/PlanSave.php /www/app/Http/Requests/Admin/PlanSave.php
+COPY app/Models/Plan.php /www/app/Models/Plan.php
+COPY app/Services/PlanService.php /www/app/Services/PlanService.php
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile

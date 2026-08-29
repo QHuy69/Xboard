@@ -300,7 +300,23 @@
     '支付方式加载完成，请选择支付方式': 'Payment methods loaded. Please choose a payment method.',
     '支付方式创建完成，请选择支付方式': 'Payment method created. Please choose a payment method.',
     'Gói名称': 'Plan name', '订阅周期': 'Subscription period',
-    'GóiGiá': 'Plan price', 'Hủy购买': 'Cancel purchase', 'Hỗ trợ续费': 'Renewal supported', '确认购买': 'Confirm purchase'
+    'GóiGiá': 'Plan price', 'Hủy购买': 'Cancel purchase', 'Hỗ trợ续费': 'Renewal supported', '确认购买': 'Confirm purchase',
+    '续费': 'Renew', '确认续费': 'Confirm renewal', 'Xác nhận续费': 'Confirm renewal', 'Xác nhậnGia hạn': 'Confirm renewal',
+    '重置成功': 'Reset successful', '确认新密码': 'Confirm new password', '加载流量明细失败': 'Failed to load traffic details',
+    '密码错误': 'Incorrect password', '服务器错误': 'Server error', '实付金额': 'Amount paid', '套餐价格': 'Plan price',
+    '加载套餐失败，请重试': 'Failed to load plans. Please try again.', '服务器网关错误，请稍后重试': 'Server gateway error. Please try again later.',
+    '支付网关错误，请稍后重试': 'Payment gateway error. Please try again later.', '订单已取消': 'Order canceled',
+    '取消支付': 'Cancel payment', '支付二维码': 'Payment QR code', '使用客户端扫描二维码快速导入': 'Use the app to scan the QR code for quick import',
+    '充值成功！': 'Top-up successful!', '支付成功！': 'Payment successful!', '取消购买': 'Cancel purchase',
+    '成功重置已用流量': 'Used traffic reset successfully', '重置已用流量': 'Reset used traffic',
+    '刷新用户信息失败:': 'Failed to refresh user information:', '邀请佣金': 'Referral commission', '邀请二维码': 'Referral QR code',
+    '服务购买': 'Purchase service', '邀请注册': 'Referral registration', '加载文档失败': 'Failed to load documentation',
+    '支付成功！订单已完成': 'Payment successful! Order completed.', '刷新支付状态失败:': 'Failed to refresh payment status:',
+    '刷新支付状态失败，请重试': 'Failed to refresh payment status. Please try again.', '账户充值': 'Top up account',
+    '充值类型': 'Top-up type', '充值信息': 'Top-up information', '节点二维码': 'Node QR code', '协议类型': 'Protocol type',
+    '流量倍率': 'Traffic multiplier', '密码确认错误': 'Password confirmation error',
+    '加载工单详情失败': 'Failed to load ticket details', '加载工单详情失败:': 'Failed to load ticket details:',
+    '工单详情': 'Ticket details', '工单主题': 'Ticket subject', '加载工单失败:': 'Failed to load ticket:'
     , '扫码Thanh toán': 'Scan to pay', 'Thanh toánSố tiền': 'Payment amount', 'Đơn hàng号': 'Order number',
     '请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán': 'Use a payment app to scan the QR code above to complete payment',
     '如果Mã QR无法显示，请点击下方链接：': 'If the QR code does not display, click the link below:', '打开Thanh toán链接': 'Open payment link',
@@ -333,6 +349,22 @@
     'Thanh toán方式Tải完成，Vui lòng chọn phương thức thanh toán': 'Đã tải phương thức thanh toán. Vui lòng chọn phương thức thanh toán.',
     'Gói名称': 'Tên gói', '订阅周期': 'Chu kỳ gói',
     'GóiGiá': 'Giá gói', 'Hủy购买': 'Hủy mua', 'Hỗ trợ续费': 'Hỗ trợ gia hạn', '扫码Thanh toán': 'Quét mã thanh toán',
+    '续费': 'Gia hạn', '确认续费': 'Xác nhận gia hạn', 'Xác nhận续费': 'Xác nhận gia hạn', 'Xác nhậnGia hạn': 'Xác nhận gia hạn',
+    '重置成功': 'Đặt lại thành công', '确认新密码': 'Xác nhận mật khẩu mới', '加载流量明细失败': 'Không tải được chi tiết lưu lượng',
+    '密码错误': 'Mật khẩu không đúng', '服务器错误': 'Lỗi máy chủ', '实付金额': 'Số tiền đã thanh toán', '套餐价格': 'Giá gói',
+    '加载套餐失败，请重试': 'Không tải được gói, vui lòng thử lại', '服务器网关错误，请稍后重试': 'Lỗi cổng máy chủ, vui lòng thử lại sau',
+    '支付网关错误，请稍后重试': 'Lỗi cổng thanh toán, vui lòng thử lại sau', '订单已取消': 'Đơn hàng đã hủy',
+    '取消支付': 'Hủy thanh toán', '支付二维码': 'Mã QR thanh toán', '使用客户端扫描二维码快速导入': 'Dùng ứng dụng để quét mã QR để nhập nhanh',
+    '充值成功！': 'Nạp tiền thành công!', '支付成功！': 'Thanh toán thành công!', '取消购买': 'Hủy mua',
+    '成功重置已用流量': 'Đặt lại lưu lượng đã dùng thành công', '重置已用流量': 'Đặt lại lưu lượng đã dùng',
+    '刷新用户信息失败:': 'Không thể làm mới thông tin người dùng:', '邀请佣金': 'Hoa hồng giới thiệu', '邀请二维码': 'Mã QR giới thiệu',
+    '服务购买': 'Mua dịch vụ', '邀请注册': 'Đăng ký qua lời mời', '加载文档失败': 'Không tải được tài liệu',
+    '支付成功！订单已完成': 'Thanh toán thành công! Đơn hàng đã hoàn tất.', '刷新支付状态失败:': 'Không thể làm mới trạng thái thanh toán:',
+    '刷新支付状态失败，请重试': 'Không thể làm mới trạng thái thanh toán, vui lòng thử lại', '账户充值': 'Nạp tiền vào tài khoản',
+    '充值类型': 'Loại nạp tiền', '充值信息': 'Thông tin nạp tiền', '节点二维码': 'Mã QR node', '协议类型': 'Loại giao thức',
+    '流量倍率': 'Hệ số lưu lượng', '密码确认错误': 'Mật khẩu xác nhận không đúng',
+    '加载工单详情失败': 'Không tải được chi tiết ticket', '加载工单详情失败:': 'Không tải được chi tiết ticket:',
+    '工单详情': 'Chi tiết ticket', '工单主题': 'Chủ đề ticket', '加载工单失败:': 'Không tải được ticket:',
     'Thanh toánSố tiền': 'Số tiền thanh toán', 'Đơn hàng号': 'Mã đơn hàng',
     '请使用Thanh toán宝Quét 上方Mã QR完成Thanh toán': 'Vui lòng dùng ứng dụng thanh toán quét mã QR ở trên để hoàn tất thanh toán',
     '如果Mã QR无法显示，请点击下方链接：': 'Nếu mã QR không hiển thị, hãy nhấn liên kết bên dưới:', '打开Thanh toán链接': 'Mở liên kết thanh toán',
@@ -525,6 +557,7 @@
       .replace(/Đặt lạiĐã dùng/g, viLocale ? 'Đặt lại đã dùng' : 'Reset already used')
       .replace(/时长/g, duration)
       .replace(/Hủy\s*購入|HủyMua|Hủy购买/g, viLocale ? 'Hủy mua' : 'Cancel purchase')
+      .replace(/Xác nhận\s*(?:续费|Gia hạn)/g, viLocale ? 'Xác nhận gia hạn' : 'Confirm renewal')
       .replace(/Đơn hàngChi tiết/g, orderDetails)
       .replace(/基本Thông tin/g, basicInfo)
       .replace(/GóiThông tin/g, planInfo)
@@ -562,9 +595,13 @@
     var trailing = text.match(/\s*$/)[0];
     var core = text.slice(leading.length, text.length - trailing.length);
     var originalCore = core;
+    var hasDirectTranslation = Object.prototype.hasOwnProperty.call(dictionary, core);
+    var directTranslation = hasDirectTranslation ? dictionary[core] : null;
     // Dynamic counters are emitted as e.g. "5207天" and therefore need a
-    // unit replacement in addition to the exact dictionary lookup.
-    if (locale !== 'zh-CN') {
+    // unit replacement in addition to the exact dictionary lookup. Always
+    // prefer a complete label first; replacing `天` before the lookup used to
+    // turn `最近30天` into the broken mixed string `最近30 ngày`.
+    if (!hasDirectTranslation && locale !== 'zh-CN') {
       if (locale === 'vi-VN') core = core.replace(/最近(\d+)天流量总计\s*[:：]?/g, 'Tổng lưu lượng $1 ngày gần đây: ');
       else if (locale === 'en-US') core = core.replace(/最近(\d+)天流量总计\s*[:：]?/g, 'Total traffic for the last $1 days: ');
       if (locale === 'vi-VN') core = core.replace(/每月(\d+)日重置/g, 'Đặt lại vào ngày $1 hàng tháng');
@@ -572,7 +609,9 @@
       var daysAgoLabel = locale === 'vi-VN' ? 'ngày trước' : (locale === 'ja-JP' ? '日前' : (locale === 'ko-KR' ? '일 전' : (locale === 'fa-IR' ? 'روز قبل' : 'days ago')));
       core = core.replace(/天前/g, daysAgoLabel).replace(/天/g, dayLabel);
     }
-    var translatedCore = Object.prototype.hasOwnProperty.call(dictionary, core) ? dictionary[core] : core;
+    var translatedCore = hasDirectTranslation
+      ? directTranslation
+      : (Object.prototype.hasOwnProperty.call(dictionary, core) ? dictionary[core] : core);
     var regionCode = countryZhToCode[core];
     if (regionCode && locale !== 'zh-CN' && typeof Intl !== 'undefined' && Intl.DisplayNames) {
       try {
@@ -616,6 +655,7 @@
         .replace(/快捷Số tiền：?/g, 'Số tiền nhanh:')
         .replace(/Nạp tiền后Số dư：?/g, 'Số dư sau khi nạp:')
         .replace(/Xác nhậnNạp tiền/g, 'Xác nhận nạp tiền')
+        .replace(/Xác nhận\s*(?:续费|Gia hạn)/g, 'Xác nhận gia hạn')
         .replace(/续费Gói|续费套餐/g, 'Gia hạn gói')
         .replace(/完成您的订阅(?:Mua|购买)/g, 'Hoàn tất việc mua gói đăng ký')
         .replace(/当前Gói|当前套餐/g, 'Gói hiện tại')
@@ -678,7 +718,11 @@
     // sees the other half, so an exact-key-only pass is not sufficient.
     if (locale !== 'zh-CN') {
       Object.keys(dictionary).filter(function (key) {
-        return key.length >= 1 && /[\u3400-\u9fff]/.test(key) && translatedCore.indexOf(key) !== -1;
+        // One-character substitutions corrupt unrelated words (for example,
+        // `无法` became `Không法`). Full labels and meaningful multi-character
+        // fragments are translated above; never splice single CJK characters
+        // into Vietnamese or English words.
+        return key.length >= 2 && /[\u3400-\u9fff]/.test(key) && translatedCore.indexOf(key) !== -1;
       }).sort(function (a, b) { return b.length - a.length; }).forEach(function (key) {
         translatedCore = translatedCore.split(key).join(dictionary[key]);
       });
@@ -773,6 +817,7 @@
           .replace(/快捷Số tiền：?/g, 'Số tiền nhanh:')
           .replace(/Nạp tiền后Số dư：?/g, 'Số dư sau khi nạp:')
           .replace(/Xác nhậnNạp tiền/g, 'Xác nhận nạp tiền')
+          .replace(/Xác nhận\s*(?:续费|Gia hạn)/g, 'Xác nhận gia hạn')
           .replace(/续费Gói|续费套餐/g, 'Gia hạn gói')
           .replace(/完成您的订阅(?:Mua|购买)/g, 'Hoàn tất việc mua gói đăng ký')
           .replace(/当前Gói|当前套餐/g, 'Gói hiện tại')
