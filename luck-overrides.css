@@ -3,6 +3,18 @@
   padding: 0 24px 22px !important;
 }
 
+.invite-page .code-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.invite-page .code-actions .action-btn-small {
+  min-width: 0 !important;
+  padding-inline: 8px !important;
+  white-space: nowrap !important;
+}
+
 /* The compiled orders stylesheet renders these mobile labels through
    pseudo-elements, so the DOM translator cannot see or replace them. */
 @media (max-width: 768px) {
@@ -558,6 +570,14 @@ body.luck-donate-open {
 
   .plan-card .feature-info {
     gap: 8px !important;
+  }
+
+  .invite-page .code-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .invite-page .code-actions > :last-child {
+    grid-column: 1 / -1 !important;
   }
 
 }

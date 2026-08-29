@@ -2,6 +2,7 @@
 
 use App\Services\ThemeService;
 use App\Services\UpdateService;
+use App\Services\LuckThemeAssetPatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
@@ -132,6 +133,14 @@ $renderTheme = function (Request $request) {
                     $runtimeFiles[] = $relative;
                 }
             }
+            foreach (['BR9H_Zte', 'CK-I2Xx_', 'DSCv3-VU', 'BBIEjj8f'] as $assetStem) {
+                foreach (File::glob($themePath . '/assets/' . $assetStem . '*.js') ?: [] as $generatedAsset) {
+                    $relative = 'assets/' . basename($generatedAsset);
+                    if (!in_array($relative, $runtimeFiles, true)) {
+                        $runtimeFiles[] = $relative;
+                    }
+                }
+            }
 
             foreach ($runtimeFiles as $runtimeFile) {
                 $source = $themePath . '/' . $runtimeFile;
@@ -180,6 +189,10 @@ $renderTheme = function (Request $request) {
                                     },
                                     $fixedContents
                                 );
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BR9H_Zte', '-localized');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'CK-I2Xx_', '-free');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'DSCv3-VU', '-managed');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBIEjj8f', '-errors');
                                 $fixedContents = str_replace(
                                     [
                                         'assets/DM1yaN1X.js',
@@ -279,6 +292,50 @@ $renderTheme = function (Request $request) {
                                 if (@file_put_contents($accessTarget, $fixedContents) === false) {
                                     Log::warning('Theme node access asset could not be published', ['target' => $accessTarget]);
                                 }
+                                continue;
+                            }
+                        }
+                        if (str_starts_with($runtimeFile, 'assets/BR9H_Zte')
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchTrafficChart($assetContents);
+                                @file_put_contents($target, $fixedContents);
+                                $localizedTarget = preg_replace('/\.js$/', '-localized.js', $target);
+                                @file_put_contents($localizedTarget, $fixedContents);
+                                continue;
+                            }
+                        }
+                        if (str_starts_with($runtimeFile, 'assets/CK-I2Xx_')
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchFreePlans($assetContents);
+                                @file_put_contents($target, $fixedContents);
+                                $freeTarget = preg_replace('/\.js$/', '-free.js', $target);
+                                @file_put_contents($freeTarget, $fixedContents);
+                                continue;
+                            }
+                        }
+                        if (str_starts_with($runtimeFile, 'assets/DSCv3-VU')
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchInviteManagement($assetContents);
+                                @file_put_contents($target, $fixedContents);
+                                $managedTarget = preg_replace('/\.js$/', '-managed.js', $target);
+                                @file_put_contents($managedTarget, $fixedContents);
+                                continue;
+                            }
+                        }
+                        if (str_starts_with($runtimeFile, 'assets/BBIEjj8f')
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchLoginErrors($assetContents);
+                                @file_put_contents($target, $fixedContents);
+                                $errorsTarget = preg_replace('/\.js$/', '-errors.js', $target);
+                                @file_put_contents($errorsTarget, $fixedContents);
                                 continue;
                             }
                         }

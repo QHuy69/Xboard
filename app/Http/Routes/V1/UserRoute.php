@@ -48,6 +48,7 @@ class UserRoute
             $router->get('/plan/fetch', [PlanController::class, 'fetch']);
             // Invite
             $router->get('/invite/save', [InviteController::class, 'save']);
+            $router->post('/invite/revoke', [InviteController::class, 'revoke']);
             $router->get('/invite/fetch', [InviteController::class, 'fetch']);
             $router->get('/invite/details', [InviteController::class, 'details']);
             // Notice

@@ -42,6 +42,27 @@ class InviteController extends Controller
         ]);
     }
 
+    public function revoke(Request $request)
+    {
+        $request->validate([
+            'code' => ['required', 'string', 'max:32'],
+        ]);
+
+        $updated = InviteCode::where('user_id', $request->user()->id)
+            ->where('code', $request->input('code'))
+            ->where('status', InviteCode::STATUS_UNUSED)
+            ->update([
+                'status' => InviteCode::STATUS_DISABLED,
+                'updated_at' => time(),
+            ]);
+
+        if ($updated !== 1) {
+            return $this->fail([404, __('Invitation code does not exist or is no longer active')]);
+        }
+
+        return $this->success(true);
+    }
+
     public function fetch(Request $request)
     {
         $commission_rate = admin_setting('invite_commission', 10);

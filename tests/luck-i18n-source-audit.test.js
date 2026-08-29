@@ -115,6 +115,22 @@ const expected = {
   ,'邀请页面初始化失败:': 'Không thể khởi tạo trang giới thiệu:'
   ,'邮箱已复制到剪贴板': 'Đã sao chép email vào bộ nhớ tạm'
   ,'重试生成二维码失败': 'Thử tạo lại mã QR thất bại'
+  ,'邀请链接二维码': 'Mã QR liên kết mời'
+  ,'分享给好友，获得推广佣金': 'Chia sẻ với bạn bè để nhận hoa hồng giới thiệu'
+  ,'下载二维码': 'Tải mã QR'
+  ,'申请提现': 'Yêu cầu rút hoa hồng'
+  ,'提交申请': 'Gửi yêu cầu'
+  ,'提现方式': 'Phương thức nhận tiền'
+  ,'请选择提现方式': 'Chọn phương thức nhận tiền'
+  ,'提现账号': 'Tài khoản nhận tiền'
+  ,'请输入提现账号': 'Nhập tài khoản nhận tiền'
+  ,'请填写提现信息，我们将在1-3个工作日内处理您的申请': 'Vui lòng điền thông tin rút tiền. Yêu cầu sẽ được xử lý trong 1–3 ngày làm việc.'
+  ,'请确保账号信息准确，提现后无法修改': 'Hãy kiểm tra chính xác thông tin tài khoản; không thể sửa sau khi gửi.'
+  ,'确定要禁用此邀请码吗？': 'Bạn có chắc muốn vô hiệu hóa mã mời này?'
+  ,'邀请码已禁用': 'Đã vô hiệu hóa mã mời'
+  ,'禁用': 'Vô hiệu hóa'
+  ,'邮箱或密码错误': 'Email hoặc mật khẩu không đúng'
+  ,'登录失败，请检查邮箱和密码': 'Đăng nhập thất bại. Hãy kiểm tra email và mật khẩu.'
 };
 
 for (const [source, vietnamese] of Object.entries(expected)) {

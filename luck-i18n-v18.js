@@ -150,6 +150,57 @@
     '流量 (GB)': 'Lưu lượng (GB)', '流量（GB）': 'Lưu lượng (GB)', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống',
     '获取节点列表失败': 'Không tải được danh sách node', '时间': 'Thời gian'
   });
+  Object.assign(en, {
+    '邀请链接二维码': 'Invitation link QR code', '分享给好友，获得推广佣金': 'Share with friends to earn referral commission',
+    '下载二维码': 'Download QR code', '有效': 'Active', '禁用': 'Disable', '邀请码已禁用': 'Invitation code disabled',
+    '确定要禁用此邀请码吗？': 'Disable this invitation code?', '禁用邀请码失败，请稍后重试': 'Failed to disable the invitation code. Please try again later.',
+    '申请提现': 'Request withdrawal', '提交申请': 'Submit request', '请填写提现信息，我们将在1-3个工作日内处理您的申请': 'Enter your withdrawal details. We will process the request within 1-3 business days.',
+    '提现方式': 'Withdrawal method', '请选择提现方式': 'Select a withdrawal method', '提现账号': 'Receiving account', '请输入提现账号': 'Enter the receiving account',
+    '请确保账号信息准确，提现后无法修改': 'Make sure the account information is correct. It cannot be changed after submission.',
+    '暂无可用的提现方式': 'No withdrawal method is available', '当前不支持提现功能': 'Withdrawals are currently unavailable', '不支持的提现方式': 'Unsupported withdrawal method',
+    '未达到最低提现金额要求': 'The minimum withdrawal amount has not been reached', '提现申请失败，请稍后重试': 'Withdrawal request failed. Please try again later.'
+  });
+  Object.assign(vi, {
+    '邀请链接二维码': 'Mã QR liên kết mời', '分享给好友，获得推广佣金': 'Chia sẻ với bạn bè để nhận hoa hồng giới thiệu',
+    '下载二维码': 'Tải mã QR', '有效': 'Còn hiệu lực', '禁用': 'Vô hiệu hóa', '邀请码已禁用': 'Đã vô hiệu hóa mã mời',
+    '确定要禁用此邀请码吗？': 'Bạn có chắc muốn vô hiệu hóa mã mời này?', '禁用邀请码失败，请稍后重试': 'Không thể vô hiệu hóa mã mời, vui lòng thử lại sau',
+    '申请提现': 'Yêu cầu rút hoa hồng', '提交申请': 'Gửi yêu cầu', '请填写提现信息，我们将在1-3个工作日内处理您的申请': 'Vui lòng điền thông tin rút tiền. Yêu cầu sẽ được xử lý trong 1–3 ngày làm việc.',
+    '提现方式': 'Phương thức nhận tiền', '请选择提现方式': 'Chọn phương thức nhận tiền', '提现账号': 'Tài khoản nhận tiền', '请输入提现账号': 'Nhập tài khoản nhận tiền',
+    '请确保账号信息准确，提现后无法修改': 'Hãy kiểm tra chính xác thông tin tài khoản; không thể sửa sau khi gửi.',
+    '暂无可用的提现方式': 'Chưa có phương thức rút tiền khả dụng', '当前不支持提现功能': 'Hiện chưa hỗ trợ rút tiền', '不支持的提现方式': 'Phương thức rút tiền không được hỗ trợ',
+    '未达到最低提现金额要求': 'Chưa đạt số tiền rút tối thiểu', '提现申请失败，请稍后重试': 'Gửi yêu cầu rút tiền thất bại, vui lòng thử lại sau',
+    'Mời bạn bèliên kếtMã QR': 'Mã QR liên kết mời', 'Tải xuốngMã QR': 'Tải mã QR', 'Gửi申请': 'Gửi yêu cầu'
+  });
+  Object.assign(vi, {
+    '已注册': 'Đã đăng ký', '已付费': 'Đã thanh toán', '待确认': 'Chờ xác nhận', '未知': 'Không xác định',
+    'API响应格式不正确': 'Định dạng phản hồi API không hợp lệ', '划转成功': 'Chuyển hoa hồng thành công',
+    '佣金划转失败:': 'Chuyển hoa hồng thất bại:', '佣金余额不足': 'Số dư hoa hồng không đủ',
+    '划转失败，请稍后重试': 'Chuyển hoa hồng thất bại, vui lòng thử lại sau', '用户不存在': 'Người dùng không tồn tại',
+    '提现工单已创建，请等待管理员处理': 'Ticket rút tiền đã được tạo, vui lòng chờ quản trị viên xử lý',
+    '佣金提现失败:': 'Rút hoa hồng thất bại:', '获取提现配置失败:': 'Không tải được cấu hình rút tiền:',
+    '请输入有效的划转金额': 'Vui lòng nhập số tiền chuyển hợp lệ', '划转金额不能超过当前余额': 'Số tiền chuyển không được vượt quá số dư hiện tại',
+    '成功划转 ¥${amount.toFixed(2)} 到账户余额': 'Đã chuyển ¥${amount.toFixed(2)} vào số dư tài khoản',
+    '划转失败:': 'Chuyển hoa hồng thất bại:', '划转金额无效或余额不足': 'Số tiền chuyển không hợp lệ hoặc số dư không đủ',
+    '操作过于频繁，请稍后重试': 'Thao tác quá thường xuyên, vui lòng thử lại sau', '请先登录': 'Vui lòng đăng nhập trước',
+    '没有权限访问': 'Bạn không có quyền truy cập', '获取提现配置失败，请稍后重试': 'Không tải được cấu hình rút tiền, vui lòng thử lại sau',
+    '提现工单已创建，请在工单系统中查看处理进度': 'Ticket rút tiền đã được tạo. Hãy xem tiến độ trong hệ thống ticket.',
+    '提现申请失败:': 'Gửi yêu cầu rút tiền thất bại:', '页面加载失败，请刷新重试': 'Tải trang thất bại, vui lòng làm mới và thử lại',
+    '佣金将会在确认后到达您的佣金账户。': 'Hoa hồng sẽ được cộng vào tài khoản sau khi xác nhận.',
+    '佣金划转': 'Chuyển hoa hồng', '确认划转': 'Xác nhận chuyển', '划转金额': 'Số tiền chuyển',
+    '请输入划转金额': 'Nhập số tiền cần chuyển', '划转说明': 'Lưu ý khi chuyển',
+    '• 佣金将划转到您的账户余额': '• Hoa hồng sẽ được chuyển vào số dư tài khoản',
+    '• 划转后可用于购买套餐或其他消费': '• Sau khi chuyển, số dư có thể dùng để mua gói hoặc thanh toán dịch vụ khác',
+    '• 划转操作不可撤销，请确认金额': '• Không thể hoàn tác thao tác này, hãy kiểm tra số tiền',
+    '确认佣金划转': 'Xác nhận chuyển hoa hồng', '您即将划转': 'Bạn sắp chuyển', '到账户余额': 'vào số dư tài khoản',
+    '划转操作完成后不可撤销': 'Không thể hoàn tác sau khi chuyển', '资金将立即转入您的账户余额': 'Tiền sẽ được chuyển ngay vào số dư tài khoản',
+    '系统将自动生成划转记录': 'Hệ thống sẽ tự động tạo lịch sử chuyển'
+  });
+  Object.assign(en, {
+    '邮箱或密码错误': 'Incorrect email or password', '登录失败，请检查邮箱和密码': 'Login failed. Check your email and password.'
+  });
+  Object.assign(vi, {
+    '邮箱或密码错误': 'Email hoặc mật khẩu không đúng', '登录失败，请检查邮箱和密码': 'Đăng nhập thất bại. Hãy kiểm tra email và mật khẩu.'
+  });
   Object.assign(tw, {
     '节点名称': '節點名稱', '地址': '地址', '倍率': '倍率', '标签': '標籤',
     '解锁': '解鎖', '延迟RTT': '延遲 RTT', 'HTTP延迟': 'HTTP 延遲'
