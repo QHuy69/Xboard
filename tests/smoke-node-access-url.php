@@ -30,10 +30,24 @@ if (($data['access_url'] ?? null) !== $expected) {
     exit(1);
 }
 
-$routeSource = file_get_contents(dirname(__DIR__) . '/routes/web.php');
+$routeFile = getenv('XBOARD_ROUTES_FILE') ?: dirname(__DIR__) . '/routes/web.php';
+$routeSource = file_get_contents($routeFile);
 if (!str_contains($routeSource, 'return server.access_url;')
-    || !str_contains($routeSource, 'oPGsis9D-v2-access.js')) {
+    || !str_contains($routeSource, "preg_replace('/\\.js$/', '-access.js'")) {
     fwrite(STDERR, "Luck node chunk patch smoke test failed.\n");
+    exit(1);
+}
+
+$entryImport = './oPGsis9D-v8-v3-fresh.js';
+$patchedImport = preg_replace_callback(
+    '#(?<prefix>\./|assets/)(?<name>oPGsis9D[^"\'?]*\.js)(?:\?v=\d+)?#',
+    static function (array $match): string {
+        return $match['prefix'] . preg_replace('/\.js$/', '-access.js', $match['name']);
+    },
+    $entryImport
+);
+if ($patchedImport !== './oPGsis9D-v8-v3-fresh-access.js') {
+    fwrite(STDERR, "Version-independent Luck node chunk rewrite failed.\n");
     exit(1);
 }
 

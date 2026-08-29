@@ -85,7 +85,7 @@ $renderTheme = function (Request $request) {
         // mounted theme directory. Keep their public copies fresh even when
         // the rest of the theme assets were already published.
         if ($themePath) {
-            foreach ([
+            $runtimeFiles = [
                 'i18n-v18.js',
                 'dashboard.blade.php',
                 'assets/luck-overrides.css',
@@ -111,7 +111,19 @@ $renderTheme = function (Request $request) {
                 'assets/C6e3mGRa-v6.js',
                 'assets/oPGsis9D-v7.js',
                 'assets/BBbuoBq5-v12.js',
-            ] as $runtimeFile) {
+            ];
+
+            // Luck changes the generated node chunk filename between theme
+            // releases (v2, v3, v8, etc.). Discover every variant instead of
+            // tying the access-link repair to one compiled filename.
+            foreach (File::glob($themePath . '/assets/oPGsis9D*.js') ?: [] as $nodeAsset) {
+                $relative = 'assets/' . basename($nodeAsset);
+                if (!in_array($relative, $runtimeFiles, true)) {
+                    $runtimeFiles[] = $relative;
+                }
+            }
+
+            foreach ($runtimeFiles as $runtimeFile) {
                 $source = $themePath . '/' . $runtimeFile;
                 $target = $publicThemePath . '/' . $runtimeFile;
                 if (File::exists($source)) {
@@ -149,6 +161,14 @@ $renderTheme = function (Request $request) {
                                 $assetContents
                             );
                             if ($fixedContents !== false) {
+                                $fixedContents = preg_replace_callback(
+                                    '#(?<prefix>\./|assets/)(?<name>oPGsis9D[^"\'?]*\.js)(?:\?v=\d+)?#',
+                                    static function (array $match): string {
+                                        $accessName = preg_replace('/\.js$/', '-access.js', $match['name']);
+                                        return $match['prefix'] . $accessName;
+                                    },
+                                    $fixedContents
+                                );
                                 $fixedContents = str_replace(
                                     [
                                         'assets/DM1yaN1X.js',
@@ -203,12 +223,8 @@ $renderTheme = function (Request $request) {
                                 continue;
                             }
                         }
-                        if (in_array($runtimeFile, [
-                            'assets/oPGsis9D-v2.js',
-                            'assets/oPGsis9D-v3.js',
-                            'assets/oPGsis9D-v2-fresh.js',
-                            'assets/oPGsis9D-v3-fresh.js',
-                        ], true)) {
+                        if (str_starts_with($runtimeFile, 'assets/oPGsis9D')
+                            && str_ends_with($runtimeFile, '.js')) {
                             $assetContents = @file_get_contents($source);
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 "\n            }\n          }\n        }\n      });\n      return countryMap;",
@@ -247,11 +263,10 @@ $renderTheme = function (Request $request) {
                                 if (@file_put_contents($target, $fixedContents) === false) {
                                     Log::warning('Theme world-map asset could not be repaired', ['target' => $target]);
                                 }
-                                if (str_contains($runtimeFile, 'oPGsis9D-v2')) {
-                                    $accessTarget = $publicThemePath . '/assets/oPGsis9D-v2-access.js';
-                                    if (@file_put_contents($accessTarget, $fixedContents) === false) {
-                                        Log::warning('Theme node access asset could not be published', ['target' => $accessTarget]);
-                                    }
+                                $accessName = preg_replace('/\.js$/', '-access.js', basename($runtimeFile));
+                                $accessTarget = $publicThemePath . '/assets/' . $accessName;
+                                if (@file_put_contents($accessTarget, $fixedContents) === false) {
+                                    Log::warning('Theme node access asset could not be published', ['target' => $accessTarget]);
                                 }
                                 continue;
                             }
