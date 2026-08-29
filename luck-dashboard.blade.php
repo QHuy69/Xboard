@@ -1,5 +1,5 @@
 @php
-  $luckDonatePlanIds = collect(preg_split('/[,\s]+/', (string) env('LUCK_DONATE_PLAN_IDS', '1,3'), -1, PREG_SPLIT_NO_EMPTY))
+  $luckDonatePlanIds = collect(preg_split('/[,\s]+/', (string) env('LUCK_DONATE_PLAN_IDS', '1'), -1, PREG_SPLIT_NO_EMPTY))
     ->map(fn ($id) => (int) $id)
     ->filter(fn ($id) => $id > 0)
     ->unique()
