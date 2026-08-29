@@ -196,10 +196,12 @@
     '系统将自动生成划转记录': 'Hệ thống sẽ tự động tạo lịch sử chuyển'
   });
   Object.assign(en, {
-    '邮箱或密码错误': 'Incorrect email or password', '登录失败，请检查邮箱和密码': 'Login failed. Check your email and password.'
+    '邮箱或密码错误': 'Incorrect email or password', '邮箱或密码错误，请检查后重试': 'Incorrect email or password. Please try again.',
+    '登录失败，请检查邮箱和密码': 'Login failed. Check your email and password.'
   });
   Object.assign(vi, {
-    '邮箱或密码错误': 'Email hoặc mật khẩu không đúng', '登录失败，请检查邮箱和密码': 'Đăng nhập thất bại. Hãy kiểm tra email và mật khẩu.'
+    '邮箱或密码错误': 'Email hoặc mật khẩu không đúng', '邮箱或密码错误，请检查后重试': 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.',
+    '登录失败，请检查邮箱和密码': 'Đăng nhập thất bại. Hãy kiểm tra email và mật khẩu.'
   });
   Object.assign(tw, {
     '节点名称': '節點名稱', '地址': '地址', '倍率': '倍率', '标签': '標籤',

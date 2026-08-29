@@ -130,6 +130,7 @@ const expected = {
   ,'邀请码已禁用': 'Đã vô hiệu hóa mã mời'
   ,'禁用': 'Vô hiệu hóa'
   ,'邮箱或密码错误': 'Email hoặc mật khẩu không đúng'
+  ,'邮箱或密码错误，请检查后重试': 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
   ,'登录失败，请检查邮箱和密码': 'Đăng nhập thất bại. Hãy kiểm tra email và mật khẩu.'
 };
 
