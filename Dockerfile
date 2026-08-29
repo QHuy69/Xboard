@@ -68,6 +68,9 @@ COPY .docker/php/zz-xboard.ini /usr/local/etc/php/conf.d/zz-xboard.ini
 RUN php -l routes/web.php \
     && php -l app/Http/Controllers/ResourcePortalController.php \
     && php -l app/Http/Routes/V2/AdminRoute.php \
+    && php -l app/Http/Requests/Admin/PlanSave.php \
+    && php -l app/Models/Plan.php \
+    && php -l app/Services/PlanService.php \
     && composer install --no-cache --no-dev --no-security-blocking \
     && php artisan storage:link \
     && chown -R www:www /www \

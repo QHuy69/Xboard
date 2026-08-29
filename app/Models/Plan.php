@@ -190,7 +190,7 @@ class Plan extends Model
         return array_filter(
             self::getAvailablePeriods(),
             fn($period) => isset($this->prices[$period])
-            && $this->prices[$period] > 0,
+                && $this->prices[$period] >= 0,
             ARRAY_FILTER_USE_KEY
         );
     }
@@ -239,7 +239,7 @@ class Plan extends Model
 
         $priceList = [];
         foreach ($prices as $period => $price) {
-            if (isset($periods[$period]) && $price > 0) {
+            if (isset($periods[$period]) && $price >= 0) {
                 $priceList[$period] = [
                     'period' => $periods[$period],
                     'price' => $price,
