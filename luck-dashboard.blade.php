@@ -1,3 +1,11 @@
+@php
+  $luckDonatePlanIds = collect(preg_split('/[,\s]+/', (string) env('LUCK_DONATE_PLAN_IDS', '1,3'), -1, PREG_SPLIT_NO_EMPTY))
+    ->map(fn ($id) => (int) $id)
+    ->filter(fn ($id) => $id > 0)
+    ->unique()
+    ->values()
+    ->all();
+@endphp
 <!doctype html>
 <html lang="auto">
 <head>
@@ -77,9 +85,8 @@
       var download = document.getElementById('luck-app-download');
       if (!banner || !modal || !close || banner.dataset.bound === '1') return;
       banner.dataset.bound = '1';
-      var TARGET_PLAN_ID = 1;
+      var TARGET_PLAN_IDS = @json($luckDonatePlanIds);
       var ELIGIBILITY_ENDPOINT = '/api/v1/user/getSubscribe';
-      var SEEN_KEY = 'luck_donate_seen_plan_' + TARGET_PLAN_ID;
       var CLASH_ICON = '/theme/{{$theme}}/assets/luck-clash.svg?v=1';
       var lang = (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || document.documentElement.lang || 'vi-VN';
       var labels = {
@@ -189,6 +196,7 @@
       };
       var lastEligibilityKey = '';
       var eligibilityRequest = 0;
+      var autoOpened = false;
       var checkEligibility = function (force) {
         var path = window.location.pathname.replace(/\/+$/, '') || '/';
         var token = normalizeToken();
@@ -196,9 +204,7 @@
           eligibilityRequest += 1;
           hideDonation();
           lastEligibilityKey = '';
-          if (path === '/login' || path === '/register') {
-            try { sessionStorage.removeItem(SEEN_KEY); } catch (ignore) {}
-          }
+          autoOpened = false;
           return;
         }
         var eligibilityKey = path + '|' + token;
@@ -218,18 +224,14 @@
           var subscription = payload && payload.data;
           var expiresAt = subscription && Number(subscription.expired_at || 0);
           var active = !expiresAt || expiresAt > Math.floor(Date.now() / 1000);
-          var eligible = subscription && Number(subscription.plan_id) === TARGET_PLAN_ID && active;
+          var eligible = subscription && TARGET_PLAN_IDS.indexOf(Number(subscription.plan_id)) !== -1 && active;
           if (!eligible) {
             hideDonation();
             return;
           }
           banner.hidden = false;
-          try {
-            if (sessionStorage.getItem(SEEN_KEY) !== '1') {
-              sessionStorage.setItem(SEEN_KEY, '1');
-              open();
-            }
-          } catch (ignore) {
+          if (!autoOpened) {
+            autoOpened = true;
             open();
           }
         }).catch(function () {
