@@ -55,14 +55,20 @@ RUN cp /tmp/luck-custom/luck-donate-qr.svg /www/public/luck-donate-qr.svg
 # image deliberately clones upstream for normal updates, but these files are
 # part of the maintained custom branch and must be present in every build.
 COPY routes/web.php /www/routes/web.php
+COPY app/Http/Controllers/ResourcePortalController.php /www/app/Http/Controllers/ResourcePortalController.php
+COPY app/Http/Routes/V2/AdminRoute.php /www/app/Http/Routes/V2/AdminRoute.php
 COPY plugins-core/Sepay/Plugin.php /www/plugins-core/Sepay/Plugin.php
 COPY resources/views/payment/banking.blade.php /www/resources/views/payment/banking.blade.php
+COPY resources/views/resources/ /www/resources/views/resources/
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile
 COPY .docker/php/zz-xboard.ini /usr/local/etc/php/conf.d/zz-xboard.ini
 
-RUN composer install --no-cache --no-dev --no-security-blocking \
+RUN php -l routes/web.php \
+    && php -l app/Http/Controllers/ResourcePortalController.php \
+    && php -l app/Http/Routes/V2/AdminRoute.php \
+    && composer install --no-cache --no-dev --no-security-blocking \
     && php artisan storage:link \
     && chown -R www:www /www \
     && chmod -R 775 /www \

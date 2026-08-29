@@ -278,6 +278,13 @@
   // Package cards, checkout dialogs and API toasts can arrive as adjacent
   // text nodes. Translate the complete Chinese labels and their mixed forms.
   Object.assign(en, {
+    '余额充值': 'Top up balance', '当前余额：': 'Current balance:', '充值金额': 'Top-up amount',
+    '请输入充值金额': 'Enter top-up amount', '快捷金额：': 'Quick amounts:', '充值后余额：': 'Balance after top-up:',
+    '确认充值': 'Confirm top-up', 'Số dưNạp tiền': 'Top up balance', '当前Số dư：': 'Current balance:',
+    'Nạp tiềnSố tiền': 'Top-up amount', '请输入Nạp tiềnSố tiền': 'Enter top-up amount',
+    '快捷Số tiền：': 'Quick amounts:', 'Nạp tiền后Số dư：': 'Balance after top-up:', 'Xác nhậnNạp tiền': 'Confirm top-up',
+    '续费套餐': 'Renew plan', '续费Gói': 'Renew plan', '完成您的订阅购买': 'Complete your subscription purchase',
+    '完成您的订阅Mua': 'Complete your subscription purchase', '当前套餐': 'Current plan', '当前Gói': 'Current plan',
     '支持续费': 'Renewal supported', '流量配额': 'Traffic quota', '设备数量': 'Device limit', '设备限制': 'Device limit',
     '网络速度': 'Network speed', '速度限制': 'Speed limit', '不限速': 'Unlimited speed', '月付': 'Monthly',
     '选择订阅周期': 'Choose subscription period', '请输入Mã giảm giá代码': 'Enter discount code', '应用': 'Apply',
@@ -300,6 +307,13 @@
     'ĐóngThanh toán': 'Close payment', '检查Thanh toánTrang thái': 'Check payment status'
   });
   Object.assign(vi, {
+    '余额充值': 'Nạp tiền vào số dư', '当前余额：': 'Số dư hiện tại:', '充值金额': 'Số tiền nạp',
+    '请输入充值金额': 'Nhập số tiền nạp', '快捷金额：': 'Số tiền nhanh:', '充值后余额：': 'Số dư sau khi nạp:',
+    '确认充值': 'Xác nhận nạp tiền', 'Số dưNạp tiền': 'Nạp tiền vào số dư', '当前Số dư：': 'Số dư hiện tại:',
+    'Nạp tiềnSố tiền': 'Số tiền nạp', '请输入Nạp tiềnSố tiền': 'Nhập số tiền nạp',
+    '快捷Số tiền：': 'Số tiền nhanh:', 'Nạp tiền后Số dư：': 'Số dư sau khi nạp:', 'Xác nhậnNạp tiền': 'Xác nhận nạp tiền',
+    '续费套餐': 'Gia hạn gói', '续费Gói': 'Gia hạn gói', '完成您的订阅购买': 'Hoàn tất việc mua gói đăng ký',
+    '完成您的订阅Mua': 'Hoàn tất việc mua gói đăng ký', '当前套餐': 'Gói hiện tại', '当前Gói': 'Gói hiện tại',
     '支持续费': 'Hỗ trợ gia hạn', '流量配额': 'Hạn mức lưu lượng', '设备数量': 'Giới hạn thiết bị', '设备限制': 'Giới hạn thiết bị',
     '网络速度': 'Tốc độ mạng', '速度限制': 'Giới hạn tốc độ', '不限速': 'Không giới hạn tốc độ', '月付': 'Hàng tháng',
     '选择订阅周期': 'Chọn chu kỳ gói', '请输入Mã giảm giá代码': 'Nhập mã giảm giá', '应用': 'Áp dụng', '原价': 'Giá gốc',
@@ -595,6 +609,16 @@
         .replace(/Mạng速度/g, 'Tốc độ mạng')
         .replace(/Không giới hạn速/g, 'Không giới hạn tốc độ')
         .replace(/Hỗ trợ续费/g, 'Hỗ trợ gia hạn')
+        .replace(/Số dưNạp tiền/g, 'Nạp tiền vào số dư')
+        .replace(/当前Số dư：?/g, 'Số dư hiện tại:')
+        .replace(/请输入Nạp tiềnSố tiền/g, 'Nhập số tiền nạp')
+        .replace(/Nạp tiềnSố tiền/g, 'Số tiền nạp')
+        .replace(/快捷Số tiền：?/g, 'Số tiền nhanh:')
+        .replace(/Nạp tiền后Số dư：?/g, 'Số dư sau khi nạp:')
+        .replace(/Xác nhậnNạp tiền/g, 'Xác nhận nạp tiền')
+        .replace(/续费Gói|续费套餐/g, 'Gia hạn gói')
+        .replace(/完成您的订阅(?:Mua|购买)/g, 'Hoàn tất việc mua gói đăng ký')
+        .replace(/当前Gói|当前套餐/g, 'Gói hiện tại')
         .replace(/NhậpMã giảm giá代码|Nhập Mã giảm giá代码/g, 'Nhập mã giảm giá')
         .replace(/Xác nhận购买/g, 'Xác nhận mua')
         .replace(/Đang创建Đơn hàng\.\.\./g, 'Đang tạo đơn hàng...')
@@ -742,6 +766,16 @@
           .replace(/Mạng速度/g, 'Tốc độ mạng')
           .replace(/Không giới hạn速/g, 'Không giới hạn tốc độ')
           .replace(/Hỗ trợ续费/g, 'Hỗ trợ gia hạn')
+          .replace(/Số dưNạp tiền/g, 'Nạp tiền vào số dư')
+          .replace(/当前Số dư：?/g, 'Số dư hiện tại:')
+          .replace(/请输入Nạp tiềnSố tiền/g, 'Nhập số tiền nạp')
+          .replace(/Nạp tiềnSố tiền/g, 'Số tiền nạp')
+          .replace(/快捷Số tiền：?/g, 'Số tiền nhanh:')
+          .replace(/Nạp tiền后Số dư：?/g, 'Số dư sau khi nạp:')
+          .replace(/Xác nhậnNạp tiền/g, 'Xác nhận nạp tiền')
+          .replace(/续费Gói|续费套餐/g, 'Gia hạn gói')
+          .replace(/完成您的订阅(?:Mua|购买)/g, 'Hoàn tất việc mua gói đăng ký')
+          .replace(/当前Gói|当前套餐/g, 'Gói hiện tại')
           .replace(/NhậpMã giảm giá代码|Nhập Mã giảm giá代码/g, 'Nhập mã giảm giá')
           .replace(/Xác nhận购买/g, 'Xác nhận mua')
           .replace(/Đang创建Đơn hàng\.\.\./g, 'Đang tạo đơn hàng...')

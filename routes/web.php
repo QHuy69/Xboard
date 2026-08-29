@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use App\Models\Order;
+use App\Http\Controllers\ResourcePortalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -257,6 +258,12 @@ $renderTheme = function (Request $request) {
     }
 };
 
+$resourcesHost = env('LUCK_RESOURCES_HOST', 'resources.zaoguang-vpn.com');
+Route::domain($resourcesHost)->group(function () {
+    Route::get('/', [ResourcePortalController::class, 'index'])->name('resources.index');
+    Route::get('/manage', [ResourcePortalController::class, 'manage'])->name('resources.manage');
+});
+
 Route::get('/', $renderTheme);
 
 // Dedicated VietQR payment page. The checkout endpoint returns this URL for
@@ -314,7 +321,10 @@ Route::get('/pay/{tradeNo}', function (Request $request, string $tradeNo) {
         'accountName' => (string) ($config['sepay_account_name'] ?? ''),
         'bankName' => (string) ($config['sepay_bank_code'] ?? ''),
         'transferDescription' => trim((string) ($config['sepay_transfer_prefix'] ?? 'XBOARD')) . ' ' . $order->trade_no,
-        'statusUrl' => url('/payment/status/' . rawurlencode($order->trade_no)),
+        // Keep status polling on the same host that serves the payment page.
+        // Using APP_URL here makes the banking subdomain perform a CORS request
+        // to the main panel, so successful payments appear to stay pending.
+        'statusUrl' => '/payment/status/' . rawurlencode($order->trade_no),
         'returnUrl' => $panelUrl . '/orders?trade_no=' . rawurlencode($order->trade_no),
     ]);
 })->where('tradeNo', '[A-Za-z0-9_-]+');

@@ -20,6 +20,7 @@ use App\Http\Controllers\V2\Admin\PaymentController;
 use App\Http\Controllers\V2\Admin\SystemController;
 use App\Http\Controllers\V2\Admin\ThemeController;
 use App\Http\Controllers\V2\Admin\TrafficResetController;
+use App\Http\Controllers\ResourcePortalController;
 use Illuminate\Contracts\Routing\Registrar;
 
 class AdminRoute
@@ -40,6 +41,14 @@ class AdminRoute
                 $router->get('/getThemeTemplate', [ConfigController::class, 'getThemeTemplate']);
                 $router->post('/setTelegramWebhook', [ConfigController::class, 'setTelegramWebhook']);
                 $router->post('/testSendMail', [ConfigController::class, 'testSendMail']);
+            });
+
+            // Public application-download portal management
+            $router->group([
+                'prefix' => 'resource-portal'
+            ], function ($router) {
+                $router->get('/fetch', [ResourcePortalController::class, 'fetch']);
+                $router->post('/save', [ResourcePortalController::class, 'save']);
             });
 
             // Mail Templates
