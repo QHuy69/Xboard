@@ -12,6 +12,7 @@ services:
   xboard:
     image: ghcr.io/cedar2025/xboard:latest
     restart: unless-stopped
+    stop_grace_period: 90s
     ports:
       - "7001:7001"
     volumes:

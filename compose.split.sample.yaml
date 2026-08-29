@@ -15,16 +15,20 @@ services:
     ports:
       - "7001:7001"
     depends_on:
-      - web
-      - ws-server
+      web:
+        condition: service_healthy
+      ws-server:
+        condition: service_healthy
     volumes:
       - ./.docker/caddy/Caddyfile.split:/etc/caddy/Caddyfile:ro
 
   web:
     image: ghcr.io/cedar2025/xboard:latest
     restart: unless-stopped
+    stop_grace_period: 90s
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     volumes: &shared-volumes
       - ./.env:/www/.env
       - ./.docker/.data/:/www/.docker/.data
@@ -34,38 +38,56 @@ services:
     environment:
       docker: "true"
       ENABLE_CADDY: "false"
+      ENABLE_REDIS: "false"
       ENABLE_HORIZON: "false"
       ENABLE_WS_SERVER: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
 
   horizon:
     image: ghcr.io/cedar2025/xboard:latest
     restart: unless-stopped
+    stop_grace_period: 90s
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     volumes: *shared-volumes
     environment:
       docker: "true"
       ENABLE_CADDY: "false"
+      ENABLE_REDIS: "false"
       ENABLE_WEB: "false"
       ENABLE_WS_SERVER: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
 
   ws-server:
     image: ghcr.io/cedar2025/xboard:latest
     restart: unless-stopped
+    stop_grace_period: 90s
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     volumes: *shared-volumes
     environment:
       docker: "true"
       ENABLE_CADDY: "false"
+      ENABLE_REDIS: "false"
       ENABLE_WEB: "false"
       ENABLE_HORIZON: "false"
       WS_HOST: "0.0.0.0"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --unixsocket /data/redis.sock --unixsocketperm 777 --save 900 1 --save 300 10 --save 60 10000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     volumes:
       - redis-data:/data
 

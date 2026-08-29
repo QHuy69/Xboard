@@ -2,6 +2,7 @@ services:
   xboard:
     image: ghcr.io/cedar2025/xboard:latest
     restart: unless-stopped
+    stop_grace_period: 90s
     network_mode: host
     volumes:
       - ./.env:/www/.env

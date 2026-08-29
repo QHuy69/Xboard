@@ -26,13 +26,21 @@ COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr
 ARG CACHEBUST=1
 ARG REPO_URL=https://github.com/cedar2025/Xboard
 ARG BRANCH_NAME=master
+ARG SOURCE_SHA=
+ARG APP_VERSION=1.0.0
 
-RUN echo "Attempting to clone branch: ${BRANCH_NAME} from ${REPO_URL} with CACHEBUST: ${CACHEBUST}" && \
+RUN echo "Cloning ${REPO_URL} at ${SOURCE_SHA:-${BRANCH_NAME}} with CACHEBUST: ${CACHEBUST}" && \
     rm -rf ./* && \
     rm -rf .git && \
     git config --global --add safe.directory /www && \
-    git clone --depth 1 --branch ${BRANCH_NAME} ${REPO_URL} . && \
+    git clone --filter=blob:none --no-checkout --depth 1 --branch "${BRANCH_NAME}" "${REPO_URL}" . && \
+    git fetch --depth 1 origin "${SOURCE_SHA:-${BRANCH_NAME}}" && \
+    git checkout --detach FETCH_HEAD && \
     git submodule update --init --recursive --force
+
+# Stamp the exact CI build version after the pinned checkout. Editing the
+# workflow checkout before this clone has no effect on the final image.
+RUN sed -i "s/'version' => '.*'/'version' => '${APP_VERSION}'/g" config/app.php
 
 # Keep custom Luck runtime files in the image's public tree. Static JS is
 # served from public/theme while compose mounts storage/theme for templates.
@@ -107,6 +115,8 @@ ENV ENABLE_WEB=true \
 
 EXPOSE 7001
 COPY .docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh /healthcheck.sh
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=6 \
+    CMD ["/healthcheck.sh"]
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"] 

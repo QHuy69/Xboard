@@ -1,0 +1,26 @@
+name: xboard
+
+services:
+  xboard:
+    # Production must use an immutable seven-character commit tag, for example
+    # ghcr.io/qhuy69/xboard:572cd86. The mutable custom-en tag is deliberately
+    # rejected by requiring XBOARD_IMAGE at deploy time.
+    image: ${XBOARD_IMAGE:?Set XBOARD_IMAGE to an immutable GHCR commit tag}
+    restart: unless-stopped
+    stop_grace_period: 90s
+    ports:
+      - "127.0.0.1:7001:7001"
+    volumes:
+      - ./.env:/www/.env
+      - ./.docker/.data:/www/.docker/.data
+      - ./storage/logs:/www/storage/logs
+      - ./storage/theme:/www/storage/theme
+      - ./plugins:/www/plugins
+      - redis-data:/data
+    environment:
+      RESOURCE_PROFILE: balanced
+      ENABLE_HORIZON: "true"
+      docker: "true"
+
+volumes:
+  redis-data:
