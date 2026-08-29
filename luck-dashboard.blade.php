@@ -42,7 +42,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=54"></script>
 </head>
 <body>
   <div id="app"></div>

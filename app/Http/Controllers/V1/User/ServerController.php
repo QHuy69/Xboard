@@ -22,14 +22,23 @@ class ServerController extends Controller
         if ($userService->isAvailable($user)) {
             $servers = ServerService::getAvailableServers($user);
         }
-        $eTag = sha1(json_encode(array_column($servers, 'cache_key')));
+        // Node responses now contain user-specific access URLs. Scope the
+        // validator to the authenticated user so a browser can never reuse a
+        // different account's node credentials after an account switch.
+        $eTag = sha1(json_encode([
+            'user' => [$user->id, $user->uuid],
+            'servers' => array_column($servers, 'cache_key'),
+        ]));
         if (strpos($request->header('If-None-Match', ''), $eTag) !== false ) {
-            return response(null,304);
+            return response(null,304)
+                ->header('ETag', "\"{$eTag}\"")
+                ->header('Cache-Control', 'private, no-store');
         }
         $data = NodeResource::collection($servers);
         return response([
             'data' => $data
-        ])->header('ETag', "\"{$eTag}\"");
+        ])->header('ETag', "\"{$eTag}\"")
+            ->header('Cache-Control', 'private, no-store');
     }
 
     private function rememberLocale(Request $request, User $user): void

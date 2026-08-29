@@ -63,6 +63,8 @@ COPY resources/views/resources/ /www/resources/views/resources/
 COPY app/Http/Requests/Admin/PlanSave.php /www/app/Http/Requests/Admin/PlanSave.php
 COPY app/Models/Plan.php /www/app/Models/Plan.php
 COPY app/Services/PlanService.php /www/app/Services/PlanService.php
+COPY app/Http/Controllers/V1/User/ServerController.php /www/app/Http/Controllers/V1/User/ServerController.php
+COPY app/Http/Resources/NodeResource.php /www/app/Http/Resources/NodeResource.php
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile
@@ -74,7 +76,10 @@ RUN php -l routes/web.php \
     && php -l app/Http/Requests/Admin/PlanSave.php \
     && php -l app/Models/Plan.php \
     && php -l app/Services/PlanService.php \
+    && php -l app/Http/Controllers/V1/User/ServerController.php \
+    && php -l app/Http/Resources/NodeResource.php \
     && composer install --no-cache --no-dev --no-security-blocking \
+    && php tests/smoke-node-access-url.php \
     && php artisan storage:link \
     && chown -R www:www /www \
     && chmod -R 775 /www \
