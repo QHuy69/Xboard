@@ -198,7 +198,7 @@ rm -f /www/storage/logs/octane-server-state.json /www/storage/logs/xboard-ws-ser
 # Only application state must be writable at runtime. Recursively chowning all
 # of /www also walks vendor, the compiled admin bundle and bind mounts on every
 # restart, keeping Caddy/Octane offline for more than a minute on production.
-for writable_path in /www/storage /www/bootstrap/cache /www/.docker/.data /www/plugins; do
+for writable_path in /www/storage /www/public/theme /www/bootstrap/cache /www/.docker/.data /www/plugins; do
     [ -e "$writable_path" ] && chown -R www:www "$writable_path" 2>/dev/null || true
 done
 chown redis:redis /data 2>/dev/null || true
