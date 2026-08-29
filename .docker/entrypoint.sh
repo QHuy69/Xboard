@@ -195,6 +195,11 @@ echo "[entrypoint] Starting services (caddy=${ENABLE_CADDY} web=${ENABLE_WEB} ho
 # Drop stale Octane/WorkerMan state files so the new master does not signal
 # PIDs left over from a previous container run (causes Swoole kill EPERM).
 rm -f /www/storage/logs/octane-server-state.json /www/storage/logs/xboard-ws-server.pid 2>/dev/null || true
-chown -R www:www /www 2>/dev/null || true
+# Only application state must be writable at runtime. Recursively chowning all
+# of /www also walks vendor, the compiled admin bundle and bind mounts on every
+# restart, keeping Caddy/Octane offline for more than a minute on production.
+for writable_path in /www/storage /www/bootstrap/cache /www/.docker/.data /www/plugins; do
+    [ -e "$writable_path" ] && chown -R www:www "$writable_path" 2>/dev/null || true
+done
 chown redis:redis /data 2>/dev/null || true
 exec "$@"
