@@ -8,22 +8,40 @@ $entry = 'import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); im
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BR9H_Zte', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'CK-I2Xx_', '-free');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'DSCv3-VU', '-managed');
-$entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BBIEjj8f', '-errors');
+$entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BBIEjj8f', '-errors-v2');
 if (!str_contains($entry, 'BR9H_Zte-v3-fresh-localized.js')
 	|| !str_contains($entry, 'CK-I2Xx_-v3-fresh-free.js')
 	|| !str_contains($entry, 'DSCv3-VU-v3-fresh-managed.js')
-	|| !str_contains($entry, 'BBIEjj8f-v3-fresh-errors.js')) {
+	|| !str_contains($entry, 'BBIEjj8f-v3-fresh-errors-v2.js')) {
     fwrite(STDERR, "Luck asset cache-busting rewrite failed.\n");
     exit(1);
 }
 
+$entryAsset = getenv('LUCK_ENTRY_ASSET');
+if ($entryAsset && is_file($entryAsset)) {
+    $productionEntry = (string) file_get_contents($entryAsset);
+    $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'BR9H_Zte', '-localized');
+    $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'CK-I2Xx_', '-free');
+    $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'DSCv3-VU', '-managed');
+    $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'BBIEjj8f', '-errors-v2');
+    if (!str_contains($productionEntry, 'BBIEjj8f-v3-fresh-errors-v2.js')) {
+        fwrite(STDERR, "Luck production entry did not select the cache-busted login chunk.\n");
+        exit(1);
+    }
+    file_put_contents(sys_get_temp_dir() . '/luck-entry-runtime-v2-check.js', $productionEntry);
+}
+
 $login = <<<'JS'
+import { useAuthStore } from "./BBbuoBq5-v3-fresh.js";
         if (((_a2 = error.response) == null ? void 0 : _a2.status) === 500) {
           customMessage.loginError(((_b2 = error.response.data) == null ? void 0 : _b2.message) || "邮箱或密码错误");
         } else if (((_c2 = error.response) == null ? void 0 : _c2.status) === 422) {
 JS;
 $login = LuckThemeAssetPatcher::patchLoginErrors($login);
-if (!str_contains($login, 'error.response.status !== 422') || !str_contains($login, 'serverMessage')) {
+$login = LuckThemeAssetPatcher::rewriteAssetImport($login, 'BBbuoBq5', '-runtime-v2');
+if (!str_contains($login, 'error.response.status !== 422')
+    || !str_contains($login, 'serverMessage')
+    || !str_contains($login, 'BBbuoBq5-v3-fresh-runtime-v2.js')) {
     fwrite(STDERR, "Luck login-error classification patch failed.\n");
     exit(1);
 }
@@ -31,8 +49,10 @@ if (!str_contains($login, 'error.response.status !== 422') || !str_contains($log
 $loginAsset = getenv('LUCK_LOGIN_ASSET');
 if ($loginAsset && is_file($loginAsset)) {
     $productionLogin = LuckThemeAssetPatcher::patchLoginErrors((string) file_get_contents($loginAsset));
+    $productionLogin = LuckThemeAssetPatcher::rewriteAssetImport($productionLogin, 'BBbuoBq5', '-runtime-v2');
     if (!str_contains($productionLogin, 'error.response.status !== 422')
-        || !str_contains($productionLogin, 'serverMessage')) {
+        || !str_contains($productionLogin, 'serverMessage')
+        || !str_contains($productionLogin, 'BBbuoBq5-v3-fresh-runtime-v2.js')) {
         fwrite(STDERR, "Luck production login chunk was not patched.\n");
         exit(1);
     }
