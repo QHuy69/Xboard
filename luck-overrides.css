@@ -359,14 +359,17 @@ body.luck-donate-open {
 
 .plan-card .feature-row {
   width: 100% !important;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr) !important;
-  gap: 12px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
 }
 
 .plan-card .feature-item {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
   min-width: 0 !important;
-  padding: 14px 10px !important;
-  gap: 8px !important;
+  padding: 12px 14px !important;
+  gap: 11px !important;
 }
 
 .plan-card .feature-icon-wrapper {
@@ -375,6 +378,11 @@ body.luck-donate-open {
 }
 
 .plan-card .feature-info {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
   min-width: 0 !important;
   overflow: hidden !important;
 }
@@ -382,20 +390,24 @@ body.luck-donate-open {
 .plan-card .feature-label,
 .plan-card .feature-value {
   max-width: 100% !important;
-  overflow-wrap: anywhere !important;
-  word-break: break-word !important;
-  white-space: normal !important;
-  text-align: center !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 .plan-card .feature-label {
+  flex: 0 1 auto !important;
   font-size: 12px !important;
   line-height: 1.25 !important;
+  text-align: left !important;
 }
 
 .plan-card .feature-value {
+  flex: 0 1 auto !important;
   font-size: 13px !important;
+  font-weight: 700 !important;
   line-height: 1.25 !important;
+  text-align: right !important;
 }
 
 @media (max-width: 768px) {
@@ -535,12 +547,16 @@ body.luck-donate-open {
   }
 
   .plan-card .feature-row {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr) !important;
-    gap: 10px !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 8px !important;
   }
 
   .plan-card .feature-item {
-    padding: 12px 8px !important;
+    padding: 11px 12px !important;
+    gap: 10px !important;
+  }
+
+  .plan-card .feature-info {
     gap: 8px !important;
   }
 

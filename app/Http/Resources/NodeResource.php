@@ -9,6 +9,28 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class NodeResource extends JsonResource
 {
+    private const OUTLINE_SHADOWSOCKS_CIPHERS = [
+        'rc4-md5',
+        'aes-128-gcm',
+        'aes-192-gcm',
+        'aes-256-gcm',
+        'aes-128-cfb',
+        'aes-192-cfb',
+        'aes-256-cfb',
+        'aes-128-ctr',
+        'aes-192-ctr',
+        'aes-256-ctr',
+        'camellia-128-cfb',
+        'camellia-192-cfb',
+        'camellia-256-cfb',
+        'bf-cfb',
+        'chacha20-ietf-poly1305',
+        'salsa20',
+        'chacha20',
+        'chacha20-ietf',
+        'xchacha20-ietf-poly1305',
+    ];
+
     /**
      * Transform the resource into an array.
      *
@@ -31,6 +53,10 @@ class NodeResource extends JsonResource
             // Luck theme used to assemble placeholder URLs from host/port,
             // which produced invalid Outline keys such as ss://host:port.
             'access_url' => $this->buildAccessUrl(),
+            // A valid Shadowsocks URI is not necessarily supported by
+            // Outline. In particular, Outline currently rejects the 2022
+            // cipher family used by some Xboard nodes.
+            'outline_compatible' => $this->isOutlineCompatible(),
             'rate' => $this['rate'],
             'tags' => $this['tags'],
             'is_online' => $this['is_online'],
@@ -67,5 +93,18 @@ class NodeResource extends JsonResource
         }
 
         return is_string($url) && $url !== '' ? trim($url) : null;
+    }
+
+    private function isOutlineCompatible(): bool
+    {
+        if (data_get($this->resource, 'type') !== Server::TYPE_SHADOWSOCKS) {
+            return false;
+        }
+
+        return in_array(
+            data_get($this->resource, 'protocol_settings.cipher'),
+            self::OUTLINE_SHADOWSOCKS_CIPHERS,
+            true
+        );
     }
 }

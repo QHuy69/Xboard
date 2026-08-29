@@ -29,11 +29,25 @@ if (($data['access_url'] ?? null) !== $expected) {
     fwrite(STDERR, "Shadowsocks access URL smoke test failed.\n");
     exit(1);
 }
+if (($data['outline_compatible'] ?? null) !== true) {
+    fwrite(STDERR, "Outline cipher compatibility smoke test failed.\n");
+    exit(1);
+}
+
+$node2022 = $node;
+$node2022['protocol_settings']['cipher'] = '2022-blake3-aes-256-gcm';
+$node2022['password'] = 'server-key:user-key';
+$data2022 = (new NodeResource($node2022))->toArray(Request::create('/'));
+if (($data2022['outline_compatible'] ?? null) !== false) {
+    fwrite(STDERR, "Shadowsocks 2022 must not be reported as Outline-compatible.\n");
+    exit(1);
+}
 
 $routeFile = getenv('XBOARD_ROUTES_FILE') ?: dirname(__DIR__) . '/routes/web.php';
 $routeSource = file_get_contents($routeFile);
 if (!str_contains($routeSource, 'return server.access_url;')
-    || !str_contains($routeSource, "preg_replace('/\\.js$/', '-access.js'")) {
+    || !str_contains($routeSource, "preg_replace('/\\.js$/', '-access.js'")
+    || !str_contains($routeSource, "str_starts_with(\$runtimeFile, 'assets/BBbuoBq5')")) {
     fwrite(STDERR, "Luck node chunk patch smoke test failed.\n");
     exit(1);
 }

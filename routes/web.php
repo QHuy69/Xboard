@@ -122,6 +122,16 @@ $renderTheme = function (Request $request) {
                     $runtimeFiles[] = $relative;
                 }
             }
+            // The main Luck entry filename is versioned independently from
+            // the node chunk. Patch every generated entry so a theme update
+            // cannot silently switch Copy/QR back to the fake ss://host:port
+            // implementation.
+            foreach (File::glob($themePath . '/assets/BBbuoBq5*.js') ?: [] as $entryAsset) {
+                $relative = 'assets/' . basename($entryAsset);
+                if (!in_array($relative, $runtimeFiles, true)) {
+                    $runtimeFiles[] = $relative;
+                }
+            }
 
             foreach ($runtimeFiles as $runtimeFile) {
                 $source = $themePath . '/' . $runtimeFile;
@@ -141,7 +151,8 @@ $renderTheme = function (Request $request) {
                         // a query string. Give that one import a fresh URL so a
                         // browser cannot reuse a previously cached malformed
                         // map chunk after it has been repaired below.
-                        if (in_array($runtimeFile, ['assets/BBbuoBq5.js', 'assets/BBbuoBq5-fresh.js'], true)) {
+                        if (str_starts_with($runtimeFile, 'assets/BBbuoBq5')
+                            && str_ends_with($runtimeFile, '.js')) {
                             $assetContents = @file_get_contents($source);
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 [

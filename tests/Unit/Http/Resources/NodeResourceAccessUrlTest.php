@@ -33,6 +33,7 @@ class NodeResourceAccessUrlTest extends TestCase
             "ss://{$credentials}@1-antilag-hcm-vn.zaoguang-vpn.com:8888#Vietnam%20Anti-Lag",
             $data['access_url']
         );
+        $this->assertTrue($data['outline_compatible']);
         $this->assertStringNotContainsString('placeholder', $data['access_url']);
     }
 
@@ -56,5 +57,30 @@ class NodeResourceAccessUrlTest extends TestCase
         $data = (new NodeResource($node))->toArray(Request::create('/'));
 
         $this->assertStringContainsString('@[2001:db8::1]:443#IPv6%20node', $data['access_url']);
+        $this->assertTrue($data['outline_compatible']);
+    }
+
+    public function test_shadowsocks_2022_url_is_valid_but_reported_as_unsupported_by_outline(): void
+    {
+        $node = [
+            'id' => 3,
+            'type' => 'shadowsocks',
+            'name' => 'SS 2022 node',
+            'host' => 'ss2022.example.com',
+            'port' => 443,
+            'password' => 'server-key:user-key',
+            'protocol_settings' => ['cipher' => '2022-blake3-aes-256-gcm'],
+            'rate' => 1,
+            'tags' => [],
+            'is_online' => 1,
+            'cache_key' => 'node-3',
+            'last_check_at' => 1,
+        ];
+
+        $data = (new NodeResource($node))->toArray(Request::create('/'));
+
+        $this->assertStringStartsWith('ss://', $data['access_url']);
+        $this->assertStringContainsString('@ss2022.example.com:443#SS%202022%20node', $data['access_url']);
+        $this->assertFalse($data['outline_compatible']);
     }
 }
