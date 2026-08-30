@@ -288,13 +288,23 @@ button {
   display: none !important;
 }
 
-/* Node polling may rebuild the SVG paths. The generated 0.3s transition then
-   makes every highlighted country flash from white to green on each refresh.
-   Keep the status colors, but render them immediately and without pulsing. */
+/* Keep the SVG stable while server status and hover state change. The stock
+   theme transitions every path, which makes highlighted countries flash when
+   their class is refreshed. */
+.world-map-container .map-svg .country,
 .world-map-container .map-svg .country.has-nodes {
   animation: none !important;
   transition: none !important;
   opacity: 1 !important;
+}
+
+/* The tooltip is positioned beside the pointer. If it can receive pointer
+   events it covers the country path, fires mouseleave, disappears, and then
+   immediately triggers mouseenter again. That loop is the visible flicker. */
+.world-map-container .country-tooltip {
+  pointer-events: none !important;
+  animation: none !important;
+  transition: none !important;
 }
 
 body.luck-donate-open {

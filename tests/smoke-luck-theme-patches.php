@@ -189,4 +189,14 @@ if (!str_contains($invite, '/api/v1/user/invite/revoke')
     exit(1);
 }
 
+$overrideCss = (string) file_get_contents(dirname(__DIR__) . '/luck-overrides.css');
+$dashboardTemplate = (string) file_get_contents(dirname(__DIR__) . '/luck-dashboard.blade.php');
+if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
+    || !str_contains($overrideCss, 'pointer-events: none !important;')
+    || !str_contains($overrideCss, '.world-map-container .map-svg .country,')
+    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=14')) {
+    fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
+    exit(1);
+}
+
 echo "Luck auth, register, payment, chart, free-plan and invitation patches verified.\n";
