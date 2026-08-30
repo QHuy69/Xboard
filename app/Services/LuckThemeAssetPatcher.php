@@ -53,10 +53,10 @@ final class LuckThemeAssetPatcher
      */
     public static function rewriteSharedRuntimeAssetImport(string $contents): string
     {
-        $pattern = '#(?<prefix>\./|assets/)(?<name>BBbuoBq5[^"\'\?]*\.js)(?:\?v=\d+)?#';
+        $pattern = '#(?<prefix>\./|assets/)(?<name>BBbuoBq5[^"\'\?]*\.js)(?<query>\?v=\d+)?#';
 
         return preg_replace_callback($pattern, static function (array $match): string {
-            return $match['prefix'] . self::sharedRuntimeAssetName($match['name']);
+            return $match['prefix'] . self::sharedRuntimeAssetName($match['name']) . ($match['query'] ?? '');
         }, $contents) ?? $contents;
     }
 
@@ -90,10 +90,10 @@ final class LuckThemeAssetPatcher
      */
     public static function rewriteSubscriptionDialogAssetImport(string $contents): string
     {
-        $pattern = '#(?<prefix>\./|assets/)(?<name>C6e3mGRa[^"\'\?]*\.js)(?:\?v=\d+)?#';
+        $pattern = '#(?<prefix>\./|assets/)(?<name>C6e3mGRa[^"\'\?]*\.js)(?<query>\?v=\d+)?#';
 
         return preg_replace_callback($pattern, static function (array $match): string {
-            return $match['prefix'] . self::subscriptionDialogAssetName($match['name']);
+            return $match['prefix'] . self::subscriptionDialogAssetName($match['name']) . ($match['query'] ?? '');
         }, $contents) ?? $contents;
     }
 
