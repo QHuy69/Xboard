@@ -480,18 +480,20 @@ JS,
 
         // Set the local lock immediately before the first registration
         // request, and release it for every success or failure path.
-        $contents = str_replace(
-            <<<'JS'
+        if (!str_contains($contents, 'registerSubmitting.value = true;')) {
+            $contents = str_replace(
+                <<<'JS'
       try {
         const finalEmail =
 JS,
-            <<<'JS'
+                <<<'JS'
       registerSubmitting.value = true;
       try {
         const finalEmail =
 JS,
-            $contents
-        );
+                $contents
+            );
+        }
 
         $contents = str_replace(
             <<<'JS'
