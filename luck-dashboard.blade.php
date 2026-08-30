@@ -24,7 +24,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link id="luck-overrides-stylesheet" rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=23">
+  <link id="luck-overrides-stylesheet" rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=24">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -379,6 +379,12 @@
           }
         });
       };
+      var syncSubscriptionDialogPortal = function () {
+        if (!document.body) return;
+        document.querySelectorAll('.subscription-dialog-overlay').forEach(function (overlay) {
+          if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
+        });
+      };
       var syncDownloadPlacement = function () {
         if (!download) return;
         var path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -414,6 +420,7 @@
       var scheduleRefresh = function () {
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(function () {
+          syncSubscriptionDialogPortal();
           syncClashIcons();
           syncIconVisibility();
           syncDownloadPlacement();
@@ -422,7 +429,12 @@
       };
       var app = document.getElementById('app');
       if (app && window.MutationObserver) {
-        new MutationObserver(scheduleRefresh).observe(app, { childList: true, subtree: true });
+        new MutationObserver(function () {
+          /* Moving the fixed overlay out of transformed/backdrop-filtered
+             scrollers must happen in the mutation microtask, before paint. */
+          syncSubscriptionDialogPortal();
+          scheduleRefresh();
+        }).observe(app, { childList: true, subtree: true });
       }
       window.addEventListener('popstate', scheduleRefresh);
       window.addEventListener('pageshow', scheduleRefresh);
@@ -431,6 +443,7 @@
         if (event.key === 'v2board_token') checkEligibility(true);
       });
       window.setTimeout(function () {
+        syncSubscriptionDialogPortal();
         syncClashIcons();
         syncIconVisibility();
         syncDownloadPlacement();

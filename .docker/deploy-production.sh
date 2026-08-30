@@ -46,7 +46,7 @@ post_deploy_checks() {
   local container_id="$1"
   local expected_revision_prefix="$2"
   local started_at="$3"
-  local health actual asset_revision_short migration_status integrity dashboard_html luck_entry_js node_route_asset node_route_js dashboard_icon_marker dashboard_platform_glyph orders_route_asset traffic_route_asset invite_route_asset portable_route_asset orders_route_js traffic_route_js invite_route_js invite_icon_marker route_platform_glyph admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found admin_favicon_svg_path admin_favicon_png_path admin_favicon_svg admin_favicon_url last_heartbeat
+  local health actual asset_revision_short migration_status integrity dashboard_html override_css luck_entry_js node_route_asset node_route_js dashboard_icon_marker dashboard_platform_glyph orders_route_asset traffic_route_asset invite_route_asset portable_route_asset orders_route_js traffic_route_js invite_route_js invite_icon_marker route_platform_glyph admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found admin_favicon_svg_path admin_favicon_png_path admin_favicon_svg admin_favicon_url last_heartbeat
   local -a admin_js_paths admin_css_paths admin_locale_paths
 
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
@@ -74,8 +74,12 @@ post_deploy_checks() {
   curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
   dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
   admin_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006)" || return 1
-  grep -q 'luck-overrides.css?v=23' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck CSS v23." >&2
+  grep -q 'luck-overrides.css?v=24' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck CSS v24." >&2
+    return 1
+  }
+  grep -q 'syncSubscriptionDialogPortal' <<<"$dashboard_html" || {
+    echo "The deployed dashboard is missing the subscription dialog portal." >&2
     return 1
   }
   grep -q 'BBbuoBq5-fresh.js?v=61' <<<"$dashboard_html" || {
@@ -87,7 +91,7 @@ post_deploy_checks() {
     return 1
   }
   for asset_url in \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=23' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=24' \
     'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
@@ -97,6 +101,13 @@ post_deploy_checks() {
       return 1
     }
   done
+
+  override_css="$(curl --fail --silent --show-error \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=24')" || return 1
+  grep -Fq '.subscription-dialog-overlay' <<<"$override_css" || {
+    echo "The deployed Luck CSS is missing the subscription viewport rule." >&2
+    return 1
+  }
 
   luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=61')" || return 1
   node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"

@@ -6,23 +6,20 @@ const template = fs.readFileSync('luck-dashboard.blade.php', 'utf8');
 
 assert.match(
   css,
-  /\.mobile-dashboard \.mobile-content\s*\{[\s\S]*?-webkit-backdrop-filter:\s*none\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/,
-  'the mobile scroll container must not establish a fixed-position containing block'
+  /\.subscription-dialog-overlay\s*\{[\s\S]*?position:\s*fixed\s*!important;[\s\S]*?inset:\s*0\s*!important;/,
+  'the portalled subscription QR overlay must be pinned to the visual viewport'
 );
+assert(template.includes('var syncSubscriptionDialogPortal = function ()'), 'subscription dialog portal runtime is missing');
+assert(template.includes("document.querySelectorAll('.subscription-dialog-overlay')"), 'portal runtime must find every generated subscription overlay');
+assert(template.includes('document.body.appendChild(overlay)'), 'subscription overlays must leave transformed route scrollers');
 assert.match(
-  css,
-  /@supports selector\(\.mobile-content:has\(\*\)\)[\s\S]*?\.mobile-dashboard \.mobile-content:not\(:has\(\.subscription-dialog-overlay\)\)[\s\S]*?backdrop-filter:\s*blur\(20px\)\s*!important;/,
-  'modern browsers should retain the normal mobile blur while the QR dialog is closed'
+  template,
+  /new MutationObserver\(function \(\) \{[\s\S]*?syncSubscriptionDialogPortal\(\);[\s\S]*?scheduleRefresh\(\);/,
+  'the portal must run in the app mutation microtask before the delayed refresh'
 );
-assert.match(
-  css,
-  /\.mobile-dashboard \.subscription-dialog-overlay\s*\{[\s\S]*?position:\s*fixed\s*!important;[\s\S]*?inset:\s*0\s*!important;/,
-  'the subscription QR overlay must be pinned to the visual viewport'
-);
-assert(template.includes('luck-overrides.css?v=23'), 'the QR positioning fix needs a fresh CSS cache key');
+assert(template.includes('luck-overrides.css?v=24'), 'the QR positioning fix needs a fresh CSS cache key');
 
-const functionalRule = css.indexOf('.mobile-dashboard .mobile-content {');
-const portraitMedia = css.indexOf('@media (max-width: 768px)', functionalRule);
-assert(functionalRule >= 0 && portraitMedia > functionalRule, 'QR anchoring must also apply to wide landscape phones');
+assert(!/\.content-wrapper\s*\{[\s\S]*?transform:\s*none\s*!important/.test(css), 'the fix must not flatten the desktop dashboard transform');
+assert(!/\.mobile-dashboard \.mobile-content\s*\{[\s\S]*?backdrop-filter:\s*none\s*!important/.test(css), 'the fix must not remove the mobile dashboard blur');
 
-console.log('Verified mobile subscription QR overlay anchoring across phone and landscape viewports.');
+console.log('Verified subscription QR portal and viewport anchoring across both dashboard shells.');
