@@ -61,6 +61,19 @@ RUN mkdir -p public/theme/Luck/assets storage/theme/Luck/assets && \
 # the underlying bank details.
 RUN cp /tmp/luck-custom/luck-donate-qr.svg /www/public/luck-donate-qr.svg
 
+# Package a deterministic admin favicon instead of relying on the admin
+# distribution's missing /images files. Keep the legacy aliases because an
+# older cached admin index can still request them while a release rolls out.
+COPY admin-favicon.svg /www/public/admin-favicon.svg
+COPY admin-favicon.png.b64 /tmp/admin-favicon.png.b64
+RUN mkdir -p /www/public/images && \
+    cp /www/public/admin-favicon.svg /www/public/images/favicon.svg && \
+    base64 -d /tmp/admin-favicon.png.b64 > /www/public/images/favicon.png && \
+    test -s /www/public/admin-favicon.svg && \
+    test -s /www/public/images/favicon.svg && \
+    test -s /www/public/images/favicon.png && \
+    rm -f /tmp/admin-favicon.png.b64
+
 # Overlay the customized runtime files on top of the upstream checkout. The
 # image deliberately clones upstream for normal updates, but these files are
 # part of the maintained custom branch and must be present in every build.
@@ -71,7 +84,6 @@ COPY config/octane.php /www/config/octane.php
 COPY app/Http/Controllers/ResourcePortalController.php /www/app/Http/Controllers/ResourcePortalController.php
 COPY app/Http/Controllers/V1/Guest/PaymentController.php /www/app/Http/Controllers/V1/Guest/PaymentController.php
 COPY app/Http/Controllers/V1/User/OrderController.php /www/app/Http/Controllers/V1/User/OrderController.php
-COPY app/Http/Controllers/V1/User/UserDeviceController.php /www/app/Http/Controllers/V1/User/UserDeviceController.php
 COPY app/Http/Controllers/V2/Admin/OrderController.php /www/app/Http/Controllers/V2/Admin/OrderController.php
 COPY app/Http/Controllers/V2/Admin/PaymentController.php /www/app/Http/Controllers/V2/Admin/PaymentController.php
 COPY app/Http/Controllers/V2/Admin/PluginController.php /www/app/Http/Controllers/V2/Admin/PluginController.php
@@ -88,8 +100,6 @@ COPY app/Services/Plugin/AbstractPlugin.php app/Services/Plugin/PluginConfigServ
 COPY app/Services/PlanService.php /www/app/Services/PlanService.php
 COPY app/Http/Controllers/V1/User/ServerController.php /www/app/Http/Controllers/V1/User/ServerController.php
 COPY app/Http/Resources/NodeResource.php /www/app/Http/Resources/NodeResource.php
-COPY app/Http/Resources/UserDeviceResource.php /www/app/Http/Resources/UserDeviceResource.php
-COPY app/Services/UserDeviceReadService.php /www/app/Services/UserDeviceReadService.php
 COPY database/migrations/2026_08_30_000004_create_order_payment_checkouts_table.php /www/database/migrations/2026_08_30_000004_create_order_payment_checkouts_table.php
 COPY tests/smoke-*.php /www/tests/
 
@@ -103,7 +113,6 @@ RUN find app config database/migrations plugins-core routes tests -type f -name 
     && php tests/smoke-node-access-url.php \
     && php tests/smoke-luck-theme-patches.php \
     && php tests/smoke-custom-backend.php \
-    && php tests/smoke-user-device-read.php \
     && php artisan storage:link \
     && chown -R www:www /www \
     && chmod -R 775 /www \

@@ -5,9 +5,10 @@ const vm = require('vm');
 const css = fs.readFileSync('luck-overrides.css', 'utf8');
 const template = fs.readFileSync('luck-dashboard.blade.php', 'utf8');
 const patcher = fs.readFileSync('app/Services/LuckThemeAssetPatcher.php', 'utf8');
+const routes = fs.readFileSync('routes/web.php', 'utf8');
 const flags = fs.readFileSync('luck-flags.svg', 'utf8');
 
-assert(template.includes('luck-overrides.css?v=20'), 'icon CSS changes need a new browser cache key');
+assert(template.includes('luck-overrides.css?v=21'), 'icon CSS changes need a new browser cache key');
 
 for (const selector of [
   '.menu-icon', '.nav-icon', '.btn-icon', '.input-icon', '.dialog-icon',
@@ -54,4 +55,29 @@ assert(patcher.includes('const mobileFlagAssetCode = mobilePackagedFlagCodes.has
 assert(!patcher.includes('String.fromCodePoint(...flagCode'), 'node flags must not rely on regional-indicator emoji');
 assert(!/(?:href|src)=["']https?:\/\//.test(flags), 'flag sprite must be entirely local');
 
-console.log('Luck user icons have deterministic contrast, sizing, image fallbacks and local node flags.');
+for (const marker of [
+  'data-luck-icon="language"',
+  'focusable="false"'
+]) {
+  assert(template.includes(marker), `dashboard inline SVG icon contract is missing ${marker}`);
+}
+for (const glyph of ['🌐', '◎', '↻']) {
+  assert(!template.includes(glyph), `dashboard must not rely on platform glyph ${glyph}`);
+}
+
+for (const marker of [
+  'public static function patchPortableUnicodeIcons',
+  'public static function versionPortableIconAssetImports',
+  '"data-luck-icon": "orders-empty"',
+  '"data-luck-icon": "traffic-empty"',
+  '"data-luck-icon": "warning"',
+  '"data-luck-icon": "balance"',
+  '"data-luck-icon": "record"',
+  '"data-luck-icon": "hint"'
+]) {
+  assert(patcher.includes(marker), `compiled Luck icon patcher is missing ${marker}`);
+}
+assert(routes.includes('LuckThemeAssetPatcher::patchPortableUnicodeIcons($loadingPatchedContents)'), 'every published Luck JavaScript chunk must receive portable icons');
+assert(routes.includes('LuckThemeAssetPatcher::versionPortableIconAssetImports($fixedContents)'), 'portable-icon lazy routes need fresh browser URLs');
+
+console.log('Luck user icons have deterministic contrast, inline SVGs, image fallbacks and local node flags.');

@@ -92,7 +92,6 @@ jobs:
             fi
           }
 
-          run_smoke tests/smoke-user-device-read.php
           run_smoke tests/smoke-node-access-url.php
           run_smoke tests/smoke-luck-theme-patches.php
 

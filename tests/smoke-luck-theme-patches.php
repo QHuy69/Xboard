@@ -36,7 +36,7 @@ if ($discoveredAnimationAssets !== $expectedAnimationAssets) {
     exit(1);
 }
 
-$entry = 'import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js");';
+$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js");';
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BR9H_Zte', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'CK-I2Xx_', '-free');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'DSCv3-VU', '-managed');
@@ -44,13 +44,16 @@ $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BBIEjj8f', '-auth-v3
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'q_WC3BFv', '-register-v2');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'ByaxWMaA', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'C0KnXkt1', '-payment-v3');
-if (!str_contains($entry, 'BR9H_Zte-v3-fresh-localized.js')
+$entry = LuckThemeAssetPatcher::versionPortableIconAssetImports($entry);
+if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
+	|| !str_contains($entry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
 	|| !str_contains($entry, 'CK-I2Xx_-v3-fresh-free.js')
-	|| !str_contains($entry, 'DSCv3-VU-v3-fresh-managed.js')
+	|| !str_contains($entry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
 	|| !str_contains($entry, 'BBIEjj8f-v3-fresh-auth-v3.js')
 	|| !str_contains($entry, 'q_WC3BFv-v3-fresh-register-v2.js')
 	|| !str_contains($entry, 'ByaxWMaA-v3-fresh-localized.js')
-	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v3.js')) {
+	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v3.js')
+	|| LuckThemeAssetPatcher::versionPortableIconAssetImports($entry) !== $entry) {
     fwrite(STDERR, "Luck asset cache-busting rewrite failed.\n");
     exit(1);
 }
@@ -106,6 +109,35 @@ if (substr_count($localizedLoadingFixture, 'typeof window.__LUCK_T__ === "functi
     exit(1);
 }
 
+$portableIconFixture = <<<'JS'
+createBaseVNode("div", { class: "empty-icon" }, "📋", -1)
+createBaseVNode("div", { class: "empty-icon" }, "📊", -1)
+createBaseVNode("span", { class: "warning-icon" }, "⚠️")
+createBaseVNode("span", { class: "warning-icon" }, "💰")
+createBaseVNode("span", { class: "warning-icon" }, "📝")
+createBaseVNode("span", { class: "hint-icon" }, "💡")
+JS;
+$patchedPortableIconFixture = LuckThemeAssetPatcher::patchPortableUnicodeIcons($portableIconFixture);
+foreach (['📋', '📊', '⚠️', '💰', '📝', '💡'] as $platformGlyph) {
+    if (str_contains($patchedPortableIconFixture, $platformGlyph)) {
+        fwrite(STDERR, "Luck portable icon patch left a platform-dependent glyph: {$platformGlyph}\n");
+        exit(1);
+    }
+}
+foreach (['orders-empty', 'traffic-empty', 'warning', 'balance', 'record', 'hint'] as $portableIconName) {
+    if (!str_contains($patchedPortableIconFixture, '"data-luck-icon": "' . $portableIconName . '"')) {
+        fwrite(STDERR, "Luck portable icon patch is missing {$portableIconName}.\n");
+        exit(1);
+    }
+}
+if (substr_count($patchedPortableIconFixture, 'class: "luck-portable-icon-svg"') !== 6
+    || substr_count($patchedPortableIconFixture, '"aria-hidden": "true"') !== 12
+    || substr_count($patchedPortableIconFixture, 'focusable: "false"') !== 6
+    || LuckThemeAssetPatcher::patchPortableUnicodeIcons($patchedPortableIconFixture) !== $patchedPortableIconFixture) {
+    fwrite(STDERR, "Luck portable inline-SVG icon contract failed.\n");
+    exit(1);
+}
+
 $nodeFlagFixture = <<<'JS'
           const countryInfo = getCountryInfo(row.name);
           return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
@@ -150,6 +182,26 @@ $incompleteNodeFlagFixture = str_replace(
 if (LuckThemeAssetPatcher::patchNodeFlags($incompleteNodeFlagFixture) !== $incompleteNodeFlagFixture
     || str_contains(LuckThemeAssetPatcher::patchNodeFlags($incompleteNodeFlagFixture), 'flagCode')) {
     fwrite(STDERR, "Luck node flag patch must be atomic when upstream markup changes.\n");
+    exit(1);
+}
+
+$nodeScrollbarFixture = <<<'JS'
+            createVNode(unref(NDataTable), {
+              columns,
+              data: servers.value,
+              "scroll-x": 1200,
+              class: "compact-table desktop-table"
+            })
+JS;
+$patchedNodeScrollbarFixture = LuckThemeAssetPatcher::patchNodeScrollbar($nodeScrollbarFixture);
+if (!str_contains($patchedNodeScrollbarFixture, '"scrollbar-props": { trigger: "none" }')
+    || substr_count($patchedNodeScrollbarFixture, '"scrollbar-props"') !== 1
+    || LuckThemeAssetPatcher::patchNodeScrollbar($patchedNodeScrollbarFixture) !== $patchedNodeScrollbarFixture) {
+    fwrite(STDERR, "Luck node scrollbar must be persistent and idempotent.\n");
+    exit(1);
+}
+if (LuckThemeAssetPatcher::patchNodeScrollbar(str_replace('"scroll-x": 1200,', '"scroll-x": 900,', $nodeScrollbarFixture)) !== str_replace('"scroll-x": 1200,', '"scroll-x": 900,', $nodeScrollbarFixture)) {
+    fwrite(STDERR, "Luck node scrollbar patch must fail closed when upstream markup changes.\n");
     exit(1);
 }
 
@@ -219,8 +271,12 @@ if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'q_WC3BFv', '-register-v2');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'ByaxWMaA', '-localized');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'C0KnXkt1', '-payment-v3');
-    if (!str_contains($productionEntry, 'BBIEjj8f-v3-fresh-auth-v3.js')) {
-        fwrite(STDERR, "Luck production entry did not select the cache-busted login chunk.\n");
+    $productionEntry = LuckThemeAssetPatcher::versionPortableIconAssetImports($productionEntry);
+    if (!str_contains($productionEntry, 'BBIEjj8f-v3-fresh-auth-v3.js')
+        || !str_contains($productionEntry, 'lsrL0SOU-v3-fresh.js?v=2')
+        || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
+        || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')) {
+        fwrite(STDERR, "Luck production entry did not select cache-busted login and portable-icon chunks.\n");
         exit(1);
     }
     file_put_contents(sys_get_temp_dir() . '/luck-entry-runtime-v2-check.js', $productionEntry);
@@ -494,9 +550,9 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country,')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
-    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=20')
-    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=60')
-    || !str_contains($dashboardTemplate, 'i18n-v18.js?v=60')) {
+    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=21')
+    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=61')
+    || !str_contains($dashboardTemplate, 'i18n-v18.js?v=61')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);
 }

@@ -74,6 +74,16 @@ const criticalRuntimeLabels = {
     'ko-KR': '사용 중',
     'fa-IR': 'در حال استفاده',
     'ru-RU': 'Используется'
+  },
+  '会员': {
+    'en-US': 'Member',
+    'vi-VN': 'Thành viên',
+    'zh-CN': '会员',
+    'zh-TW': '會員',
+    'ja-JP': '会員',
+    'ko-KR': '회원',
+    'fa-IR': 'عضو',
+    'ru-RU': 'Участник'
   }
 };
 for (const [source, expectedByLocale] of Object.entries(criticalRuntimeLabels)) {
@@ -85,6 +95,23 @@ for (const [source, expectedByLocale] of Object.entries(criticalRuntimeLabels)) 
       `${locale} runtime label fell through to the generic system notice for ${source}`);
   }
 }
+
+const monthlyResetLabels = {
+  'en-US': 'Reset on day 31 of each month',
+  'vi-VN': 'Đặt lại vào ngày 31 hàng tháng',
+  'zh-CN': '每月31 日重置',
+  'zh-TW': '每月 31 日重設',
+  'ja-JP': '毎月31日にリセット',
+  'ko-KR': '매월 31일에 재설정',
+  'fa-IR': 'بازنشانی در روز 31 هر ماه',
+  'ru-RU': 'Сброс 31-го числа каждого месяца'
+};
+for (const locale of localeIds) {
+  assert.strictEqual(translators[locale]('每月31 日重置'), monthlyResetLabels[locale],
+    `${locale} did not localize the dynamic monthly reset schedule`);
+}
+assert.strictEqual(translators['en-US']('每月31 日Reset'), monthlyResetLabels['en-US']);
+assert.strictEqual(translators['ru-RU']('每月31 日Сбросить'), monthlyResetLabels['ru-RU']);
 
 for (const locale of localeIds) {
   const failures = [];

@@ -157,6 +157,7 @@ $renderTheme = function (Request $request) {
                                 // feature-specific rewrite and before the
                                 // chunk is published to public/theme.
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents);
+                                $loadingPatchedContents = LuckThemeAssetPatcher::patchPortableUnicodeIcons($loadingPatchedContents);
                             }
                         }
                         // Luck's generated world-map chunk has occasionally
@@ -186,6 +187,7 @@ $renderTheme = function (Request $request) {
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C0KnXkt1', '-payment-v3');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C6e3mGRa', '-payment-v3');
+                                $fixedContents = LuckThemeAssetPatcher::versionPortableIconAssetImports($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::patchSharedAuth($fixedContents);
                                 $fixedContents = str_replace(
                                     [
@@ -263,6 +265,7 @@ $renderTheme = function (Request $request) {
                                     );
                                 }
                                 $fixedContents = LuckThemeAssetPatcher::patchNodeFlags($fixedContents);
+                                $fixedContents = LuckThemeAssetPatcher::patchNodeScrollbar($fixedContents);
                                 $fixedContents = str_replace(
                                     [
                                         './DM1yaN1X.js?v=50',

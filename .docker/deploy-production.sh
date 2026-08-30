@@ -46,7 +46,7 @@ post_deploy_checks() {
   local container_id="$1"
   local expected_revision_prefix="$2"
   local started_at="$3"
-  local health actual asset_revision_short migration_status integrity dashboard_html luck_entry_js node_route_asset admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found ip_status last_heartbeat
+  local health actual asset_revision_short migration_status integrity dashboard_html luck_entry_js node_route_asset node_route_js dashboard_icon_marker dashboard_platform_glyph orders_route_asset traffic_route_asset invite_route_asset portable_route_asset orders_route_js traffic_route_js invite_route_js invite_icon_marker route_platform_glyph admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found admin_favicon_svg_path admin_favicon_png_path admin_favicon_svg admin_favicon_url last_heartbeat
   local -a admin_js_paths admin_css_paths admin_locale_paths
 
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
@@ -74,22 +74,22 @@ post_deploy_checks() {
   curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
   dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
   admin_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006)" || return 1
-  grep -q 'luck-overrides.css?v=20' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck CSS v20." >&2
+  grep -q 'luck-overrides.css?v=21' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck CSS v21." >&2
     return 1
   }
-  grep -q 'BBbuoBq5-fresh.js?v=60' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck entry JS v60." >&2
+  grep -q 'BBbuoBq5-fresh.js?v=61' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck entry JS v61." >&2
     return 1
   }
-  grep -q 'i18n-v18.js?v=60' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck i18n v60." >&2
+  grep -q 'i18n-v18.js?v=61' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck i18n v61." >&2
     return 1
   }
   for asset_url in \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=20' \
-    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=60' \
-    'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=60' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=21' \
+    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=61' \
+    'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-flags.svg?v=1'; do
     curl --fail --silent --show-error --output /dev/null "$asset_url" || {
@@ -98,7 +98,7 @@ post_deploy_checks() {
     }
   done
 
-  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=60')" || return 1
+  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=61')" || return 1
   node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$node_route_asset" in
     ./oPGsis9D*-access-v2.js) ;;
@@ -120,7 +120,8 @@ post_deploy_checks() {
     'luck-flags.svg?v=1#${flagAssetCode}' \
     'luck-flags.svg?v=1#${mobileFlagAssetCode}' \
     'const mobileFlagCode =' \
-    'toDisplayString(mobileDisplayName)'; do
+    'toDisplayString(mobileDisplayName)' \
+    '"scrollbar-props": { trigger: "none" }'; do
     grep -aFq "$node_flag_marker" <<<"$node_route_js" || {
       echo "The deployed Luck node route is missing portable flag marker: $node_flag_marker" >&2
       return 1
@@ -132,13 +133,67 @@ post_deploy_checks() {
     return 1
   fi
 
+  for dashboard_icon_marker in \
+    'data-luck-icon="language"'; do
+    grep -aFq "$dashboard_icon_marker" <<<"$dashboard_html" || {
+      echo "The deployed Luck dashboard is missing portable inline icon marker: $dashboard_icon_marker" >&2
+      return 1
+    }
+  done
+  for dashboard_platform_glyph in '🌐'; do
+    if grep -aFq "$dashboard_platform_glyph" <<<"$dashboard_html"; then
+      echo "The deployed Luck dashboard still contains platform-dependent glyph: $dashboard_platform_glyph" >&2
+      return 1
+    fi
+  done
+
+  orders_route_asset="$( { grep -aoE '\./lsrL0SOU[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
+  traffic_route_asset="$( { grep -aoE '\./BR9H_Zte[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
+  invite_route_asset="$( { grep -aoE '\./DSCv3-VU[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
+  for portable_route_asset in "$orders_route_asset" "$traffic_route_asset" "$invite_route_asset"; do
+    if [ -z "$portable_route_asset" ]; then
+      echo "The deployed Luck entry is missing a versioned portable-icon lazy route." >&2
+      return 1
+    fi
+  done
+  orders_route_js="$(curl --fail --silent --show-error \
+    "http://127.0.0.1:7001/theme/Luck/assets/${orders_route_asset#./}")" || return 1
+  traffic_route_js="$(curl --fail --silent --show-error \
+    "http://127.0.0.1:7001/theme/Luck/assets/${traffic_route_asset#./}")" || return 1
+  invite_route_js="$(curl --fail --silent --show-error \
+    "http://127.0.0.1:7001/theme/Luck/assets/${invite_route_asset#./}")" || return 1
+  grep -aFq '"data-luck-icon": "orders-empty"' <<<"$orders_route_js" || {
+    echo "The deployed orders route is missing its portable empty-state icon." >&2
+    return 1
+  }
+  grep -aFq '"data-luck-icon": "traffic-empty"' <<<"$traffic_route_js" || {
+    echo "The deployed traffic route is missing its portable empty-state icon." >&2
+    return 1
+  }
+  for invite_icon_marker in warning balance record hint; do
+    grep -aFq "\"data-luck-icon\": \"${invite_icon_marker}\"" <<<"$invite_route_js" || {
+      echo "The deployed invite route is missing portable icon: $invite_icon_marker" >&2
+      return 1
+    }
+  done
+  for route_platform_glyph in '📋' '📊' '⚠️' '💰' '📝' '💡'; do
+    if grep -aFq "$route_platform_glyph" <<<"${orders_route_js}${traffic_route_js}${invite_route_js}"; then
+      echo "The deployed Luck lazy routes still contain platform-dependent glyph: $route_platform_glyph" >&2
+      return 1
+    fi
+  done
+
   mapfile -t admin_js_paths < <({ grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
   mapfile -t admin_css_paths < <({ grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
   mapfile -t admin_locale_paths < <({ grep -oE 'src="/assets/admin/locales/[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+  admin_favicon_svg_path="$({ grep -oE 'href="/admin-favicon\.svg\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)"
+  admin_favicon_png_path="$({ grep -oE 'href="/images/favicon\.png\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)"
   if [ "${#admin_js_paths[@]}" -ne 1 ] \
     || [ "${#admin_css_paths[@]}" -lt 1 ] \
-    || [ "${#admin_locale_paths[@]}" -lt 1 ]; then
-    echo "The deployed admin shell emitted an unexpected asset set: ${#admin_js_paths[@]} entry JS, ${#admin_css_paths[@]} CSS, ${#admin_locale_paths[@]} locales." >&2
+    || [ "${#admin_locale_paths[@]}" -lt 1 ] \
+    || [ -z "$admin_favicon_svg_path" ] \
+    || [ -z "$admin_favicon_png_path" ]; then
+    echo "The deployed admin shell emitted an unexpected asset set: ${#admin_js_paths[@]} entry JS, ${#admin_css_paths[@]} CSS, ${#admin_locale_paths[@]} locales, SVG favicon=$admin_favicon_svg_path, PNG favicon=$admin_favicon_png_path." >&2
     return 1
   fi
   admin_asset_version="$(docker exec "$container_id" php -r '
@@ -151,7 +206,7 @@ post_deploy_checks() {
     echo "The deployed admin asset URL does not match config app.version: $admin_asset_version" >&2
     return 1
   fi
-  for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"; do
+  for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}" "$admin_favicon_svg_path" "$admin_favicon_png_path"; do
     if [ "${admin_asset_path##*\?v=}" != "$admin_asset_version" ]; then
       echo "The deployed admin asset URL does not match config app.version: $admin_asset_path" >&2
       return 1
@@ -187,15 +242,25 @@ post_deploy_checks() {
     echo "The deployed admin stylesheet is missing the icon shrink guard." >&2
     return 1
   fi
-
-  ip_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7001/api/v1/user/devices/current)" || return 1
-  case "$ip_status" in
-    401|403) ;;
-    *)
-      echo "Authenticated current-IP route returned unexpected HTTP $ip_status." >&2
+  admin_favicon_svg="$(curl --fail --silent --show-error "http://127.0.0.1:7001${admin_favicon_svg_path}")" || return 1
+  grep -aFq 'aria-label="ZaoGuang admin"' <<<"$admin_favicon_svg" || {
+    echo "The deployed admin SVG favicon is not the packaged brand asset." >&2
+    return 1
+  }
+  grep -aFq 'stroke="#fff"' <<<"$admin_favicon_svg" || return 1
+  for admin_favicon_url in "$admin_favicon_png_path" '/images/favicon.svg'; do
+    curl --fail --silent --show-error --output /dev/null "http://127.0.0.1:7001${admin_favicon_url}" || {
+      echo "The deployed admin favicon is unavailable: $admin_favicon_url" >&2
       return 1
-      ;;
-  esac
+    }
+  done
+  docker exec "$container_id" php -r '
+    $png = file_get_contents("/www/public/images/favicon.png");
+    exit(is_string($png) && substr($png, 0, 8) === "\x89PNG\r\n\x1a\n" ? 0 : 1);
+  ' || {
+    echo "The deployed admin PNG favicon has an invalid signature." >&2
+    return 1
+  }
 
   migration_status="$(docker exec "$container_id" php /www/artisan migrate:status --no-ansi)" || return 1
   grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status" || return 1

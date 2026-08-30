@@ -136,6 +136,8 @@
     }
   @endphp
 
+  <link rel="icon" type="image/svg+xml" href="/admin-favicon.svg?v={{ $assetVersion }}" />
+  <link rel="icon" type="image/png" sizes="64x64" href="/images/favicon.png?v={{ $assetVersion }}" />
   @foreach($styles as $css)
     <link rel="stylesheet" crossorigin href="/assets/admin/{{ $css }}?v={{ $assetVersion }}" />
   @endforeach

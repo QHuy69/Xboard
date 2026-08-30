@@ -18,8 +18,28 @@ expect(
   'the stock left-bottom named area must not create an implicit column that collapses the user card'
 );
 expect(
+  /\.left-column\[data-v-3709f5eb\]\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important[\s\S]*?grid-auto-flow:\s*row\s*!important[\s\S]*?grid-auto-columns:\s*minmax\(0,\s*1fr\)\s*!important/,
+  'the desktop left column must remain one explicit track instead of recreating a phantom middle column'
+);
+expect(
+  /\.left-column\[data-v-3709f5eb\]\s*>\s*\*\s*\{[\s\S]*?grid-column:\s*1\s*\/\s*-1\s*!important/,
+  'the user card and download sections must span the same desktop column'
+);
+expect(
   /container:\s*luck-user-card\s*\/\s*inline-size/,
   'dashboard card must respond to its real available width, not only the viewport'
+);
+expect(
+  /\.dashboard-content\[data-v-3709f5eb\][\s\S]*?container:\s*luck-dashboard\s*\/\s*inline-size/,
+  'dashboard columns must use their real post-sidebar width as a container'
+);
+expect(
+  /@container luck-dashboard \(max-width:\s*920px\)[\s\S]*?\.main-layout\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  'dashboard columns must stack by available content width instead of raw viewport width'
+);
+expect(
+  /@supports not \(container-type:\s*inline-size\)[\s\S]*?@media \(max-width:\s*1500px\)[\s\S]*?\.user-main-info[\s\S]*?@media \(max-width:\s*1180px\)[\s\S]*?\.main-layout/,
+  'viewport-only desktop stacking must be limited to legacy browsers without container queries'
 );
 expect(
   /@container luck-user-card \(max-width:\s*800px\)[\s\S]*?\.user-main-info[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
@@ -42,6 +62,14 @@ expect(
   'balance cards must share available space without fixed widths or negative margins'
 );
 expect(
+  /\.wallet-card-wide \.ios-card-action\[data-v-3709f5eb\]\s*\{[\s\S]*?display:\s*none\s*!important/,
+  'the duplicate unstyled wallet recharge action must be hidden'
+);
+expect(
+  /\.wallet-card-wide \.recharge-btn-float\[data-v-3709f5eb\]\s*\{[\s\S]*?display:\s*inline-flex\s*!important/,
+  'the intended floating wallet recharge action must remain visible'
+);
+expect(
   /\.user-subscription-item \.subscription-label\[data-v-3709f5eb\],[\s\S]*?overflow-wrap:\s*normal[\s\S]*?word-break:\s*keep-all/,
   'subscription labels must wrap by words instead of one character per line'
 );
@@ -58,12 +86,16 @@ expect(
   'the Naive wrapper must not create a second horizontal scrollbar'
 );
 expect(
-  /\.compact-table\[data-v-85145c70\] \.n-data-table-base-table-body[\s\S]*?overflow-x:\s*auto\s*!important/,
-  'the Naive table body must be the sole horizontal scroll owner'
+  /\.compact-table\[data-v-85145c70\] \.n-scrollbar-container[\s\S]*?padding-bottom:\s*11px\s*!important/,
+  'the real Naive scroll container must reserve space for its persistent rail'
 );
 expect(
-  /\.compact-table\[data-v-85145c70\] \.n-data-table-table[\s\S]*?min-width:\s*960px/,
-  'node columns must preserve readable widths and scroll as one table'
+  /\.compact-table\[data-v-85145c70\] \.n-scrollbar-rail--horizontal\s*\{[\s\S]*?height:\s*10px\s*!important[\s\S]*?opacity:\s*1\s*!important/,
+  'the Naive horizontal rail must be visible without hover'
+);
+expect(
+  /\.n-scrollbar-rail--horizontal \.n-scrollbar-rail__scrollbar\s*\{[\s\S]*?height:\s*8px\s*!important[\s\S]*?min-width:\s*32px\s*!important/,
+  'the Naive horizontal thumb must stay visible and usable'
 );
 expect(
   /\.luck-node-flag\s*\{[\s\S]*?place-items:\s*center[\s\S]*?overflow:\s*hidden/,
@@ -95,14 +127,40 @@ for (const viewport of [
   }
 }
 
+/* Production geometry recorded before the fix. The stale `left-bottom` area
+   split each left column into two implicit tracks. The corrected CSS contract
+   makes the user card and lower sections span the complete left track while
+   keeping the right column top-aligned. */
+for (const geometry of [
+  { viewport: '1366x768', main: 924, measuredLeft: 601, collapsedUser: 105 },
+  { viewport: '1920x1080', main: 1474, measuredLeft: 967, collapsedUser: 289 },
+  { viewport: '2560x1440', main: 2118, measuredLeft: 1396, collapsedUser: 504 },
+  { viewport: '3440x1440', main: 2998, measuredLeft: 1983, collapsedUser: 797 },
+  { viewport: '3840x2160', main: 3398, measuredLeft: 2249, collapsedUser: 931 }
+]) {
+  const available = geometry.main - 24;
+  const right = Math.max(300, available / 3);
+  const correctedLeft = available - right;
+  assert(geometry.collapsedUser < correctedLeft, `${geometry.viewport} fixture must reproduce the former collapse`);
+  assert(
+    Math.abs(correctedLeft - geometry.measuredLeft) <= 1,
+    `${geometry.viewport} corrected user card must span the complete 2fr left track`
+  );
+  assert(right >= 299, `${geometry.viewport} right column must retain a readable width`);
+  assert(correctedLeft >= right * 1.9, `${geometry.viewport} desktop columns must preserve the intended 2:1 hierarchy`);
+}
+
 assert(patcher.includes('public static function patchNodeFlags'), 'node flag asset patch is missing');
 assert(patcher.includes('class: "luck-node-flag"'), 'node flag patch does not emit the visible flag glyph');
 assert(patcher.includes('luck-flags.svg?v=1#${flagAssetCode}'), 'node flags must use the packaged SVG sprite');
 assert(patcher.includes('const mobileFlagCode ='), 'mobile node cards need an independent portable flag code');
 assert(patcher.includes('luck-flags.svg?v=1#${mobileFlagAssetCode}'), 'mobile node cards must use the packaged SVG sprite');
 assert(patcher.includes('toDisplayString(mobileDisplayName)'), 'mobile node names must remove duplicate flag emoji');
+assert(patcher.includes('public static function patchNodeScrollbar'), 'node scrollbar prop patch is missing');
+assert(patcher.includes('"scrollbar-props": { trigger: "none" }'), 'node table must render its horizontal rail without hover');
 assert(!patcher.includes('String.fromCodePoint(...flagCode'), 'node flags must not depend on Windows emoji rendering');
 assert(patcher.includes('displayName'), 'duplicate flag emoji must be removed from the node name');
 assert(routes.includes('LuckThemeAssetPatcher::patchNodeFlags($fixedContents)'), 'node flag patch is not applied while publishing Luck assets');
+assert(routes.includes('LuckThemeAssetPatcher::patchNodeScrollbar($fixedContents)'), 'node scrollbar patch is not applied while publishing Luck assets');
 
 console.log('Verified responsive dashboard, readable labels, node scrolling and local node flags.');

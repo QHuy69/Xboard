@@ -15,9 +15,11 @@ assert.doesNotThrow(() => new vm.Script(languageScript[1]), 'language picker run
 
 assert(!template.includes('maximum-scale=1'), 'pinch zoom must not be disabled');
 assert(!template.includes('user-scalable=no'), 'user zoom must remain available');
-assert(template.includes('luck-overrides.css?v=20'), 'responsive CSS needs a fresh cache key');
-assert(template.includes('BBbuoBq5-fresh.js?v=60'), 'entry imports need a fresh cache key');
-assert(template.includes('i18n-v18.js?v=60'), 'manual language switching needs a fresh cache key');
+assert(template.includes('luck-overrides.css?v=21'), 'responsive CSS needs a fresh cache key');
+assert(template.includes('BBbuoBq5-fresh.js?v=61'), 'entry imports need a fresh cache key');
+assert(template.includes('i18n-v18.js?v=61'), 'manual language switching needs a fresh cache key');
+assert(template.includes('id="luck-overrides-stylesheet"'), 'responsive stylesheet needs a stable runtime handle');
+assert(template.includes("new MutationObserver(placeOverridesLast).observe(document.head, { childList: true })"), 'late route styles must not override the responsive release sheet');
 
 assert(!/\[role="dialog"\]\s*>\s*\*\s*\{/.test(css), 'dialog children must not become nested scroll panes');
 assert.match(

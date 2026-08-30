@@ -6,8 +6,18 @@ const css = fs.readFileSync('luck-overrides.css', 'utf8');
 
 assert.match(
   css,
-  /\.orders-table-container\[data-v-95571e5b\][\s\S]*?overflow-x:\s*auto\s*!important/,
+  /\.orders-table-container\[data-v-95571e5b\][\s\S]*?overflow:\s*auto\s*!important/,
   'the order ledger container must expose a horizontal scrollbar when needed'
+);
+assert.match(
+  css,
+  /\.ios-content-container:has\(\.orders-page\[data-v-95571e5b\]\),[\s\S]*?height:\s*100%\s*!important[\s\S]*?min-height:\s*0\s*!important/,
+  'the orders route must use the shell available height instead of extending its rail below the viewport'
+);
+assert.match(
+  css,
+  /\.orders-page\[data-v-95571e5b\]\s*\{[\s\S]*?height:\s*100%\s*!important[\s\S]*?max-height:\s*100%\s*!important/,
+  'the orders page must remain bounded by the visible shell'
 );
 assert.match(
   css,

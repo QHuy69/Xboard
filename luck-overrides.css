@@ -204,8 +204,28 @@ button {
    unit, give every column a deliberate minimum, and use the same alignment
    rules for its header and body. */
 .orders-page[data-v-95571e5b] {
+  box-sizing: border-box !important;
+  height: 100% !important;
+  max-height: 100% !important;
   width: 100% !important;
+  min-height: 0 !important;
   min-width: 0 !important;
+}
+
+/* The generated orders route uses 100vh even though it is nested below the
+   application header. That puts the native horizontal rail below the visible
+   shell. Bind the route to the shell's available height and keep the ledger
+   as the single two-axis scroll owner. */
+.ios-content-container:has(.orders-page[data-v-95571e5b]),
+.content-wrapper:has(.orders-page[data-v-95571e5b]) {
+  box-sizing: border-box !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+}
+
+.content-wrapper:has(.orders-page[data-v-95571e5b]) {
+  overflow: hidden !important;
 }
 
 .orders-page[data-v-95571e5b] .filter-tabs[data-v-95571e5b] {
@@ -225,9 +245,9 @@ button {
 
 .orders-table-container[data-v-95571e5b] {
   max-width: 100% !important;
+  min-height: 0 !important;
   min-width: 0 !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
+  overflow: auto !important;
   overscroll-behavior-inline: contain;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
@@ -355,7 +375,7 @@ button {
    pseudo-elements, so the DOM translator cannot see or replace them. */
 @media (max-width: 768px) {
   .orders-table-container[data-v-95571e5b] {
-    overflow-x: visible !important;
+    overflow: visible !important;
   }
 
   .orders-table[data-v-95571e5b] {
@@ -539,10 +559,10 @@ button {
   display: none !important;
 }
 
-.header-actions > .luck-app-download {
+.luck-download-toolbar > .luck-app-download {
   flex: 0 0 auto;
-  min-height: 44px;
-  padding: 0 17px;
+  min-height: 40px;
+  padding: 0 15px;
   box-shadow: none;
   white-space: nowrap;
 }
@@ -751,15 +771,12 @@ body.luck-donate-open {
     font-size: 13px;
   }
 
-  .luck-app-download {
-    position: fixed;
-    left: 12px;
-    right: auto;
-    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-    z-index: 2200;
-    min-height: 36px;
-    padding: 8px 11px;
-    font-size: 12px;
+  .luck-download-toolbar > .luck-app-download {
+    position: static;
+    inset: auto;
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 13px;
   }
 
   .luck-app-download svg {
@@ -1251,6 +1268,7 @@ html[dir="rtl"] .luck-language-picker select {
 
 .dashboard-content[data-v-3709f5eb] {
   padding: clamp(12px, 1.8vw, 24px) !important;
+  container: luck-dashboard / inline-size;
 }
 
 .main-layout[data-v-3709f5eb] {
@@ -1267,11 +1285,28 @@ html[dir="rtl"] .luck-language-picker select {
   gap: clamp(12px, 1.4vw, 20px) !important;
 }
 
+/* A stale named grid area on `.left-bottom` made Grid create an implicit
+   second track inside the left dashboard column.  The exact failure scaled
+   with the viewport: the profile card measured only 105px at 1366px, 289px
+   at 1920px and 797px at 3440px while the downloads block occupied a separate
+   track.  Declare the single-track contract explicitly so future generated
+   bundle changes cannot recreate that phantom middle column. */
+.left-column[data-v-3709f5eb] {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-auto-flow: row !important;
+  grid-auto-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+}
+
 .left-column[data-v-3709f5eb] > *,
 .right-column[data-v-3709f5eb] > * {
   width: 100% !important;
   min-width: 0 !important;
   margin-inline: 0 !important;
+}
+
+.left-column[data-v-3709f5eb] > * {
+  grid-column: 1 / -1 !important;
 }
 
 /* The stock layout assigns `grid-area: left-bottom` to the client/download
@@ -1284,6 +1319,87 @@ html[dir="rtl"] .luck-language-picker select {
   grid-area: auto !important;
   width: 100% !important;
   min-width: 0 !important;
+}
+
+/* Keep the resources CTA with the application cards it describes. The stock
+   shell has enough header controls already, and injecting another translated
+   label there made laptop/tablet headers collide. The toolbar is created by
+   the dashboard shell script and remains a single action at every width. */
+.clients-section.luck-download-section[data-v-3709f5eb] {
+  container: luck-download-section / inline-size;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+}
+
+.luck-download-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  grid-column: 2;
+  grid-row: 1;
+  width: auto;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+.clients-section.luck-download-section[data-v-3709f5eb] > .section-title[data-v-3709f5eb] {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  margin-bottom: 16px !important;
+  line-height: 1.35 !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+}
+
+.clients-section.luck-download-section[data-v-3709f5eb] > :where(.platform-cards, .client-apps) {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+.luck-download-toolbar > .luck-app-download {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 9px 15px;
+  border-color: rgba(14, 116, 144, .18);
+  white-space: nowrap !important;
+  writing-mode: horizontal-tb !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+}
+
+@container luck-download-section (max-width: 520px) {
+  .clients-section.luck-download-section[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) 40px;
+    column-gap: 10px;
+  }
+
+  .luck-download-toolbar > .luck-app-download {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 12px;
+  }
+
+  .luck-download-toolbar > .luck-app-download .luck-app-download-label {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+  }
 }
 
 .user-card[data-v-3709f5eb] {
@@ -1463,6 +1579,19 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
   word-break: keep-all !important;
 }
 
+/* The generated wallet card renders the same recharge action twice: the
+   intended floating badge and an unstyled iOS fallback at the bottom. Keep
+   the compact badge as the sole visible control on every viewport. */
+.wallet-card-wide .ios-card-action[data-v-3709f5eb] {
+  display: none !important;
+}
+
+.wallet-card-wide .recharge-btn-float[data-v-3709f5eb] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 @container luck-user-card (max-width: 800px) {
   .user-main-info[data-v-3709f5eb] {
     grid-template-columns: minmax(0, 1fr) !important;
@@ -1517,17 +1646,26 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
   }
 }
 
-@media (max-width: 1500px) {
-  /* Fallback for browsers without container-query support and for desktop
-     shells whose sidebar leaves the main card narrower than the viewport. */
-  .user-main-info[data-v-3709f5eb] {
+@container luck-dashboard (max-width: 920px) {
+  .main-layout[data-v-3709f5eb] {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
-@media (max-width: 1180px) {
-  .main-layout[data-v-3709f5eb] {
-    grid-template-columns: minmax(0, 1fr) !important;
+/* Only legacy browsers without container queries need viewport fallbacks.
+   Modern browsers must respond to the actual dashboard/card width after the
+   sidebar, not stack a perfectly usable 1366/1440px desktop layout early. */
+@supports not (container-type: inline-size) {
+  @media (max-width: 1500px) {
+    .user-main-info[data-v-3709f5eb] {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+  }
+
+  @media (max-width: 1180px) {
+    .main-layout[data-v-3709f5eb] {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
   }
 }
 
@@ -1614,9 +1752,7 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
   .record-icon,
   .country-flag-svg,
   .notice-icon,
-  .alert-icon,
-  .luck-current-ip-icon,
-  .luck-current-ip-refresh-icon
+  .alert-icon
 ) {
   box-sizing: border-box;
   flex-shrink: 0 !important;
@@ -1811,21 +1947,6 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
   overflow-x: hidden !important;
 }
 
-.compact-table[data-v-85145c70] .n-data-table-base-table-body::-webkit-scrollbar {
-  height: 10px;
-}
-
-.compact-table[data-v-85145c70] .n-data-table-base-table-body::-webkit-scrollbar-track {
-  border-radius: 999px;
-  background: rgba(226, 232, 240, .75);
-}
-
-.compact-table[data-v-85145c70] .n-data-table-base-table-body::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(226, 232, 240, .75);
-  border-radius: 999px;
-  background: rgba(71, 85, 105, .65);
-}
-
 .compact-table[data-v-85145c70] .n-data-table-wrapper {
   max-width: 100% !important;
   overflow-x: hidden !important;
@@ -1833,16 +1954,38 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
 
 .compact-table[data-v-85145c70] .n-data-table-base-table-body {
   max-width: 100% !important;
-  overflow-x: auto !important;
+  overflow-x: hidden !important;
   overscroll-behavior-inline: contain;
-  scrollbar-width: auto;
-  scrollbar-color: rgba(71, 85, 105, .65) rgba(226, 232, 240, .75);
 }
 
-.compact-table[data-v-85145c70] .n-data-table-table {
-  width: max(100%, 960px) !important;
-  min-width: 960px !important;
-  table-layout: auto !important;
+/* Naive UI scrolls through its inner NScrollbar container and paints a custom
+   rail. The table-body wrapper is not the scroll owner. A non-hover trigger is
+   injected into the NDataTable props so this rail always exists. */
+.compact-table[data-v-85145c70] .n-scrollbar-container {
+  padding-bottom: 11px !important;
+  overscroll-behavior-inline: contain;
+}
+
+.compact-table[data-v-85145c70] .n-scrollbar-rail--horizontal {
+  display: block !important;
+  right: 2px !important;
+  bottom: 1px !important;
+  left: 2px !important;
+  height: 10px !important;
+  border-radius: 999px !important;
+  background: rgba(226, 232, 240, .75) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.compact-table[data-v-85145c70] .n-scrollbar-rail--horizontal .n-scrollbar-rail__scrollbar {
+  bottom: 1px !important;
+  height: 8px !important;
+  min-width: 32px !important;
+  border: 1px solid rgba(226, 232, 240, .8) !important;
+  border-radius: 999px !important;
+  background: rgba(71, 85, 105, .72) !important;
+  opacity: 1 !important;
 }
 
 .compact-table[data-v-85145c70] .n-data-table-th,
@@ -1913,505 +2056,5 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
   .compact-table[data-v-85145c70] .n-data-table-td {
     padding: 9px 10px !important;
     font-size: 12px !important;
-  }
-}
-
-/* Current user IPs: this panel is injected immediately after the dashboard's
-   traffic card. It is intentionally unscoped because it is not part of the
-   pre-built Vue SFC, while every selector is namespaced to avoid affecting
-   admin or other Luck tables. */
-.luck-current-ip-panel {
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  margin-top: clamp(14px, 1.6vw, 22px);
-  padding: clamp(16px, 2vw, 24px);
-  border: 1px solid rgba(203, 213, 225, .72);
-  border-radius: 20px;
-  background: linear-gradient(145deg, rgba(248, 250, 252, .96), rgba(255, 255, 255, .98));
-  box-shadow: 0 8px 24px rgba(15, 23, 42, .07), 0 3px 9px rgba(15, 23, 42, .04);
-  color: #334155;
-  /* This panel normally lives in the dashboard's one-third right column.
-     Its own width, not the viewport width, decides whether rows become cards. */
-  container: luck-current-ip / inline-size;
-}
-
-.luck-current-ip-header,
-.luck-current-ip-heading {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-}
-
-.luck-current-ip-header {
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.luck-current-ip-heading {
-  flex: 1 1 auto;
-  gap: 9px;
-}
-
-.luck-current-ip-heading h2 {
-  min-width: 0;
-  margin: 0;
-  color: #334155;
-  font-size: clamp(15px, 1.3vw, 18px);
-  font-weight: 700;
-  line-height: 1.35;
-  white-space: normal;
-  overflow-wrap: normal;
-  word-break: keep-all;
-}
-
-html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-heading h2 {
-  overflow-wrap: anywhere;
-  word-break: normal;
-}
-
-.luck-current-ip-icon {
-  display: inline-grid;
-  flex: 0 0 30px;
-  width: 30px;
-  height: 30px;
-  place-items: center;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  box-shadow: 0 5px 12px rgba(59, 130, 246, .22);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.luck-current-ip-count {
-  display: inline-flex;
-  flex: 0 0 auto;
-  min-width: 42px;
-  min-height: 24px;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 8px;
-  border: 1px solid rgba(59, 130, 246, .16);
-  border-radius: 999px;
-  background: rgba(59, 130, 246, .1);
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  direction: ltr;
-  unicode-bidi: isolate;
-  white-space: nowrap;
-}
-
-.luck-current-ip-refresh {
-  display: inline-flex;
-  flex: 0 0 auto;
-  min-height: 36px;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 7px 12px;
-  border: 1px solid rgba(148, 163, 184, .42);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, .86);
-  color: #475569;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  transition: border-color .18s ease, box-shadow .18s ease, color .18s ease;
-}
-
-.luck-current-ip-refresh:hover:not(:disabled),
-.luck-current-ip-refresh:focus-visible {
-  border-color: rgba(59, 130, 246, .7);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
-  color: #2563eb;
-  outline: none;
-}
-
-.luck-current-ip-refresh:disabled {
-  cursor: wait;
-  opacity: .56;
-}
-
-.luck-current-ip-refresh:disabled .luck-current-ip-refresh-icon {
-  animation: luck-current-ip-spin .8s linear infinite;
-}
-
-.luck-current-ip-refresh-icon {
-  display: inline-block;
-  font-size: 17px;
-  line-height: 1;
-}
-
-@keyframes luck-current-ip-spin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .luck-current-ip-refresh-icon { animation: none !important; }
-}
-
-.luck-current-ip-body,
-.luck-current-ip-table-wrap {
-  width: 100%;
-  min-width: 0;
-}
-
-.luck-current-ip-table-wrap {
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  border: 1px solid rgba(226, 232, 240, .95);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, .72);
-}
-
-.luck-current-ip-table {
-  width: 100%;
-  min-width: 610px;
-  border-collapse: collapse;
-  table-layout: fixed;
-  color: #334155;
-  font-size: 13px;
-}
-
-.luck-current-ip-table th,
-.luck-current-ip-table td {
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(226, 232, 240, .92);
-  text-align: start;
-  vertical-align: middle;
-  line-height: 1.4;
-}
-
-.luck-current-ip-table th {
-  background: rgba(241, 245, 249, .78);
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.luck-current-ip-table th:nth-child(1) { width: 29%; }
-.luck-current-ip-table th:nth-child(2) { width: 37%; }
-.luck-current-ip-table th:nth-child(3) { width: 16%; }
-.luck-current-ip-table th:nth-child(4) { width: 18%; }
-
-.luck-current-ip-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.luck-current-ip-table tbody tr:hover {
-  background: rgba(239, 246, 255, .58);
-}
-
-.luck-current-ip-address {
-  direction: ltr;
-  unicode-bidi: isolate;
-  color: #0f172a;
-  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-weight: 650;
-  white-space: nowrap;
-  overflow-wrap: normal;
-  word-break: normal;
-  user-select: all;
-}
-
-.luck-current-ip-node {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  word-break: normal;
-}
-
-.luck-current-ip-protocol {
-  display: inline-flex;
-  max-width: 100%;
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: rgba(99, 102, 241, .1);
-  color: #4f46e5;
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: .02em;
-  direction: ltr;
-  unicode-bidi: isolate;
-  white-space: nowrap;
-}
-
-.luck-current-ip-activity {
-  color: #64748b;
-  white-space: nowrap;
-}
-
-.luck-current-ip-state {
-  display: grid;
-  min-height: 92px;
-  place-items: center;
-  padding: 18px;
-  border: 1px dashed rgba(148, 163, 184, .45);
-  border-radius: 13px;
-  background: rgba(248, 250, 252, .72);
-  color: #64748b;
-  text-align: center;
-  line-height: 1.55;
-  white-space: normal;
-  overflow-wrap: normal;
-  word-break: keep-all;
-}
-
-html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-state {
-  overflow-wrap: anywhere;
-  word-break: normal;
-}
-
-.luck-current-ip-state--error {
-  border-color: rgba(239, 68, 68, .34);
-  background: rgba(254, 242, 242, .66);
-  color: #b91c1c;
-}
-
-.luck-visually-hidden {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-}
-
-html[dir="rtl"] .luck-current-ip-table th,
-html[dir="rtl"] .luck-current-ip-table td {
-  text-align: right;
-}
-
-html[dir="rtl"] .luck-current-ip-address,
-html[dir="rtl"] .luck-current-ip-protocol {
-  text-align: left;
-}
-
-@media (max-width: 768px) {
-  .luck-current-ip-panel {
-    padding: 14px;
-    border-radius: 16px;
-  }
-
-  .luck-current-ip-table-wrap {
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .luck-current-ip-table,
-  .luck-current-ip-table tbody,
-  .luck-current-ip-table tr,
-  .luck-current-ip-table td {
-    display: block;
-    width: 100%;
-    min-width: 0;
-  }
-
-  .luck-current-ip-table thead {
-    display: none;
-  }
-
-  .luck-current-ip-table tbody {
-    display: grid;
-    gap: 10px;
-  }
-
-  .luck-current-ip-table tr {
-    overflow: hidden;
-    border: 1px solid rgba(226, 232, 240, .95);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, .82);
-  }
-
-  .luck-current-ip-table td {
-    display: grid;
-    grid-template-columns: minmax(108px, 34%) minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    padding: 9px 11px;
-    text-align: end;
-    white-space: normal;
-  }
-
-  .luck-current-ip-table td::before {
-    content: attr(data-label);
-    min-width: 0;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.35;
-    text-align: start;
-    white-space: normal;
-    overflow-wrap: normal;
-    word-break: keep-all;
-  }
-
-  html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-table td::before {
-    overflow-wrap: anywhere;
-    word-break: normal;
-  }
-
-  .luck-current-ip-address,
-  .luck-current-ip-node,
-  .luck-current-ip-activity {
-    justify-self: end;
-    text-align: end;
-  }
-
-  .luck-current-ip-address {
-    max-width: 100%;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .luck-current-ip-protocol {
-    justify-self: end;
-  }
-
-  html[dir="rtl"] .luck-current-ip-table td {
-    text-align: left;
-  }
-}
-
-@media (max-width: 390px) {
-  .luck-current-ip-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .luck-current-ip-refresh {
-    margin-inline-start: 39px;
-  }
-
-  .luck-current-ip-table td {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 5px;
-  }
-
-  .luck-current-ip-address,
-  .luck-current-ip-node,
-  .luck-current-ip-activity,
-  .luck-current-ip-protocol {
-    justify-self: start;
-    text-align: start;
-  }
-}
-
-/* A 1366/1440px desktop can still leave the dashboard right column below
-   700px. Container queries prevent the IP table from becoming a narrow,
-   horizontally-scrolling desktop table in that otherwise-wide viewport. */
-@container luck-current-ip (max-width: 720px) {
-  .luck-current-ip-table-wrap {
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .luck-current-ip-table,
-  .luck-current-ip-table tbody,
-  .luck-current-ip-table tr,
-  .luck-current-ip-table td {
-    display: block;
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-  }
-
-  .luck-current-ip-table thead {
-    display: none;
-  }
-
-  .luck-current-ip-table tbody {
-    display: grid;
-    gap: 10px;
-  }
-
-  .luck-current-ip-table tr {
-    overflow: hidden;
-    border: 1px solid rgba(226, 232, 240, .95);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, .82);
-  }
-
-  .luck-current-ip-table td {
-    display: grid;
-    grid-template-columns: minmax(108px, 34%) minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-    padding: 9px 11px;
-    text-align: end;
-    white-space: normal;
-  }
-
-  .luck-current-ip-table td::before {
-    content: attr(data-label);
-    min-width: 0;
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.35;
-    text-align: start;
-    white-space: normal;
-    overflow-wrap: normal;
-    word-break: keep-all;
-  }
-
-  html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-table td::before {
-    overflow-wrap: anywhere;
-    word-break: normal;
-  }
-
-  .luck-current-ip-address,
-  .luck-current-ip-node,
-  .luck-current-ip-activity {
-    max-width: 100%;
-    justify-self: end;
-    text-align: end;
-  }
-
-  .luck-current-ip-address {
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-
-  .luck-current-ip-protocol {
-    justify-self: end;
-  }
-}
-
-@container luck-current-ip (max-width: 390px) {
-  .luck-current-ip-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .luck-current-ip-refresh {
-    margin-inline-start: 39px;
-  }
-
-  .luck-current-ip-table td {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 5px;
-  }
-
-  .luck-current-ip-address,
-  .luck-current-ip-node,
-  .luck-current-ip-activity,
-  .luck-current-ip-protocol {
-    justify-self: start;
-    text-align: start;
   }
 }

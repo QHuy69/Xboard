@@ -5223,67 +5223,18 @@
   Object.assign(ko, extraEn); assignProductionTranslations(ko, productionLocales['ko-KR']); assignProductionTranslations(ko, completeLocaleTranslations['ko-KR']);
   Object.assign(fa, extraEn); assignProductionTranslations(fa, productionLocales['fa-IR']); assignProductionTranslations(fa, completeLocaleTranslations['fa-IR']);
   Object.assign(ru, extraEn); assignProductionTranslations(ru, productionLocales['ru-RU']); assignProductionTranslations(ru, completeLocaleTranslations['ru-RU']);
-  // User-dashboard online IP panel.  The runtime panel uses the same source
-  // keys as every compiled Luck view, so changing the language picker updates
-  // its complete loading/empty/error/table state in all supported locales.
-  var userDeviceTranslations = {
-    'en-US': {
-      '当前使用IP': 'Active IPs', 'IP地址': 'IP address', '节点': 'Node', '协议': 'Protocol', '刷新': 'Refresh',
-      '当前没有活动IP': 'No active IPs', '正在加载活动IP...': 'Loading active IPs...',
-      '无法加载活动IP': 'Could not load active IPs', '最后活动': 'Last active'
-    },
-    'vi-VN': {
-      '当前使用IP': 'IP đang sử dụng', 'IP地址': 'Địa chỉ IP', '节点': 'Node', '协议': 'Giao thức', '刷新': 'Làm mới',
-      '当前没有活动IP': 'Không có IP nào đang hoạt động', '正在加载活动IP...': 'Đang tải danh sách IP...',
-      '无法加载活动IP': 'Không thể tải danh sách IP', '最后活动': 'Lần hoạt động'
-    },
-    'zh-CN': {
-      '当前使用IP': '当前使用 IP', 'IP地址': 'IP 地址', '节点': '节点', '协议': '协议', '刷新': '刷新',
-      '当前没有活动IP': '当前没有活动 IP', '正在加载活动IP...': '正在加载活动 IP...',
-      '无法加载活动IP': '无法加载活动 IP', '最后活动': '最后活动'
-    },
-    'zh-TW': {
-      '当前使用IP': '目前使用中的 IP', 'IP地址': 'IP 位址', '节点': '節點', '协议': '通訊協定', '刷新': '重新整理',
-      '当前没有活动IP': '目前沒有使用中的 IP', '正在加载活动IP...': '正在載入使用中的 IP...',
-      '无法加载活动IP': '無法載入使用中的 IP', '最后活动': '最後活動'
-    },
-    'ja-JP': {
-      '当前使用IP': '使用中の IP', 'IP地址': 'IP アドレス', '节点': 'ノード', '协议': 'プロトコル', '刷新': '更新',
-      '当前没有活动IP': '使用中の IP はありません', '正在加载活动IP...': '使用中の IP を読み込み中...',
-      '无法加载活动IP': '使用中の IP を読み込めません', '最后活动': '最終アクティビティ'
-    },
-    'ko-KR': {
-      '当前使用IP': '사용 중인 IP', 'IP地址': 'IP 주소', '节点': '노드', '协议': '프로토콜', '刷新': '새로고침',
-      '当前没有活动IP': '사용 중인 IP가 없습니다', '正在加载活动IP...': '사용 중인 IP를 불러오는 중...',
-      '无法加载活动IP': '사용 중인 IP를 불러올 수 없습니다', '最后活动': '마지막 활동'
-    },
-    'fa-IR': {
-      '当前使用IP': 'IPهای در حال استفاده', 'IP地址': 'نشانی IP', '节点': 'گره', '协议': 'پروتکل', '刷新': 'تازه‌سازی',
-      '当前没有活动IP': 'هیچ IP فعالی وجود ندارد', '正在加载活动IP...': 'در حال بارگذاری IPهای فعال...',
-      '无法加载活动IP': 'بارگذاری IPهای فعال ممکن نیست', '最后活动': 'آخرین فعالیت'
-    },
-    'ru-RU': {
-      '当前使用IP': 'Используемые IP', 'IP地址': 'IP-адрес', '节点': 'Узел', '协议': 'Протокол', '刷新': 'Обновить',
-      '当前没有活动IP': 'Нет активных IP-адресов', '正在加载活动IP...': 'Загрузка активных IP-адресов...',
-      '无法加载活动IP': 'Не удалось загрузить активные IP-адреса', '最后活动': 'Последняя активность'
-    }
-  };
-  Object.keys(userDeviceTranslations).forEach(function (language) {
-    var target = { 'en-US': en, 'vi-VN': vi, 'zh-CN': zh, 'zh-TW': tw, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'ru-RU': ru }[language];
-    Object.assign(target, userDeviceTranslations[language]);
-  });
   // Short labels emitted by compiled controls must be explicit in every
   // locale. Without these exact keys, the Vietnamese CJK safety net turns
   // them into the generic "Thông báo hệ thống" notice.
   var runtimeControlLabelTranslations = {
-    'en-US': { '名称': 'Name', '正在使用': 'In use' },
-    'vi-VN': { '名称': 'Tên', '正在使用': 'Đang sử dụng' },
-    'zh-CN': { '名称': '名称', '正在使用': '正在使用' },
-    'zh-TW': { '名称': '名稱', '正在使用': '使用中' },
-    'ja-JP': { '名称': '名前', '正在使用': '使用中' },
-    'ko-KR': { '名称': '이름', '正在使用': '사용 중' },
-    'fa-IR': { '名称': 'نام', '正在使用': 'در حال استفاده' },
-    'ru-RU': { '名称': 'Название', '正在使用': 'Используется' }
+    'en-US': { '名称': 'Name', '正在使用': 'In use', '会员': 'Member' },
+    'vi-VN': { '名称': 'Tên', '正在使用': 'Đang sử dụng', '会员': 'Thành viên' },
+    'zh-CN': { '名称': '名称', '正在使用': '正在使用', '会员': '会员' },
+    'zh-TW': { '名称': '名稱', '正在使用': '使用中', '会员': '會員' },
+    'ja-JP': { '名称': '名前', '正在使用': '使用中', '会员': '会員' },
+    'ko-KR': { '名称': '이름', '正在使用': '사용 중', '会员': '회원' },
+    'fa-IR': { '名称': 'نام', '正在使用': 'در حال استفاده', '会员': 'عضو' },
+    'ru-RU': { '名称': 'Название', '正在使用': 'Используется', '会员': 'Участник' }
   };
   Object.keys(runtimeControlLabelTranslations).forEach(function (language) {
     var target = { 'en-US': en, 'vi-VN': vi, 'zh-CN': zh, 'zh-TW': tw, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'ru-RU': ru }[language];
@@ -5379,6 +5330,27 @@
     var trailing = text.match(/\s*$/)[0];
     var core = text.slice(leading.length, text.length - trailing.length);
     var originalCore = core;
+    // The reset day is composed at runtime, so it cannot be covered by a
+    // literal dictionary key. Some Luck builds also translate only the final
+    // `重置` fragment first, producing values such as `每月31 日Reset` or
+    // `每月31 日Сбросить`. Normalize the complete schedule before fragment
+    // translation so every locale gets one coherent, source-language-free
+    // label.
+    if (locale !== 'zh-CN') {
+      var monthlyResetLabels = {
+        'en-US': function (day) { return 'Reset on day ' + day + ' of each month'; },
+        'vi-VN': function (day) { return 'Đặt lại vào ngày ' + day + ' hàng tháng'; },
+        'zh-TW': function (day) { return '每月 ' + day + ' 日重設'; },
+        'ja-JP': function (day) { return '毎月' + day + '日にリセット'; },
+        'ko-KR': function (day) { return '매월 ' + day + '일에 재설정'; },
+        'fa-IR': function (day) { return 'بازنشانی در روز ' + day + ' هر ماه'; },
+        'ru-RU': function (day) { return 'Сброс ' + day + '-го числа каждого месяца'; }
+      };
+      var monthlyResetLabel = monthlyResetLabels[locale] || monthlyResetLabels['en-US'];
+      core = core.replace(/每月\s*(\d+)\s*日\s*(?:重置|Reset|Сброс(?:ить)?|Đặt lại|リセット|재설정)?/gi, function (_, day) {
+        return monthlyResetLabel(day);
+      });
+    }
     var hasDirectTranslation = Object.prototype.hasOwnProperty.call(dictionary, core);
     var directTranslation = hasDirectTranslation ? dictionary[core] : null;
     // Dynamic counters are emitted as e.g. "5207天" and therefore need a
@@ -5388,7 +5360,6 @@
     if (!hasDirectTranslation && locale !== 'zh-CN') {
       if (locale === 'vi-VN') core = core.replace(/最近(\d+)天流量总计\s*[:：]?/g, 'Tổng lưu lượng $1 ngày gần đây: ');
       else if (locale === 'en-US') core = core.replace(/最近(\d+)天流量总计\s*[:：]?/g, 'Total traffic for the last $1 days: ');
-      if (locale === 'vi-VN') core = core.replace(/每月(\d+)日重置/g, 'Đặt lại vào ngày $1 hàng tháng');
       var dayLabel = locale === 'vi-VN' ? 'ngày' : (locale === 'ja-JP' ? '日' : (locale === 'ko-KR' ? '일' : (locale === 'fa-IR' ? 'روز' : 'day')));
       var daysAgoLabel = locale === 'vi-VN' ? 'ngày trước' : (locale === 'ja-JP' ? '日前' : (locale === 'ko-KR' ? '일 전' : (locale === 'fa-IR' ? 'روز قبل' : 'days ago')));
       core = core.replace(/天前/g, daysAgoLabel).replace(/天/g, dayLabel);
@@ -5513,7 +5484,13 @@
       }).sort(function (a, b) { return b.length - a.length; }).forEach(function (key) {
         translatedCore = translatedCore.split(key).join(dictionary[key]);
       });
-      translatedCore = translatedCore.replace(/(\d+)\s*(ngày trước|ngày|days ago|day|日前|日|일 전|일|روز قبل|روز)/g, '$1 $2');
+      if (locale === 'ja-JP') {
+        translatedCore = translatedCore.replace(/(\d+)\s*(日前|日)/g, '$1$2');
+      } else if (locale === 'ko-KR') {
+        translatedCore = translatedCore.replace(/(\d+)\s*(일 전|일)/g, '$1$2');
+      } else {
+        translatedCore = translatedCore.replace(/(\d+)\s*(ngày trước|ngày|days ago|day|روز قبل|روز)/g, '$1 $2');
+      }
     }
     // Last-resort production guard for strings introduced by a future Luck
     // bundle or returned verbatim by an upstream API. A Vietnamese session must

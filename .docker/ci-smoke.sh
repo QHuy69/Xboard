@@ -86,11 +86,27 @@ fi
 echo "[smoke] Container healthcheck passed"
 
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/api/v1/guest/comm/config" >/dev/null
-curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard" >/dev/null
+dashboard_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard")"
 admin_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006")"
 echo "[smoke] Public HTTP endpoints passed"
 
-luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=60")"
+for dashboard_asset_marker in \
+  'id="luck-overrides-stylesheet"' \
+  'luck-overrides.css?v=21' \
+  'BBbuoBq5-fresh.js?v=61' \
+  'i18n-v18.js?v=61'; do
+  grep -aFq "$dashboard_asset_marker" <<<"$dashboard_html" || {
+    echo "Published Luck dashboard is missing versioned asset marker: $dashboard_asset_marker" >&2
+    exit 1
+  }
+done
+for dashboard_asset_url in \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=21" \
+  "http://127.0.0.1:${host_port}/theme/Luck/i18n-v18.js?v=61"; do
+  curl --fail --silent --show-error --output /dev/null "$dashboard_asset_url"
+done
+
+luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=61")"
 node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$node_route_asset" in
   ./oPGsis9D*-access-v2.js) ;;
@@ -109,7 +125,8 @@ for node_flag_marker in \
   'luck-flags.svg?v=1#${flagAssetCode}' \
   'luck-flags.svg?v=1#${mobileFlagAssetCode}' \
   'const mobileFlagCode =' \
-  'toDisplayString(mobileDisplayName)'; do
+  'toDisplayString(mobileDisplayName)' \
+  '"scrollbar-props": { trigger: "none" }'; do
   grep -aFq "$node_flag_marker" <<<"$node_route_js" || {
     echo "Published Luck node route is missing portable flag marker: $node_flag_marker" >&2
     exit 1
@@ -122,13 +139,62 @@ if [ "$node_flag_host_count" -lt 2 ]; then
 fi
 echo "[smoke] Desktop and mobile lazy node-route flags passed"
 
+for dashboard_icon_marker in \
+  'data-luck-icon="language"'; do
+  grep -aFq "$dashboard_icon_marker" <<<"$dashboard_html" || {
+    echo "Published Luck dashboard is missing portable inline icon marker: $dashboard_icon_marker" >&2
+    exit 1
+  }
+done
+for dashboard_platform_glyph in '🌐'; do
+  if grep -aFq "$dashboard_platform_glyph" <<<"$dashboard_html"; then
+    echo "Published Luck dashboard still contains platform-dependent glyph: $dashboard_platform_glyph" >&2
+    exit 1
+  fi
+done
+
+orders_route_asset="$( { grep -aoE '\./lsrL0SOU[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
+traffic_route_asset="$( { grep -aoE '\./BR9H_Zte[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
+invite_route_asset="$( { grep -aoE '\./DSCv3-VU[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
+for portable_route_asset in "$orders_route_asset" "$traffic_route_asset" "$invite_route_asset"; do
+  if [ -z "$portable_route_asset" ]; then
+    echo "Published Luck entry is missing a versioned portable-icon lazy route." >&2
+    exit 1
+  fi
+done
+orders_route_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${orders_route_asset#./}")"
+traffic_route_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${traffic_route_asset#./}")"
+invite_route_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${invite_route_asset#./}")"
+grep -aFq '"data-luck-icon": "orders-empty"' <<<"$orders_route_js"
+grep -aFq '"data-luck-icon": "traffic-empty"' <<<"$traffic_route_js"
+for invite_icon_marker in warning balance record hint; do
+  grep -aFq "\"data-luck-icon\": \"${invite_icon_marker}\"" <<<"$invite_route_js" || {
+    echo "Published Luck invite route is missing portable icon: $invite_icon_marker" >&2
+    exit 1
+  }
+done
+for route_platform_glyph in '📋' '📊' '⚠️' '💰' '📝' '💡'; do
+  if grep -aFq "$route_platform_glyph" <<<"${orders_route_js}${traffic_route_js}${invite_route_js}"; then
+    echo "Published Luck lazy routes still contain platform-dependent glyph: $route_platform_glyph" >&2
+    exit 1
+  fi
+done
+echo "[smoke] Portable dashboard, empty-state and transfer icons passed"
+
 mapfile -t admin_js_paths < <({ grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
 mapfile -t admin_css_paths < <({ grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
 mapfile -t admin_locale_paths < <({ grep -oE 'src="/assets/admin/locales/[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+admin_favicon_svg_path="$({ grep -oE 'href="/admin-favicon\.svg\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)"
+admin_favicon_png_path="$({ grep -oE 'href="/images/favicon\.png\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)"
 if [ "${#admin_js_paths[@]}" -ne 1 ] \
   || [ "${#admin_css_paths[@]}" -lt 1 ] \
-  || [ "${#admin_locale_paths[@]}" -lt 1 ]; then
-  echo "Admin shell emitted an unexpected asset set: ${#admin_js_paths[@]} entry JS, ${#admin_css_paths[@]} CSS, ${#admin_locale_paths[@]} locales." >&2
+  || [ "${#admin_locale_paths[@]}" -lt 1 ] \
+  || [ -z "$admin_favicon_svg_path" ] \
+  || [ -z "$admin_favicon_png_path" ]; then
+  echo "Admin shell emitted an unexpected asset set: ${#admin_js_paths[@]} entry JS, ${#admin_css_paths[@]} CSS, ${#admin_locale_paths[@]} locales, SVG favicon=$admin_favicon_svg_path, PNG favicon=$admin_favicon_png_path." >&2
   exit 1
 fi
 admin_asset_version="$(docker exec "$container_name" php -r '
@@ -138,7 +204,7 @@ admin_asset_version="$(docker exec "$container_name" php -r '
   echo rawurlencode((string) config("app.version", ""));
 ')"
 test -n "$admin_asset_version"
-for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"; do
+for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}" "$admin_favicon_svg_path" "$admin_favicon_png_path"; do
   test "${admin_asset_path##*\?v=}" = "$admin_asset_version"
   admin_asset_file="/www/public${admin_asset_path%%\?*}"
   docker exec "$container_name" test -f "$admin_asset_file"
@@ -165,7 +231,17 @@ if [ "$admin_css_marker_found" != true ]; then
   echo "Admin stylesheets are missing the icon visibility marker." >&2
   exit 1
 fi
-echo "[smoke] Versioned admin SVG icon assets passed"
+admin_favicon_svg="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}${admin_favicon_svg_path}")"
+grep -aFq 'aria-label="ZaoGuang admin"' <<<"$admin_favicon_svg"
+grep -aFq 'stroke="#fff"' <<<"$admin_favicon_svg"
+for admin_favicon_url in "$admin_favicon_png_path" '/images/favicon.svg'; do
+  curl --fail --silent --show-error --output /dev/null "http://127.0.0.1:${host_port}${admin_favicon_url}"
+done
+docker exec "$container_name" php -r '
+  $png = file_get_contents("/www/public/images/favicon.png");
+  exit(is_string($png) && substr($png, 0, 8) === "\x89PNG\r\n\x1a\n" ? 0 : 1);
+'
+echo "[smoke] Versioned admin icons and packaged favicons passed"
 
 docker exec "$container_name" php /www/tests/smoke-order-idempotency.php
 echo "[smoke] Order, payment-replay and disabled-surplus idempotency checks passed"
@@ -178,9 +254,6 @@ echo "[smoke] CoinPayments, support-plugin, locale and Telegram checks passed"
 
 docker exec "$container_name" php /www/tests/smoke-coinpayments-checkout-idempotency.php
 echo "[smoke] CoinPayments durable checkout and uncertain-result checks passed"
-
-docker exec "$container_name" php /www/tests/smoke-user-device-read.php
-echo "[smoke] Authenticated current-IP filtering and privacy checks passed"
 
 docker exec "$container_name" php /www/tests/smoke-scheduler-runtime.php
 echo "[smoke] Telegram schedules and encrypted database backup passed"

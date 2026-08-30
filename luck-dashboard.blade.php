@@ -24,7 +24,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=20">
+  <link id="luck-overrides-stylesheet" rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=21">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -49,12 +49,12 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=60"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=61"></script>
 </head>
 <body>
   <div id="app"></div>
   <div class="luck-shell-actions">
-    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.zaoguang-vpn.com') }}" target="_blank" rel="noopener noreferrer" hidden>
+    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.zaoguang-vpn.com') }}" target="_blank" rel="noopener noreferrer" aria-label="Tải ứng dụng" title="Tải ứng dụng" hidden>
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="luck-app-download-label">Tải ứng dụng</span>
     </a>
@@ -83,216 +83,24 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=60"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=61"></script>
   <script>
     (function () {
-      var ENDPOINT = '/api/v1/user/devices/current';
-      var PANEL_ID = 'luck-current-ip-panel';
-      var requestSequence = 0;
-      var syncTimer = 0;
-
-      var translate = function (value) {
-        return typeof window.__LUCK_T__ === 'function' ? window.__LUCK_T__(value) : value;
-      };
-      var createElement = function (tag, className, text) {
-        var node = document.createElement(tag);
-        if (className) node.className = className;
-        if (text !== undefined) node.textContent = text;
-        return node;
-      };
-      var normalizeToken = function () {
-        try {
-          var token = window.localStorage.getItem('v2board_token') || '';
-          if (token.charAt(0) === '"') token = JSON.parse(token);
-          return typeof token === 'string' ? token.trim() : '';
-        } catch (ignoreToken) {
-          return '';
+      /* Vue can append lazy route styles after the render-blocking links in the
+         template. Keep the responsive overrides as the final author sheet so
+         a late dashboard chunk cannot restore fixed card widths. */
+      var overrideSheet = document.getElementById('luck-overrides-stylesheet');
+      if (!overrideSheet || !document.head) return;
+      var placeOverridesLast = function () {
+        var authorSheets = document.head.querySelectorAll('link[rel="stylesheet"], style');
+        if (authorSheets.length && authorSheets[authorSheets.length - 1] !== overrideSheet) {
+          document.head.appendChild(overrideSheet);
         }
       };
-      var currentLocale = function () {
-        return (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE)
-          || document.documentElement.lang
-          || 'vi-VN';
-      };
-      var relativeTime = function (ageSeconds) {
-        var seconds = Math.max(0, Number(ageSeconds) || 0);
-        var value = -Math.round(seconds);
-        var unit = 'second';
-        if (seconds >= 60) {
-          value = -Math.round(seconds / 60);
-          unit = 'minute';
-        }
-        try {
-          return new Intl.RelativeTimeFormat(currentLocale(), { numeric: 'auto' }).format(value, unit);
-        } catch (ignoreRelativeTime) {
-          return seconds < 60 ? Math.round(seconds) + 's' : Math.round(seconds / 60) + 'm';
-        }
-      };
-
-      var renderState = function (panel, kind, label) {
-        var body = panel.querySelector('.luck-current-ip-body');
-        if (!body) return;
-        body.replaceChildren(createElement('div', 'luck-current-ip-state luck-current-ip-state--' + kind, label));
-      };
-
-      var renderRows = function (panel, payload) {
-        var body = panel.querySelector('.luck-current-ip-body');
-        var count = panel.querySelector('.luck-current-ip-count');
-        if (!body || !count) return;
-        var rows = payload && Array.isArray(payload.current) ? payload.current : [];
-        var total = Math.max(0, Number(payload && payload.total));
-        if (!Number.isFinite(total)) total = rows.length;
-        count.textContent = String(total) + ' IP';
-
-        if (!rows.length) {
-          renderState(panel, 'empty', translate('当前没有活动IP'));
-          return;
-        }
-
-        var labels = {
-          ip: translate('IP地址'),
-          node: translate('节点'),
-          protocol: translate('协议'),
-          activity: translate('最后活动')
-        };
-        var wrapper = createElement('div', 'luck-current-ip-table-wrap');
-        var table = createElement('table', 'luck-current-ip-table');
-        var caption = createElement('caption', 'luck-visually-hidden', translate('当前使用IP'));
-        var thead = document.createElement('thead');
-        var headerRow = document.createElement('tr');
-        [labels.ip, labels.node, labels.protocol, labels.activity].forEach(function (label) {
-          headerRow.appendChild(createElement('th', '', label));
-        });
-        thead.appendChild(headerRow);
-
-        var tbody = document.createElement('tbody');
-        rows.forEach(function (device) {
-          var row = document.createElement('tr');
-          var ip = createElement('td', 'luck-current-ip-address', String(device.ip || ''));
-          ip.dir = 'ltr';
-          ip.dataset.label = labels.ip;
-          ip.title = String(device.ip || '');
-
-          var node = createElement('td', 'luck-current-ip-node', String(device.node_name || ''));
-          node.dataset.label = labels.node;
-          node.title = String(device.node_name || '');
-
-          var protocol = document.createElement('td');
-          protocol.dataset.label = labels.protocol;
-          protocol.appendChild(createElement('span', 'luck-current-ip-protocol', String(device.type || '').toUpperCase()));
-
-          var activity = createElement('td', 'luck-current-ip-activity', relativeTime(device.age_seconds));
-          activity.dataset.label = labels.activity;
-          var lastSeenAt = Number(device.last_seen_at || 0);
-          if (lastSeenAt > 0) {
-            try { activity.title = new Date(lastSeenAt * 1000).toLocaleString(currentLocale()); } catch (ignoreDate) {}
-          }
-
-          row.append(ip, node, protocol, activity);
-          tbody.appendChild(row);
-        });
-        table.append(caption, thead, tbody);
-        wrapper.appendChild(table);
-        body.replaceChildren(wrapper);
-      };
-
-      var loadDevices = function (panel) {
-        if (!panel || !panel.isConnected) return;
-        var button = panel.querySelector('.luck-current-ip-refresh');
-        var count = panel.querySelector('.luck-current-ip-count');
-        var token = normalizeToken();
-        var requestId = ++requestSequence;
-        if (button) button.disabled = true;
-        if (count) count.textContent = '—';
-        renderState(panel, 'loading', translate('正在加载活动IP...'));
-        if (!token) {
-          if (button) button.disabled = false;
-          renderState(panel, 'error', translate('无法加载活动IP'));
-          return;
-        }
-
-        fetch(ENDPOINT, {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-          headers: { 'Accept': 'application/json', 'Authorization': token }
-        }).then(function (response) {
-          if (!response.ok) throw new Error('Current device request failed');
-          return response.json();
-        }).then(function (response) {
-          if (requestId !== requestSequence || !panel.isConnected) return;
-          renderRows(panel, response && response.data ? response.data : {});
-        }).catch(function () {
-          if (requestId !== requestSequence || !panel.isConnected) return;
-          renderState(panel, 'error', translate('无法加载活动IP'));
-        }).finally(function () {
-          if (requestId === requestSequence && button && panel.isConnected) button.disabled = false;
-        });
-      };
-
-      var createPanel = function () {
-        var panel = createElement('section', 'luck-current-ip-panel');
-        panel.id = PANEL_ID;
-        panel.setAttribute('aria-labelledby', PANEL_ID + '-title');
-
-        var header = createElement('div', 'luck-current-ip-header');
-        var heading = createElement('div', 'luck-current-ip-heading');
-        var icon = createElement('span', 'luck-current-ip-icon', '◎');
-        icon.setAttribute('aria-hidden', 'true');
-        var title = createElement('h2', '', translate('当前使用IP'));
-        title.id = PANEL_ID + '-title';
-        var count = createElement('span', 'luck-current-ip-count', '—');
-        count.setAttribute('aria-live', 'polite');
-        heading.append(icon, title, count);
-
-        var refresh = createElement('button', 'luck-current-ip-refresh');
-        refresh.type = 'button';
-        refresh.setAttribute('aria-label', translate('刷新'));
-        refresh.append(
-          createElement('span', 'luck-current-ip-refresh-icon', '↻'),
-          createElement('span', '', translate('刷新'))
-        );
-        refresh.addEventListener('click', function () { loadDevices(panel); });
-        header.append(heading, refresh);
-
-        var body = createElement('div', 'luck-current-ip-body');
-        body.setAttribute('aria-live', 'polite');
-        panel.append(header, body);
-        return panel;
-      };
-
-      var syncPanel = function () {
-        var path = window.location.pathname.replace(/\/+$/, '') || '/';
-        var existing = document.getElementById(PANEL_ID);
-        if (path !== '/dashboard') {
-          requestSequence += 1;
-          if (existing) existing.remove();
-          return;
-        }
-
-        var traffic = document.querySelector('.traffic-dashboard');
-        if (!traffic || !traffic.parentNode) return;
-        if (existing && existing.previousElementSibling === traffic) return;
-        if (existing) existing.remove();
-        var panel = createPanel();
-        traffic.insertAdjacentElement('afterend', panel);
-        loadDevices(panel);
-      };
-      var scheduleSync = function () {
-        window.clearTimeout(syncTimer);
-        syncTimer = window.setTimeout(syncPanel, 80);
-      };
-
-      var app = document.getElementById('app');
-      if (app && window.MutationObserver) {
-        new MutationObserver(scheduleSync).observe(app, { childList: true, subtree: true });
+      placeOverridesLast();
+      if (window.MutationObserver) {
+        new MutationObserver(placeOverridesLast).observe(document.head, { childList: true });
       }
-      window.addEventListener('popstate', scheduleSync);
-      window.addEventListener('pageshow', scheduleSync);
-      window.addEventListener('storage', function (event) {
-        if (event.key === 'v2board_token') scheduleSync();
-      });
-      window.setTimeout(syncPanel, 0);
     }());
   </script>
   <script>
@@ -329,8 +137,10 @@
       };
       var label = labels[lang] || labels['vi-VN'];
       var downloadLabels = {
-        'vi-VN': 'Tải ứng dụng', 'en-US': 'Download app', 'zh-CN': '下载应用', 'zh-TW': '下載應用',
-        'ja-JP': 'アプリをダウンロード', 'ko-KR': '앱 다운로드', 'fa-IR': 'دانلود برنامه', 'ru-RU': 'Скачать приложение'
+        'vi': 'Tải ứng dụng', 'vi-VN': 'Tải ứng dụng', 'en': 'Download app', 'en-US': 'Download app',
+        'zh-CN': '下载应用', 'zh-TW': '下載應用', 'ja-JP': 'アプリをダウンロード', 'ko-KR': '앱 다운로드',
+        'fa': 'دانلود برنامه', 'fa-IR': 'دانلود برنامه', 'ru': 'Скачать приложение',
+        'ru-RU': 'Скачать приложение', 'ar': 'تنزيل التطبيق', 'ar-SA': 'تنزيل التطبيق'
       };
       var copy = {
         'vi-VN': {
@@ -387,7 +197,12 @@
       if (labelNode) labelNode.textContent = label;
       banner.setAttribute('aria-label', label);
       var downloadLabel = download && download.querySelector('.luck-app-download-label');
-      if (downloadLabel) downloadLabel.textContent = downloadLabels[lang] || downloadLabels['vi-VN'];
+      var localizedDownloadLabel = downloadLabels[lang] || downloadLabels[String(lang).split('-')[0]] || downloadLabels['vi-VN'];
+      if (downloadLabel) downloadLabel.textContent = localizedDownloadLabel;
+      if (download) {
+        download.setAttribute('aria-label', localizedDownloadLabel);
+        download.setAttribute('title', localizedDownloadLabel);
+      }
       var title = document.getElementById('luck-donate-title');
       var message = document.getElementById('luck-donate-message');
       var thanks = document.getElementById('luck-donate-thanks');
@@ -571,22 +386,20 @@
           download.hidden = true;
           return;
         }
-        var shellActions = document.querySelector('.luck-shell-actions');
-        if (window.matchMedia('(max-width: 768px)').matches) {
-          if (shellActions && download.parentElement !== shellActions) {
-            shellActions.insertBefore(download, banner);
-          }
-          download.hidden = !shellActions;
-          return;
-        }
-        var headerActions = document.querySelector('.header-actions');
-        if (!headerActions) {
+        var downloadSection = document.querySelector('.clients-section');
+        if (!downloadSection) {
           download.hidden = true;
           return;
         }
-        if (download.parentElement !== headerActions) {
-          headerActions.insertBefore(download, headerActions.firstElementChild);
+        downloadSection.classList.add('luck-download-section');
+        var toolbar = downloadSection.querySelector('.luck-download-toolbar');
+        var platformCards = downloadSection.querySelector('.platform-cards');
+        if (!toolbar) {
+          toolbar = document.createElement('div');
+          toolbar.className = 'luck-download-toolbar';
+          downloadSection.insertBefore(toolbar, platformCards || downloadSection.firstChild);
         }
+        if (download.parentElement !== toolbar) toolbar.appendChild(download);
         download.hidden = false;
       };
       banner.addEventListener('click', open);
@@ -626,7 +439,11 @@
     }());
   </script>
   <div class="luck-language-picker" aria-label="{{ __('Language selector') }}">
-    <label for="luck-language-select">🌐</label>
+    <label for="luck-language-select">
+      <svg class="luck-portable-icon-svg" data-luck-icon="language" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style="display:block">
+        <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.2-2.4 3.3-5.4 3.3-9S14.2 5.4 12 3m0 18c-2.2-2.4-3.3-5.4-3.3-9S9.8 5.4 12 3M3.5 9h17m-17 6h17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </label>
     <select id="luck-language-select" aria-label="{{ __('Choose language') }}">
       <option value="vi-VN">Tiếng Việt</option>
       <option value="en-US">English</option>

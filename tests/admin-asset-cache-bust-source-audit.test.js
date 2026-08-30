@@ -75,7 +75,8 @@ for (const source of [smoke, deploy]) {
     source.includes('mapfile -t admin_js_paths') &&
       source.includes('mapfile -t admin_css_paths') &&
       source.includes('mapfile -t admin_locale_paths') &&
-      source.includes('for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"; do'),
+      source.includes('for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"') &&
+      source.includes('"$admin_favicon_svg_path" "$admin_favicon_png_path"; do'),
     'A release gate does not validate every emitted admin asset URL and file.'
   );
 }

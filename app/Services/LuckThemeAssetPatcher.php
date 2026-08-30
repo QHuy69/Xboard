@@ -72,6 +72,19 @@ final class LuckThemeAssetPatcher
         return preg_replace('/\.js$/', '-access-v2.js', $name) ?? $name;
     }
 
+    /**
+     * Give the three lazy routes containing maintained portable icons a new
+     * browser/CDN URL without changing their physical generated filenames.
+     */
+    public static function versionPortableIconAssetImports(string $contents): string
+    {
+        $pattern = '#(?<prefix>\./|assets/)(?<name>(?:lsrL0SOU|BR9H_Zte|DSCv3-VU)[^"\'\?]*\.js)(?:\?v=\d+)?#';
+
+        return preg_replace_callback($pattern, static function (array $match): string {
+            return $match['prefix'] . $match['name'] . '?v=2';
+        }, $contents) ?? $contents;
+    }
+
     public static function patchLoadingAnimations(string $contents): string
     {
         // Luck renders route-level loading VNodes before the DOM translation
@@ -135,6 +148,63 @@ final class LuckThemeAssetPatcher
         return $contents;
     }
 
+    /**
+     * Replace Luck's font/OS-dependent emoji glyphs with inline currentColor
+     * SVG. These exact generated fragments cover the orders and traffic empty
+     * states plus both desktop/mobile invite-transfer warning dialogs.
+     * Decorative hosts remain aria-hidden because the adjacent localized text
+     * already exposes their meaning to assistive technology.
+     */
+    public static function patchPortableUnicodeIcons(string $contents): string
+    {
+        $replacements = [
+            'createBaseVNode("div", { class: "empty-icon" }, "📋", -1)' => <<<'JS'
+createBaseVNode("div", { class: "empty-icon", "aria-hidden": "true" }, [
+              createBaseVNode("svg", { class: "luck-portable-icon-svg", width: "48", height: "48", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false", "data-luck-icon": "orders-empty", style: { display: "block" } }, [
+                createBaseVNode("path", { d: "M9 5h6m-6 4h6m-6 4h4M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2m-8 0a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2H8V3Z", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" })
+              ])
+            ], -1)
+JS,
+            'createBaseVNode("div", { class: "empty-icon" }, "📊", -1)' => <<<'JS'
+createBaseVNode("div", { class: "empty-icon", "aria-hidden": "true" }, [
+              createBaseVNode("svg", { class: "luck-portable-icon-svg", width: "48", height: "48", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false", "data-luck-icon": "traffic-empty", style: { display: "block" } }, [
+                createBaseVNode("path", { d: "M4 19V9m6 10V5m6 14v-7m4 7H2", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" })
+              ])
+            ], -1)
+JS,
+            'createBaseVNode("span", { class: "warning-icon" }, "⚠️")' => <<<'JS'
+createBaseVNode("span", { class: "warning-icon", "aria-hidden": "true" }, [
+              createBaseVNode("svg", { class: "luck-portable-icon-svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false", "data-luck-icon": "warning", style: { display: "block" } }, [
+                createBaseVNode("path", { d: "M12 3 2.8 20h18.4L12 3Zm0 6v4m0 3h.01", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" })
+              ])
+            ])
+JS,
+            'createBaseVNode("span", { class: "warning-icon" }, "💰")' => <<<'JS'
+createBaseVNode("span", { class: "warning-icon", "aria-hidden": "true" }, [
+              createBaseVNode("svg", { class: "luck-portable-icon-svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false", "data-luck-icon": "balance", style: { display: "block" } }, [
+                createBaseVNode("path", { d: "M12 3a8 8 0 1 0 0 16 8 8 0 0 0 0-16Zm0 3v12m3-9.5c-.6-.7-1.5-1-3-1-1.7 0-3 .9-3 2s1.3 2 3 2 3 .9 3 2-1.3 2-3 2c-1.5 0-2.4-.3-3-1", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" })
+              ])
+            ])
+JS,
+            'createBaseVNode("span", { class: "warning-icon" }, "📝")' => <<<'JS'
+createBaseVNode("span", { class: "warning-icon", "aria-hidden": "true" }, [
+              createBaseVNode("svg", { class: "luck-portable-icon-svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false", "data-luck-icon": "record", style: { display: "block" } }, [
+                createBaseVNode("path", { d: "M7 3h7l4 4v14H7V3Zm7 0v5h5M9 12h6m-6 4h6", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" })
+              ])
+            ])
+JS,
+            'createBaseVNode("span", { class: "hint-icon" }, "💡")' => <<<'JS'
+createBaseVNode("span", { class: "hint-icon", "aria-hidden": "true" }, [
+              createBaseVNode("svg", { class: "luck-portable-icon-svg", width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", "aria-hidden": "true", focusable: "false", "data-luck-icon": "hint", style: { display: "block" } }, [
+                createBaseVNode("path", { d: "M9 18h6m-5 3h4m3-9a5 5 0 1 0-8.5 3.6c.9.8 1.5 1.4 1.5 2.4h4c0-1 .6-1.6 1.5-2.4A4.9 4.9 0 0 0 17 12Z", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round" })
+              ])
+            ])
+JS,
+        ];
+
+        return str_replace(array_keys($replacements), array_values($replacements), $contents);
+    }
+
     public static function patchTrafficChart(string $contents): string
     {
         if (!str_contains($contents, 'const luckChartText =')) {
@@ -177,6 +247,31 @@ final class LuckThemeAssetPatcher
         );
 
         return $contents;
+    }
+
+    public static function patchNodeScrollbar(string $contents): string
+    {
+        if (str_contains($contents, '"scrollbar-props": { trigger: "none" }')) {
+            return $contents;
+        }
+
+        $needle = <<<'JS'
+              "scroll-x": 1200,
+              class: "compact-table desktop-table"
+JS;
+        if (!str_contains($contents, $needle)) {
+            return $contents;
+        }
+
+        return str_replace(
+            $needle,
+            <<<'JS'
+              "scroll-x": 1200,
+              "scrollbar-props": { trigger: "none" },
+              class: "compact-table desktop-table"
+JS,
+            $contents
+        );
     }
 
     public static function patchNodeFlags(string $contents): string
