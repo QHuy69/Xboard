@@ -1274,6 +1274,18 @@ html[dir="rtl"] .luck-language-picker select {
   margin-inline: 0 !important;
 }
 
+/* The stock layout assigns `grid-area: left-bottom` to the client/download
+   section. Once the parent is converted from its original named-area layout
+   to this responsive grid, that stale name creates a second implicit column
+   and squeezes the profile card to 34px on a 280px foldable (and roughly
+   110px even at 1366px). Reset it so both left-column children occupy normal
+   full-width rows. */
+.left-bottom[data-v-3709f5eb] {
+  grid-area: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
 .user-card[data-v-3709f5eb] {
   width: 100% !important;
   min-width: 0 !important;

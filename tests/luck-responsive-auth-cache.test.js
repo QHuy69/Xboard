@@ -6,6 +6,8 @@ const css = fs.readFileSync('luck-overrides.css', 'utf8');
 const template = fs.readFileSync('luck-dashboard.blade.php', 'utf8');
 const routes = fs.readFileSync('routes/web.php', 'utf8');
 const patcher = fs.readFileSync('app/Services/LuckThemeAssetPatcher.php', 'utf8');
+const ciSmoke = fs.readFileSync('.docker/ci-smoke.sh', 'utf8');
+const deploy = fs.readFileSync('.docker/deploy-production.sh', 'utf8');
 
 const languageScript = template.match(/<div class="luck-language-picker"[\s\S]*?<\/div>\s*<script>([\s\S]*?)<\/script>/);
 assert(languageScript, 'language picker runtime script is missing');
@@ -13,8 +15,8 @@ assert.doesNotThrow(() => new vm.Script(languageScript[1]), 'language picker run
 
 assert(!template.includes('maximum-scale=1'), 'pinch zoom must not be disabled');
 assert(!template.includes('user-scalable=no'), 'user zoom must remain available');
-assert(template.includes('luck-overrides.css?v=19'), 'responsive CSS needs a fresh cache key');
-assert(template.includes('BBbuoBq5-fresh.js?v=59'), 'entry imports need a fresh cache key');
+assert(template.includes('luck-overrides.css?v=20'), 'responsive CSS needs a fresh cache key');
+assert(template.includes('BBbuoBq5-fresh.js?v=60'), 'entry imports need a fresh cache key');
 assert(template.includes('i18n-v18.js?v=60'), 'manual language switching needs a fresh cache key');
 
 assert(!/\[role="dialog"\]\s*>\s*\*\s*\{/.test(css), 'dialog children must not become nested scroll panes');
@@ -59,6 +61,11 @@ assert(routes.includes('LuckThemeAssetPatcher::rewriteNodeAssetImport($assetCont
 assert(routes.includes('LuckThemeAssetPatcher::nodeAccessAssetName($runtimeFile)'), 'node output must use the normalized physical filename');
 assert(patcher.includes("'-access-v2.js'"), 'node patch needs a new physical cache-busted suffix');
 assert(!routes.includes("preg_replace('/\\.js$/', '-access.js'"), 'legacy suffix appending can create access-access files');
+for (const [name, source] of [['published-image smoke', ciSmoke], ['production deploy gate', deploy]]) {
+  assert(source.includes('node_route_asset'), `${name} does not resolve the lazy node-route module`);
+  assert(source.includes('./oPGsis9D*-access-v2.js'), `${name} does not require the normalized node module`);
+  assert(source.includes('${node_route_asset#./}'), `${name} does not fetch the referenced node module`);
+}
 assert(
   patcher.includes('profileStatus === 401 || profileStatus === 403')
     && patcher.includes('if (isAuthFailure)')

@@ -46,7 +46,7 @@ post_deploy_checks() {
   local container_id="$1"
   local expected_revision_prefix="$2"
   local started_at="$3"
-  local health actual migration_status integrity dashboard_html ip_status last_heartbeat
+  local health actual migration_status integrity dashboard_html luck_entry_js node_route_asset admin_html admin_js_path admin_css_path admin_js_file admin_css_file ip_status last_heartbeat
 
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
   if [ "$health" != "healthy" ]; then
@@ -67,13 +67,13 @@ post_deploy_checks() {
 
   curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
   dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
-  curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006 >/dev/null || return 1
-  grep -q 'luck-overrides.css?v=19' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck CSS v19." >&2
+  admin_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006)" || return 1
+  grep -q 'luck-overrides.css?v=20' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck CSS v20." >&2
     return 1
   }
-  grep -q 'BBbuoBq5-fresh.js?v=59' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck entry JS v59." >&2
+  grep -q 'BBbuoBq5-fresh.js?v=60' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck entry JS v60." >&2
     return 1
   }
   grep -q 'i18n-v18.js?v=60' <<<"$dashboard_html" || {
@@ -81,8 +81,8 @@ post_deploy_checks() {
     return 1
   }
   for asset_url in \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=19' \
-    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=59' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=20' \
+    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=60' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=60' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-flags.svg?v=1'; do
@@ -91,6 +91,39 @@ post_deploy_checks() {
       return 1
     }
   done
+
+  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=60')" || return 1
+  node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+  case "$node_route_asset" in
+    ./oPGsis9D*-access-v2.js) ;;
+    *)
+      echo "The deployed Luck entry has no normalized node-route module: $node_route_asset" >&2
+      return 1
+      ;;
+  esac
+  curl --fail --silent --show-error --output /dev/null \
+    "http://127.0.0.1:7001/theme/Luck/assets/${node_route_asset#./}" || {
+      echo "The deployed lazy node-route module is unavailable: $node_route_asset" >&2
+      return 1
+    }
+
+  admin_js_path="$(grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
+  admin_css_path="$(grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
+  if [ -z "$admin_js_path" ] || [ -z "$admin_css_path" ]; then
+    echo "The deployed admin shell did not publish versioned JavaScript and CSS URLs." >&2
+    return 1
+  fi
+  admin_js_file="/www/public${admin_js_path%%\?*}"
+  admin_css_file="/www/public${admin_css_path%%\?*}"
+  docker exec "$container_id" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file" || {
+    echo "The deployed admin bundle is missing the portable Vietnamese SVG flag." >&2
+    return 1
+  }
+  docker exec "$container_id" grep -aFq 'viewBox:"0 0 30 20"' "$admin_js_file" || return 1
+  docker exec "$container_id" grep -aFq 'xboard-admin-icon-visibility' "$admin_css_file" || {
+    echo "The deployed admin stylesheet is missing the icon shrink guard." >&2
+    return 1
+  }
 
   ip_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7001/api/v1/user/devices/current)" || return 1
   case "$ip_status" in

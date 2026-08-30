@@ -87,8 +87,32 @@ echo "[smoke] Container healthcheck passed"
 
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/api/v1/guest/comm/config" >/dev/null
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard" >/dev/null
-curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006" >/dev/null
+admin_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006")"
 echo "[smoke] Public HTTP endpoints passed"
+
+luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=60")"
+node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+case "$node_route_asset" in
+  ./oPGsis9D*-access-v2.js) ;;
+  *)
+    echo "Published Luck entry has no normalized node-route module: $node_route_asset" >&2
+    exit 1
+    ;;
+esac
+curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${node_route_asset#./}" >/dev/null
+echo "[smoke] Lazy node-route module passed"
+
+admin_js_path="$(grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
+admin_css_path="$(grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
+test -n "$admin_js_path"
+test -n "$admin_css_path"
+admin_js_file="/www/public${admin_js_path%%\?*}"
+admin_css_file="/www/public${admin_css_path%%\?*}"
+docker exec "$container_name" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file"
+docker exec "$container_name" grep -aFq 'viewBox:"0 0 30 20"' "$admin_js_file"
+docker exec "$container_name" grep -aFq 'xboard-admin-icon-visibility' "$admin_css_file"
+echo "[smoke] Versioned admin SVG icon assets passed"
 
 docker exec "$container_name" php /www/tests/smoke-order-idempotency.php
 echo "[smoke] Order, payment-replay and disabled-surplus idempotency checks passed"

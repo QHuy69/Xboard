@@ -14,6 +14,10 @@ expect(
   'desktop dashboard columns must have explicit readable minimums'
 );
 expect(
+  /\.left-bottom\[data-v-3709f5eb\][\s\S]*?grid-area:\s*auto\s*!important[\s\S]*?width:\s*100%\s*!important/,
+  'the stock left-bottom named area must not create an implicit column that collapses the user card'
+);
+expect(
   /container:\s*luck-user-card\s*\/\s*inline-size/,
   'dashboard card must respond to its real available width, not only the viewport'
 );

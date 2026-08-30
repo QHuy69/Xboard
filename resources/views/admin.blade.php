@@ -21,6 +21,12 @@
     $scripts = [];
     $styles = [];
     $locales = [];
+    // The compiled admin filenames are patched in place for maintained fixes,
+    // so their original Vite hashes do not change. Tie every public asset URL
+    // to the immutable application build version to prevent browsers and CDNs
+    // from keeping an older module (for example the platform-dependent flag
+    // emoji) after a release.
+    $assetVersion = rawurlencode((string) ($version ?: '1'));
 
     if (is_array($entry)) {
       $visited = [];
@@ -60,22 +66,22 @@
 
   @if($entry && count($scripts) > 0)
     @foreach($styles as $css)
-      <link rel="stylesheet" crossorigin href="/assets/admin/{{ $css }}" />
+      <link rel="stylesheet" crossorigin href="/assets/admin/{{ $css }}?v={{ $assetVersion }}" />
     @endforeach
     @foreach($locales as $locale)
-      <script src="/assets/admin/{{ $locale }}"></script>
+      <script src="/assets/admin/{{ $locale }}?v={{ $assetVersion }}"></script>
     @endforeach
     @foreach($scripts as $js)
-      <script type="module" crossorigin src="/assets/admin/{{ $js }}"></script>
+      <script type="module" crossorigin src="/assets/admin/{{ $js }}?v={{ $assetVersion }}"></script>
     @endforeach
   @else
     {{-- Fallback: hardcoded paths for backward compatibility --}}
-    <script type="module" crossorigin src="/assets/admin/assets/index.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/admin/assets/index.css" />
-    <link rel="stylesheet" crossorigin href="/assets/admin/assets/vendor.css">
-    <script src="/assets/admin/locales/en-US.js"></script>
-    <script src="/assets/admin/locales/zh-CN.js"></script>
-    <script src="/assets/admin/locales/ko-KR.js"></script>
+    <script type="module" crossorigin src="/assets/admin/assets/index.js?v={{ $assetVersion }}"></script>
+    <link rel="stylesheet" crossorigin href="/assets/admin/assets/index.css?v={{ $assetVersion }}" />
+    <link rel="stylesheet" crossorigin href="/assets/admin/assets/vendor.css?v={{ $assetVersion }}">
+    <script src="/assets/admin/locales/en-US.js?v={{ $assetVersion }}"></script>
+    <script src="/assets/admin/locales/zh-CN.js?v={{ $assetVersion }}"></script>
+    <script src="/assets/admin/locales/ko-KR.js?v={{ $assetVersion }}"></script>
   @endif
 </head>
 

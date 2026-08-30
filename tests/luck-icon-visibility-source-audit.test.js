@@ -7,7 +7,7 @@ const template = fs.readFileSync('luck-dashboard.blade.php', 'utf8');
 const patcher = fs.readFileSync('app/Services/LuckThemeAssetPatcher.php', 'utf8');
 const flags = fs.readFileSync('luck-flags.svg', 'utf8');
 
-assert(template.includes('luck-overrides.css?v=19'), 'icon CSS changes need a new browser cache key');
+assert(template.includes('luck-overrides.css?v=20'), 'icon CSS changes need a new browser cache key');
 
 for (const selector of [
   '.menu-icon', '.nav-icon', '.btn-icon', '.input-icon', '.dialog-icon',
