@@ -72,6 +72,8 @@ curl --fail --silent --show-error "http://127.0.0.1:${host_port}/api/v1/guest/co
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard" >/dev/null
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006" >/dev/null
 
+docker exec "$container_name" php /www/tests/smoke-order-idempotency.php
+
 docker exec "$container_name" php /www/artisan migrate:status --no-ansi \
   | grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran'
 

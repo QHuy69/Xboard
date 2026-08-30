@@ -43,5 +43,6 @@
     "Failed to save user information": "Không thể lưu thông tin người dùng",
     "Failed to save order information": "Không thể lưu thông tin đơn hàng",
     "Changing subscription plans is currently disabled. Please contact support.": "Hiện không cho phép đổi gói. Vui lòng liên hệ hỗ trợ.",
-    "Invalid subscription period": "Chu kỳ đăng ký không hợp lệ"
+    "Invalid subscription period": "Chu kỳ đăng ký không hợp lệ",
+    "Order amount is invalid": "Số tiền đơn hàng không hợp lệ"
 }

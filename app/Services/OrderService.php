@@ -127,7 +127,7 @@ class OrderService
 
             $plan = Plan::find($order->plan_id);
             if (!$plan) {
-                throw new \RuntimeException('订阅不存在');
+                throw new \RuntimeException(__('Subscription plan does not exist'));
             }
 
             HookManager::call('order.open.before', $order);
