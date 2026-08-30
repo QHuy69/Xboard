@@ -2,11 +2,20 @@
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 require_once dirname(__DIR__) . '/plugins-core/CoinPayments/Plugin.php';
+require_once dirname(__DIR__) . '/plugins-core/Crisp/Plugin.php';
+require_once dirname(__DIR__) . '/plugins-core/Messenger/Plugin.php';
 
 use Plugin\CoinPayments\Plugin as CoinPaymentsPlugin;
+use Plugin\Crisp\Plugin as CrispPlugin;
+use Plugin\Messenger\Plugin as MessengerPlugin;
+use App\Models\Plugin as PluginModel;
 use App\Services\EncryptedDatabaseBackupService;
+use App\Services\Plugin\HookManager;
+use App\Services\Plugin\PluginConfigService;
+use App\Services\Plugin\PluginManager;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 function expectSource(string $file, array $needles): void
 {
@@ -39,6 +48,63 @@ set_exception_handler(static function (Throwable $throwable): never {
     fwrite(STDERR, "Uncaught backend smoke-test error: {$throwable->getMessage()}\n");
     exit(1);
 });
+
+HookManager::reset();
+$unconfiguredCoinPayments = new CoinPaymentsPlugin('coin_payments');
+$unconfiguredCoinPayments->setConfig(['enabled' => true]);
+$unconfiguredCoinPayments->boot();
+if (array_key_exists('CoinPayments', HookManager::filter('available_payment_methods', []))) {
+    fwrite(STDERR, "CoinPayments was exposed without required credentials.\n");
+    exit(1);
+}
+
+HookManager::reset();
+$configuredCoinPayments = new CoinPaymentsPlugin('coin_payments');
+$configuredCoinPayments->setConfig([
+    'enabled' => 'true',
+    'coinpayments_client_id' => 'client-123',
+    'coinpayments_client_secret' => 'secret-xyz',
+    'coinpayments_invoice_currency' => 'USD',
+    'coinpayments_invoice_currency_id' => 'currency-usd',
+    'coinpayments_cny_invoice_rate' => '0.14',
+]);
+$configuredCoinPayments->boot();
+if (!array_key_exists('CoinPayments', HookManager::filter('available_payment_methods', []))) {
+    fwrite(STDERR, "Configured CoinPayments was not registered.\n");
+    exit(1);
+}
+
+HookManager::reset();
+$crisp = new CrispPlugin('crisp');
+$crisp->setConfig(['website_id' => 'invalid-script-value']);
+$crisp->boot();
+if (HookManager::filter('theme.support.crisp.website_id', 'fallback-crisp') !== 'fallback-crisp') {
+    fwrite(STDERR, "Crisp accepted an invalid Website ID.\n");
+    exit(1);
+}
+HookManager::reset();
+$crisp->setConfig(['website_id' => '123e4567-e89b-42d3-a456-426614174000']);
+$crisp->boot();
+if (HookManager::filter('theme.support.crisp.website_id', '') !== '123e4567-e89b-42d3-a456-426614174000') {
+    fwrite(STDERR, "Crisp did not expose a valid Website ID.\n");
+    exit(1);
+}
+HookManager::reset();
+$messenger = new MessengerPlugin('messenger');
+$messenger->setConfig(['page_username' => 'invalid/value']);
+$messenger->boot();
+if (HookManager::filter('theme.support.messenger.page_username', 'fallback-page') !== 'fallback-page') {
+    fwrite(STDERR, "Messenger accepted an invalid Page username.\n");
+    exit(1);
+}
+HookManager::reset();
+$messenger->setConfig(['page_username' => 'zaoguang.support']);
+$messenger->boot();
+if (HookManager::filter('theme.support.messenger.page_username', '') !== 'zaoguang.support') {
+    fwrite(STDERR, "Messenger did not expose a valid Page username.\n");
+    exit(1);
+}
+HookManager::reset();
 $webhookUrl = 'https://payments.example.test/coinpayments/callback';
 $timestamp = gmdate('Y-m-d\TH:i:s');
 $payload = json_encode([
@@ -74,6 +140,20 @@ expectSource('plugins-core/CoinPayments/Plugin.php', [
     "invoiceState !== 'completed'",
     'invoice.amount.currencyId',
     'invoice.amount.total',
+]);
+
+expectSource('plugins-core/Crisp/Plugin.php', [
+    "theme.support.crisp.website_id",
+    "getConfig('website_id'",
+]);
+
+expectSource('plugins-core/Messenger/Plugin.php', [
+    "theme.support.messenger.page_username",
+    "getConfig('page_username'",
+]);
+
+expectSource('app/Services/PaymentService.php', [
+    'array_replace(is_array($pluginConfig) ? $pluginConfig : [], $this->config)',
 ]);
 
 expectSource('app/Services/OrderService.php', [
@@ -143,8 +223,18 @@ try {
     @unlink($wrongPasswordPath ?? '');
 }
 
-foreach (['plugins-core/CoinPayments/config.json', 'plugins-core/Telegram/config.json', 'resources/lang/vi-VN.json'] as $file) {
+foreach (['plugins-core/CoinPayments/config.json', 'plugins-core/Telegram/config.json', 'plugins-core/Crisp/config.json', 'plugins-core/Messenger/config.json', 'resources/lang/vi-VN.json'] as $file) {
     $decoded = json_decode((string) file_get_contents(dirname(__DIR__) . '/' . $file), true, 512, JSON_THROW_ON_ERROR);
+    if (isset($decoded['config'])) {
+        foreach ($decoded['config'] as $key => $field) {
+            if (!is_array($field)
+                || !isset($field['type'], $field['default'], $field['label'])
+                || !in_array($field['type'], ['string', 'password', 'boolean', 'number', 'select', 'json'], true)) {
+                fwrite(STDERR, "Plugin config field {$file}:{$key} is not admin-compatible.\n");
+                exit(1);
+            }
+        }
+    }
     if ($file === 'plugins-core/Telegram/config.json') {
         foreach ($decoded['config'] as $field) {
             if (($field['type'] ?? '') === 'select' && !array_is_list($field['options'] ?? [])) {
@@ -153,6 +243,62 @@ foreach (['plugins-core/CoinPayments/config.json', 'plugins-core/Telegram/config
             }
         }
     }
+}
+
+$coinPaymentsManifest = json_decode((string) file_get_contents(dirname(__DIR__) . '/plugins-core/CoinPayments/config.json'), true, 512, JSON_THROW_ON_ERROR);
+if (($coinPaymentsManifest['auto_enable'] ?? true) !== false) {
+    fwrite(STDERR, "CoinPayments must not auto-enable before credentials are configured.\n");
+    exit(1);
+}
+foreach (['coinpayments_client_id', 'coinpayments_client_secret', 'coinpayments_invoice_currency', 'coinpayments_webhook_url'] as $field) {
+    if (!isset($coinPaymentsManifest['config'][$field])) {
+        fwrite(STDERR, "CoinPayments admin config is missing {$field}.\n");
+        exit(1);
+    }
+}
+$coinPaymentsForm = (new CoinPaymentsPlugin('coin_payments'))->form();
+foreach ($coinPaymentsForm as $field => $_meta) {
+    if (!isset($coinPaymentsManifest['config'][$field])) {
+        fwrite(STDERR, "CoinPayments payment field {$field} cannot be configured from plugin admin.\n");
+        exit(1);
+    }
+}
+
+DB::beginTransaction();
+try {
+    PluginModel::query()->where('code', 'coin_payments')->delete();
+    PluginManager::installDefaultPlugins();
+    $installedCoinPayments = PluginModel::query()->where('code', 'coin_payments')->firstOrFail();
+    if ($installedCoinPayments->is_enabled) {
+        fwrite(STDERR, "CoinPayments default install did not remain disabled.\n");
+        exit(1);
+    }
+
+    app(PluginConfigService::class)->updateConfig('coin_payments', [
+        'enabled' => 'false',
+        'coinpayments_client_secret' => 'preserve-this-secret',
+        'coinpayments_webhook_max_age' => '420',
+    ]);
+    app(PluginConfigService::class)->updateConfig('coin_payments', [
+        'coinpayments_client_id' => 'updated-client',
+    ]);
+    $storedConfig = json_decode((string) $installedCoinPayments->fresh()->config, true, 512, JSON_THROW_ON_ERROR);
+    if (($storedConfig['enabled'] ?? null) !== false
+        || ($storedConfig['coinpayments_webhook_max_age'] ?? null) !== 420
+        || ($storedConfig['coinpayments_client_secret'] ?? null) !== 'preserve-this-secret') {
+        fwrite(STDERR, "Plugin admin config did not preserve or normalize values.\n");
+        exit(1);
+    }
+
+    $installedCoinPayments->update(['version' => '2.0.0', 'is_enabled' => false]);
+    app(PluginManager::class)->update('coin_payments');
+    $updatedCoinPayments = $installedCoinPayments->fresh();
+    if ($updatedCoinPayments->version !== $coinPaymentsManifest['version'] || $updatedCoinPayments->is_enabled) {
+        fwrite(STDERR, "CoinPayments upgrade changed the disabled state.\n");
+        exit(1);
+    }
+} finally {
+    DB::rollBack();
 }
 
 echo "CoinPayments signing, surplus guard, account locale and Telegram integration checks passed.\n";

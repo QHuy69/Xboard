@@ -103,6 +103,8 @@ RUN php -l routes/web.php \
     && php -l app/Http/Controllers/V1/User/ServerController.php \
     && php -l app/Http/Resources/NodeResource.php \
     && php -l app/Services/LuckThemeAssetPatcher.php \
+    && php -l plugins-core/Crisp/Plugin.php \
+    && php -l plugins-core/Messenger/Plugin.php \
     && php -l app/Services/OrderService.php \
     && php -l app/Services/TelegramService.php \
     && php -l app/Services/EncryptedDatabaseBackupService.php \

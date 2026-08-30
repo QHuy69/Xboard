@@ -1,0 +1,17 @@
+{
+    "name": "Crisp Chat Support",
+    "code": "crisp",
+    "type": "feature",
+    "version": "1.0.0",
+    "description": "Hiển thị Crisp Chat trên dashboard khách hàng theo cấu hình plugin",
+    "author": "XBoard Team",
+    "config": {
+        "website_id": {
+            "type": "string",
+            "default": "",
+            "label": "Crisp Website ID",
+            "placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "description": "UUID Website ID trong phần cài đặt Crisp. Để trống thì nút chat không được tải."
+        }
+    }
+}

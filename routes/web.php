@@ -133,12 +133,13 @@ $renderTheme = function (Request $request) {
                     $runtimeFiles[] = $relative;
                 }
             }
-            foreach (['BR9H_Zte', 'CK-I2Xx_', 'DSCv3-VU', 'BBIEjj8f', 'q_WC3BFv', 'ByaxWMaA', 'C0KnXkt1', 'C6e3mGRa'] as $assetStem) {
-                foreach (File::glob($themePath . '/assets/' . $assetStem . '*.js') ?: [] as $generatedAsset) {
-                    $relative = 'assets/' . basename($generatedAsset);
-                    if (!in_array($relative, $runtimeFiles, true)) {
-                        $runtimeFiles[] = $relative;
-                    }
+            // Patch every compiled JavaScript chunk, including route chunks
+            // whose hashes and version suffixes change between Luck releases.
+            // This is deliberately broader than the feature-specific list:
+            // animation labels can live in any lazy-loaded page.
+            foreach (LuckThemeAssetPatcher::discoverJavascriptAssets($themePath) as $relative) {
+                if (!in_array($relative, $runtimeFiles, true)) {
+                    $runtimeFiles[] = $relative;
                 }
             }
 
@@ -148,6 +149,16 @@ $renderTheme = function (Request $request) {
                 if (File::exists($source)) {
                     try {
                         File::ensureDirectoryExists(dirname($target));
+                        $loadingPatchedContents = false;
+                        if (str_ends_with($runtimeFile, '.js')) {
+                            $javascriptContents = @file_get_contents($source);
+                            if ($javascriptContents !== false) {
+                                // Patch VNode loading labels before any
+                                // feature-specific rewrite and before the
+                                // chunk is published to public/theme.
+                                $loadingPatchedContents = LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents);
+                            }
+                        }
                         // Luck's generated world-map chunk has occasionally
                         // shipped with one extra closing brace around the
                         // country aggregation callback.  A browser then
@@ -162,7 +173,7 @@ $renderTheme = function (Request $request) {
                         // map chunk after it has been repaired below.
                         if (str_starts_with($runtimeFile, 'assets/BBbuoBq5')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 [
                                     './oPGsis9D-v2.js?v=50',
@@ -262,7 +273,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/oPGsis9D')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 "\n            }\n          }\n        }\n      });\n      return countryMap;",
                                 "\n            }\n          }\n      });\n      return countryMap;",
@@ -311,7 +322,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/BR9H_Zte')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchTrafficChart($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
@@ -323,7 +334,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/CK-I2Xx_')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchFreePlans($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
@@ -335,7 +346,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/DSCv3-VU')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchInviteManagement($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
@@ -347,7 +358,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/BBIEjj8f')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchLoginErrors($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
@@ -360,7 +371,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/q_WC3BFv')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchRegisterFlow($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
@@ -373,7 +384,7 @@ $renderTheme = function (Request $request) {
                         }
                         if (str_starts_with($runtimeFile, 'assets/ByaxWMaA')
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchMessageLocalization($assetContents);
                                 @file_put_contents($target, $fixedContents);
@@ -385,7 +396,7 @@ $renderTheme = function (Request $request) {
                         if ((str_starts_with($runtimeFile, 'assets/C0KnXkt1')
                                 || str_starts_with($runtimeFile, 'assets/C6e3mGRa'))
                             && str_ends_with($runtimeFile, '.js')) {
-                            $assetContents = @file_get_contents($source);
+                            $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchPaymentMessages($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
@@ -394,6 +405,12 @@ $renderTheme = function (Request $request) {
                                 @file_put_contents($paymentTarget, $fixedContents);
                                 continue;
                             }
+                        }
+                        if ($loadingPatchedContents !== false) {
+                            if (@file_put_contents($target, $loadingPatchedContents) === false) {
+                                Log::warning('Theme JavaScript animation labels could not be localized', ['target' => $target]);
+                            }
+                            continue;
                         }
                         // A read-only/publicly prebuilt theme must not turn a
                         // normal page request into a 500 just because an

@@ -488,12 +488,18 @@ class PluginManager
 
         $newVersion = $config['version'];
         $oldVersion = $dbPlugin->version;
+        $wasEnabled = (bool) $dbPlugin->is_enabled;
 
         if (version_compare($newVersion, $oldVersion, '<=')) {
             throw new \Exception('Plugin is already up to date');
         }
 
-        $this->disable($pluginCode);
+        // Upgrading a disabled plugin must never silently enable it. This is
+        // especially important for payment plugins whose credentials may not
+        // have been configured yet.
+        if ($wasEnabled) {
+            $this->disable($pluginCode);
+        }
         $this->runMigrations($pluginCode);
 
         $plugin = $this->loadPlugin($pluginCode);
@@ -512,7 +518,9 @@ class PluginManager
             'updated_at' => now(),
         ]);
 
-        $this->enable($pluginCode);
+        if ($wasEnabled) {
+            $this->enable($pluginCode);
+        }
 
         return true;
     }
@@ -729,14 +737,18 @@ class PluginManager
             }
             if (!Plugin::where('code', $code)->exists()) {
                 $pluginManager->install($code);
-                $pluginManager->enable($code);
-                Log::info("Installed and enabled core plugin: {$code}");
+                if (($config['auto_enable'] ?? true) === true) {
+                    $pluginManager->enable($code);
+                    Log::info("Installed and enabled core plugin: {$code}");
+                } else {
+                    Log::info("Installed core plugin in disabled state: {$code}");
+                }
             }
         }
     }
 
     /**
-     * 根据 config.json 的类型信息对配置值进行类型转换（仅处理 type=json 键）。
+     * 根据 config.json 的类型信息对配置值进行类型转换。
      */
     protected function castConfigValuesByType(string $pluginCode, array $values): array
     {
@@ -755,6 +767,13 @@ class PluginManager
                         $values[$key] = $decoded;
                     }
                 }
+            } elseif ($type === 'boolean' && !is_bool($value)) {
+                $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                if ($parsed !== null) {
+                    $values[$key] = $parsed;
+                }
+            } elseif ($type === 'number' && is_numeric($value)) {
+                $values[$key] = str_contains((string) $value, '.') ? (float) $value : (int) $value;
             }
         }
         return $values;

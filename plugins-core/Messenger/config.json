@@ -1,0 +1,17 @@
+{
+    "name": "Messenger Support",
+    "code": "messenger",
+    "type": "feature",
+    "version": "1.0.0",
+    "description": "Hiển thị nút hỗ trợ Messenger trên dashboard khách hàng theo cấu hình plugin",
+    "author": "XBoard Team",
+    "config": {
+        "page_username": {
+            "type": "string",
+            "default": "",
+            "label": "Tên người dùng Facebook Page",
+            "placeholder": "ten.trang.facebook",
+            "description": "Phần cuối liên kết m.me của Page, không nhập toàn bộ URL."
+        }
+    }
+}

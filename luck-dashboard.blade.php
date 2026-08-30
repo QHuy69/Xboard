@@ -24,7 +24,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=15">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=16">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -49,7 +49,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=57"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=58"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -83,7 +83,7 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=56"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=57"></script>
   <script>
     (function () {
       // The stock login chunk occasionally misses the first SPA navigation
@@ -382,9 +382,15 @@
       });
     }());
   </script>
+  @php
+    $crispFallback = (string) admin_setting('crisp_website_id', env('CRISP_WEBSITE_ID', ''));
+    $crispWebsiteId = trim((string) \App\Services\Plugin\HookManager::filter('theme.support.crisp.website_id', $crispFallback));
+    $messengerFallback = (string) admin_setting('messenger_page_username', env('MESSENGER_PAGE_USERNAME', ''));
+    $messengerUsername = trim((string) \App\Services\Plugin\HookManager::filter('theme.support.messenger.page_username', $messengerFallback));
+  @endphp
   <script>
     (function () {
-      var websiteId = @json((string) (admin_setting('crisp_website_id', env('CRISP_WEBSITE_ID', ''))));
+      var websiteId = @json($crispWebsiteId);
       if (!websiteId || !/^[0-9a-f-]{36}$/i.test(websiteId) || window.__luckCrispLoaded) return;
       window.__luckCrispLoaded = true;
       window.$crisp = window.$crisp || [];
@@ -398,7 +404,6 @@
       document.head.appendChild(script);
     }());
   </script>
-  @php($messengerUsername = trim((string) admin_setting('messenger_page_username', env('MESSENGER_PAGE_USERNAME', ''))))
   @if($messengerUsername !== '' && preg_match('/^[A-Za-z0-9._-]{3,100}$/', $messengerUsername))
     <a class="luck-messenger-support" href="https://m.me/{{ rawurlencode($messengerUsername) }}" target="_blank" rel="noopener noreferrer" aria-label="Messenger support" title="Messenger support">f</a>
   @endif

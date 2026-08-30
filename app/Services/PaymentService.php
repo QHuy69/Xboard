@@ -54,6 +54,11 @@ class PaymentService
             $paymentPlugins = $this->pluginManager->getEnabledPaymentPlugins();
             foreach ($paymentPlugins as $plugin) {
                 if ($plugin->getPluginCode() === $pluginCode) {
+                    // Plugin-admin configuration supplies safe global
+                    // defaults. A concrete payment record can override those
+                    // values without making the plugin settings decorative.
+                    $pluginConfig = $plugin->getConfig();
+                    $this->config = array_replace(is_array($pluginConfig) ? $pluginConfig : [], $this->config);
                     $plugin->setConfig($this->config);
                     $this->payment = $plugin;
                     return;

@@ -158,14 +158,57 @@ const expected = {
   ,'必须使用邀请码才可以注册': 'Bạn phải nhập mã mời để đăng ký'
   ,'未知的支付类型，请重试': 'Không xác định được phương thức thanh toán, vui lòng thử lại'
   ,'登录成功，但暂时无法加载账户信息，请重试': 'Đăng nhập thành công nhưng chưa tải được thông tin tài khoản. Vui lòng thử lại.'
-  ,'新套餐': 'Gói mới'
-  ,'新Gói': 'Gói mới'
+  ,'验证码为空': 'Chưa nhập mã xác minh'
+  ,'请输入邮箱验证码': 'Nhập mã xác minh email'
+  ,'请Xác nhận mật khẩu': 'Vui lòng xác nhận mật khẩu'
+  ,'请Xác nhận密码': 'Vui lòng xác nhận mật khẩu'
+  ,'新购': 'Mua mới'
+  ,'新套餐': 'gói mới'
+  ,'新Gói': 'gói mới'
+  ,'Gói mới的Hạn mức lưu lượng将立即生效': 'Hạn mức lưu lượng của gói mới có hiệu lực ngay'
+  ,'Giới hạn thiết bị和Giới hạn tốc độ将按Gói mới执行': 'Giới hạn thiết bị và tốc độ sẽ áp dụng theo gói mới'
+  ,'建议在月初或Lưu lượng即将用完时MuaGói mới，以避免浪费。': 'Nên mua gói mới vào đầu tháng hoặc khi sắp hết lưu lượng để tránh lãng phí.'
+  ,'Mua gói khác sẽ ảnh hưởng đếnđặt lại trạng thái lưu lượng hiện tại': 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại'
+  ,'加载中...': 'Đang tải...'
+  ,'正在加载主页数据...': 'Đang tải dữ liệu trang chủ...'
+  ,'加载套餐列表中...': 'Đang tải danh sách gói...'
+  ,'正在加载套餐信息...': 'Đang tải thông tin gói...'
+  ,'正在加载节点列表...': 'Đang tải danh sách node...'
+  ,'正在加载世界地图...': 'Đang tải bản đồ thế giới...'
+  ,'加载订单中...': 'Đang tải đơn hàng...'
+  ,'工单内容加载中...': 'Đang tải nội dung ticket...'
+  ,'正在加载文档...': 'Đang tải tài liệu...'
+  ,'正在加载文档内容...': 'Đang tải nội dung tài liệu...'
+  ,'正在加载图表数据...': 'Đang tải dữ liệu biểu đồ...'
+  ,'正在加载流量数据表...': 'Đang tải bảng dữ liệu lưu lượng...'
+  ,'流量数据加载中...': 'Đang tải dữ liệu lưu lượng...'
+  ,'正在加载支付方式，请稍候...': 'Đang tải phương thức thanh toán, vui lòng đợi...'
+  ,'正在处理支付...': 'Đang xử lý thanh toán...'
+  ,'正在完成余额支付...': 'Đang hoàn tất thanh toán bằng số dư...'
+  ,'正在检查支付状态...': 'Đang kiểm tra trạng thái thanh toán...'
+  ,'正在激活免费订单...': 'Đang kích hoạt đơn hàng 0đ...'
+  ,'正在获取支付方式...': 'Đang lấy phương thức thanh toán...'
+  ,'正在跳转支付...': 'Đang chuyển đến trang thanh toán...'
+  ,'注册中...': 'Đang đăng ký...'
+  ,'重置中...': 'Đang đặt lại...'
+  ,'充值中...': 'Đang nạp tiền...'
+  ,'Nhập email验证码': 'Nhập mã xác minh email'
 };
 
 for (const [source, vietnamese] of Object.entries(expected)) {
   const actual = translate(source);
   assert.strictEqual(actual, vietnamese, `${source} translated incorrectly`);
   assert(!/[\u3400-\u9fff]/.test(actual), `${source} leaked CJK text`);
+}
+
+for (const [source, fallback] of Object.entries({
+  '正在读取未来版本数据...': 'Đang xử lý dữ liệu...',
+  '请输入未来版本字段': 'Vui lòng kiểm tra thông tin bắt buộc',
+  '未来版本操作失败': 'Thao tác thất bại, vui lòng thử lại',
+  '未来版本通知': 'Thông báo hệ thống'
+})) {
+  assert.strictEqual(translate(source), fallback, `${source} did not use the CJK safety fallback`);
+  assert(!/[\u3400-\u9fff]/.test(translate(source)), `${source} leaked CJK through the safety fallback`);
 }
 
 const joinedVietnamese = /(?:Xác nhận|Số dư|Nạp tiền|Đơn hàng|Gói|Thanh toán|Thông tin|Mật khẩu|Đăng ký|Mã QR|Dịch vụ|Tốc độ|Mua|Hủy|Đang|Máy chủ|Trạng thái|Gia hạn|Đã thanh toán|Hỗ trợ|Tải|Chi tiết|Làm mới|Đặt lại)(?=[A-ZÀ-Ỹ])/;

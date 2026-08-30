@@ -158,7 +158,9 @@
     'You must use the invitation code to register': 'An invitation code is required to register',
     '必须使用邀请码才可以注册': 'An invitation code is required to register',
     '未知的支付类型，请重试': 'Unknown payment method. Please try again.',
-    '新套餐': 'New plan', '新Gói': 'New plan'
+    '验证码为空': 'Verification code required', '请输入邮箱验证码': 'Enter email verification code',
+    '请Xác nhận mật khẩu': 'Please confirm your password', '请Xác nhận密码': 'Please confirm your password',
+    '新购': 'New purchase', '新套餐': 'New plan', '新Gói': 'New plan'
   });
   Object.assign(vi, {
     '节点名称': 'Tên node', '地址': 'Địa chỉ', '倍率': 'Tỷ lệ', '标签': 'Nhãn',
@@ -186,7 +188,9 @@
     'Invalid invitation code': 'Mã mời không hợp lệ',
     '未知的支付类型，请重试': 'Không xác định được phương thức thanh toán, vui lòng thử lại',
     '登录成功，但暂时无法加载账户信息，请重试': 'Đăng nhập thành công nhưng chưa tải được thông tin tài khoản. Vui lòng thử lại.',
-    '新套餐': 'Gói mới', '新Gói': 'Gói mới'
+    '验证码为空': 'Chưa nhập mã xác minh', '请输入邮箱验证码': 'Nhập mã xác minh email',
+    '请Xác nhận mật khẩu': 'Vui lòng xác nhận mật khẩu', '请Xác nhận密码': 'Vui lòng xác nhận mật khẩu',
+    '新购': 'Mua mới', '新套餐': 'gói mới', '新Gói': 'gói mới'
   });
   Object.assign(en, {
     '邀请链接二维码': 'Invitation link QR code', '分享给好友，获得推广佣金': 'Share with friends to earn referral commission',
@@ -452,8 +456,8 @@
     '最终Giá': 'Giá cuối', '购买提示': 'Lưu ý mua gói', '重要提醒': 'Lưu ý quan trọng', '确认购买': 'Xác nhận mua',
     '正在创建Đơn hàng...': 'Đang tạo đơn hàng...', '网络错误，请稍后重试': 'Lỗi mạng, vui lòng thử lại sau',
     'Máy chủ网关Lỗi，请稍后重试': 'Lỗi máy chủ, vui lòng thử lại sau', '网关错误，请稍后重试': 'Lỗi cổng kết nối, vui lòng thử lại sau',
-    '购买其他Gói将会对当前的Tình trạng sử dụng lưu量，并立即生成新的Gói配置：': 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:',
-    '购买其他Gói将会对当前的Tình trạng sử dụng lưu lượng，并立即生成新的Gói配置：': 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:',
+    '购买其他Gói将会对当前的Tình trạng sử dụng lưu量，并立即生成新的Gói配置：': 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:',
+    '购买其他Gói将会对当前的Tình trạng sử dụng lưu lượng，并立即生成新的Gói配置：': 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:',
     '当前未使用的流量将会被清零': 'Lưu lượng chưa sử dụng hiện tại sẽ bị xóa', '新Gói的流量配额将立即生效': 'Hạn mức lưu lượng của gói mới có hiệu lực ngay',
     '设备限制和速度限制将按新Gói执行': 'Giới hạn thiết bị và tốc độ sẽ áp dụng theo gói mới', '如果是降级Gói，请确认您的使用需求': 'Nếu hạ cấp gói, hãy xác nhận nhu cầu sử dụng',
     '建议在月初或流量即将用完时购买新Gói，以避免浪费。': 'Nên mua gói mới đầu tháng hoặc khi sắp hết lưu lượng để tránh lãng phí.',
@@ -566,6 +570,18 @@
   // complete fragment dictionary so every supported locale renders whole
   // words instead of leaking source-language pieces.
   var extraEn = {
+    '加载中...': 'Loading...', '正在加载主页数据...': 'Loading dashboard data...',
+    '加载套餐列表中...': 'Loading plans...', '正在加载套餐信息...': 'Loading plan information...',
+    '正在加载节点列表...': 'Loading nodes...', '正在加载世界地图...': 'Loading world map...',
+    '加载订单中...': 'Loading orders...', '工单内容加载中...': 'Loading ticket content...',
+    '正在加载文档...': 'Loading documentation...', '正在加载文档内容...': 'Loading document content...',
+    '正在加载图表数据...': 'Loading chart data...', '正在加载流量数据表...': 'Loading traffic data...',
+    '流量数据加载中...': 'Loading traffic data...', '正在加载支付方式，请稍候...': 'Loading payment methods. Please wait...',
+    '正在处理支付...': 'Processing payment...', '正在完成余额支付...': 'Completing balance payment...',
+    '正在检查支付状态...': 'Checking payment status...', '正在激活免费订单...': 'Activating the free order...',
+    '正在获取支付方式...': 'Getting payment methods...', '正在跳转支付...': 'Redirecting to payment...',
+    '注册中...': 'Registering...', '重置中...': 'Resetting...', '充值中...': 'Topping up...',
+    'Nhập email验证码': 'Enter email verification code',
     '购买': 'Purchase', '提示': 'Notice', '升级': 'Upgrade', '基本信息': 'Basic information', '周期': 'Billing cycle',
     '费用明细': 'Price details', '实付': 'Paid amount', '选择支付方式': 'Choose payment method', '请选择支付方式': 'Please choose a payment method',
     '订单类型': 'Order type', '保留订单': 'Keep order', '确认取消': 'Confirm cancellation', '取消订单': 'Cancel order',
@@ -590,6 +606,18 @@
     '最近7天流量': 'Traffic for the last 7 days', '最近7天': 'last 7 days', '日': 'day', '月': 'month', '年': 'year'
   };
   var extraVi = {
+    '加载中...': 'Đang tải...', '正在加载主页数据...': 'Đang tải dữ liệu trang chủ...',
+    '加载套餐列表中...': 'Đang tải danh sách gói...', '正在加载套餐信息...': 'Đang tải thông tin gói...',
+    '正在加载节点列表...': 'Đang tải danh sách node...', '正在加载世界地图...': 'Đang tải bản đồ thế giới...',
+    '加载订单中...': 'Đang tải đơn hàng...', '工单内容加载中...': 'Đang tải nội dung ticket...',
+    '正在加载文档...': 'Đang tải tài liệu...', '正在加载文档内容...': 'Đang tải nội dung tài liệu...',
+    '正在加载图表数据...': 'Đang tải dữ liệu biểu đồ...', '正在加载流量数据表...': 'Đang tải bảng dữ liệu lưu lượng...',
+    '流量数据加载中...': 'Đang tải dữ liệu lưu lượng...', '正在加载支付方式，请稍候...': 'Đang tải phương thức thanh toán, vui lòng đợi...',
+    '正在处理支付...': 'Đang xử lý thanh toán...', '正在完成余额支付...': 'Đang hoàn tất thanh toán bằng số dư...',
+    '正在检查支付状态...': 'Đang kiểm tra trạng thái thanh toán...', '正在激活免费订单...': 'Đang kích hoạt đơn hàng 0đ...',
+    '正在获取支付方式...': 'Đang lấy phương thức thanh toán...', '正在跳转支付...': 'Đang chuyển đến trang thanh toán...',
+    '注册中...': 'Đang đăng ký...', '重置中...': 'Đang đặt lại...', '充值中...': 'Đang nạp tiền...',
+    'Nhập email验证码': 'Nhập mã xác minh email',
     '注册失败': 'Đăng ký thất bại',
     'Đăng kýthất bại': 'Đăng ký thất bại',
     '请检查输入信息': 'Vui lòng kiểm tra thông tin đã nhập',
@@ -634,6 +662,277 @@
     '请Làm mới重试': 'Vui lòng làm mới để thử lại', '请重试': 'Vui lòng thử lại', '重试': 'thử lại',
     '加载': 'Tải', '失败': 'thất bại'
   };
+  // Exact strings extracted from the production Luck bundles. These are kept
+  // as complete sentences so the fragment fallback cannot create half-Chinese,
+  // half-Vietnamese validation messages or loading animations.
+  var productionVi = {
+    '发送失败': 'Gửi thất bại',
+    '发送忘记密码验证码失败:': 'Gửi mã xác minh đặt lại mật khẩu thất bại:',
+    '发送验证码失败，请稍后重试': 'Gửi mã xác minh thất bại, vui lòng thử lại sau',
+    '该邮箱未注册，请检查邮箱地址或前往注册': 'Email này chưa đăng ký. Hãy kiểm tra địa chỉ email hoặc đăng ký tài khoản.',
+    '两次输入的密码不一致': 'Mật khẩu nhập hai lần không khớp',
+    '密码不匹配': 'Mật khẩu không khớp',
+    '密码格式错误': 'Định dạng mật khẩu không hợp lệ',
+    '密码长度不能少于6位': 'Mật khẩu phải có ít nhất 6 ký tự',
+    '密码长度不能少于8位': 'Mật khẩu phải có ít nhất 8 ký tự',
+    '密码重置成功，请使用新密码登录': 'Đặt lại mật khẩu thành công. Hãy đăng nhập bằng mật khẩu mới.',
+    '请完成验证': 'Vui lòng hoàn tất xác minh',
+    '请完成验证码验证后再登录': 'Vui lòng xác minh mã trước khi đăng nhập',
+    '验证码错误': 'Mã xác minh không đúng',
+    '验证码发送过于频繁，请稍后再试': 'Gửi mã xác minh quá thường xuyên, vui lòng thử lại sau',
+    '验证码已发送': 'Đã gửi mã xác minh',
+    '邮箱未注册': 'Email chưa đăng ký',
+    '邮箱验证码': 'Mã xác minh email',
+    '邮箱验证码错误，请重新输入': 'Mã xác minh email không đúng, vui lòng nhập lại',
+    '重置密码失败，请稍后重试': 'Đặt lại mật khẩu thất bại, vui lòng thử lại sau',
+    '重置失败次数过多，请稍后再试': 'Đặt lại thất bại quá nhiều lần, vui lòng thử lại sau',
+    '当前暂停新用户注册，请联系管理员': 'Hệ thống đang tạm dừng đăng ký mới, vui lòng liên hệ quản trị viên',
+    '服务器暂时无法响应，请稍后重试': 'Máy chủ tạm thời không phản hồi, vui lòng thử lại sau',
+    '该邮箱已被注册，请使用其他邮箱或直接登录': 'Email này đã được đăng ký. Hãy dùng email khác hoặc đăng nhập.',
+    '连接': 'Kết nối',
+    '密码错误次数过多': 'Nhập sai mật khẩu quá nhiều lần',
+    '密码错误次数过多，请稍后再试': 'Nhập sai mật khẩu quá nhiều lần, vui lòng thử lại sau',
+    '您的账户已被管理员封禁，请联系客服': 'Tài khoản đã bị quản trị viên khóa, vui lòng liên hệ hỗ trợ',
+    '请检查网络连接后重试': 'Hãy kiểm tra kết nối mạng rồi thử lại',
+    '请稍后再试': 'Vui lòng thử lại sau',
+    '网络连接失败': 'Kết nối mạng thất bại',
+    '邮箱已被使用': 'Email đã được sử dụng',
+    '邮箱已存在': 'Email đã tồn tại',
+    '暂停注册': 'Tạm dừng đăng ký',
+    '账户被封禁': 'Tài khoản bị khóa',
+    '账户已被封禁': 'Tài khoản đã bị khóa',
+    '账户暂时锁定': 'Tài khoản tạm thời bị khóa',
+    '注册过于频繁': 'Đăng ký quá thường xuyên',
+    '注册频繁': 'Đăng ký quá thường xuyên',
+    '注册已关闭': 'Đăng ký đã đóng',
+
+    '打开支付宝APP': 'Mở ứng dụng Alipay',
+    '半年付': '6 tháng', '季付': '3 tháng', '年付': 'Hàng năm', '两年付': '2 năm', '三年付': '3 năm',
+    '一次性': 'Một lần', '无限制': 'Không giới hạn',
+    '此订单为免费订单，确认后将立即激活': 'Đây là đơn hàng 0đ và sẽ được kích hoạt ngay sau khi xác nhận',
+    '订单不存在或已失效': 'Đơn hàng không tồn tại hoặc đã hết hiệu lực',
+    '订单已过期，请重新下单': 'Đơn hàng đã hết hạn, vui lòng tạo đơn mới',
+    '订单已支付，无需重复支付': 'Đơn hàng đã được thanh toán, không cần thanh toán lại',
+    '订单状态未知，请稍后再试': 'Không xác định được trạng thái đơn hàng, vui lòng thử lại sau',
+    '服务器内部错误，请稍后重试': 'Lỗi nội bộ máy chủ, vui lòng thử lại sau',
+    '服务器响应超时，请稍后重试': 'Máy chủ phản hồi quá hạn, vui lòng thử lại sau',
+    '服务暂时不可用，请稍后重试': 'Dịch vụ tạm thời không khả dụng, vui lòng thử lại sau',
+    '恭喜！此套餐完全免费': 'Gói này hoàn toàn miễn phí',
+    '获取订单详情失败，请重试': 'Không tải được chi tiết đơn hàng, vui lòng thử lại',
+    '加载支付方式失败，请重试': 'Không tải được phương thức thanh toán, vui lòng thử lại',
+    '没有可用的支付方式，请联系管理员': 'Không có phương thức thanh toán khả dụng, vui lòng liên hệ quản trị viên',
+    '免费订阅': 'Gói 0đ',
+    '免费套餐订单已创建，请到后台手动激活订单，或联系管理员配置支付方式': 'Đã tạo đơn gói 0đ. Hãy kích hoạt đơn trong admin hoặc cấu hình phương thức thanh toán.',
+    '免费套餐激活失败: ${getChineseErrorMessage(error)}': 'Kích hoạt gói 0đ thất bại: ${getChineseErrorMessage(error)}',
+    '免费套餐已激活！': 'Đã kích hoạt gói 0đ!',
+    '请求参数错误': 'Tham số yêu cầu không hợp lệ',
+    '请求超时，请稍后重试': 'Yêu cầu quá hạn, vui lòng thử lại sau',
+    '请求的资源不存在': 'Tài nguyên yêu cầu không tồn tại',
+    '权限不足，无法执行此操作': 'Không đủ quyền để thực hiện thao tác này',
+    '确认订阅': 'Xác nhận đăng ký',
+    '身份验证失败，请重新登录': 'Xác thực thất bại, vui lòng đăng nhập lại',
+    '使用优惠券后，此订单完全免费！': 'Sau khi áp dụng mã giảm giá, đơn hàng này có giá 0đ!',
+    '套餐不存在': 'Gói không tồn tại',
+    '套餐不存在或已下架': 'Gói không tồn tại hoặc đã ngừng bán',
+    '套餐介绍': 'Giới thiệu gói',
+    '套餐ID无效': 'ID gói không hợp lệ',
+    '推荐': 'Đề xuất',
+    '网络连接失败，请检查网络连接': 'Kết nối mạng thất bại, vui lòng kiểm tra kết nối',
+    '无效的支付方式': 'Phương thức thanh toán không hợp lệ',
+    '已使用余额支付 ¥${(orderDetail.balance_amount / 100).toFixed(2)}，剩余需要支付：¥${(orderDetail.total_amount / 100).toFixed(2)}': 'Đã dùng số dư ¥${(orderDetail.balance_amount / 100).toFixed(2)}, còn phải thanh toán: ¥${(orderDetail.total_amount / 100).toFixed(2)}',
+    '已应用': 'Đã áp dụng',
+    '已在新窗口打开支付链接': 'Đã mở liên kết thanh toán trong cửa sổ mới',
+    '优惠金额：¥': 'Số tiền giảm: ¥',
+    '优惠券不存在或已失效': 'Mã giảm giá không tồn tại hoặc đã hết hiệu lực',
+    '优惠券订单激活失败: ${getChineseErrorMessage(error)}': 'Kích hoạt đơn có mã giảm giá thất bại: ${getChineseErrorMessage(error)}',
+    '优惠券订单已创建，请到后台手动激活订单，或联系管理员配置支付方式': 'Đã tạo đơn có mã giảm giá. Hãy kích hoạt đơn trong admin hoặc cấu hình phương thức thanh toán.',
+    '优惠券订单已激活！享受免费服务！': 'Đã kích hoạt đơn dùng mã giảm giá!',
+    '优惠券无效': 'Mã giảm giá không hợp lệ',
+    '优惠券已被使用': 'Mã giảm giá đã được sử dụng',
+    '优惠券已过期': 'Mã giảm giá đã hết hạn',
+    '优惠券已应用': 'Đã áp dụng mã giảm giá',
+    '优惠券折扣': 'Giảm giá bằng mã',
+    '余额不足，请充值后重试': 'Số dư không đủ, vui lòng nạp thêm rồi thử lại',
+    '余额支付成功！已使用余额 ¥${(orderDetail.balance_amount / 100).toFixed(2)}': 'Thanh toán bằng số dư thành công! Đã dùng ¥${(orderDetail.balance_amount / 100).toFixed(2)}',
+    '正在跳转到支付页面，请完成支付': 'Đang chuyển đến trang thanh toán, vui lòng hoàn tất thanh toán',
+    '正在跳转到支付应用，请完成支付': 'Đang mở ứng dụng thanh toán, vui lòng hoàn tất thanh toán',
+    '支付成功！套餐已激活': 'Thanh toán thành công! Gói đã được kích hoạt',
+    '支付处理失败': 'Xử lý thanh toán thất bại',
+    '支付处理失败，请重试': 'Xử lý thanh toán thất bại, vui lòng thử lại',
+    '支付处理失败: ${errorMessage}': 'Xử lý thanh toán thất bại: ${errorMessage}',
+    '支付方式不存在或已停用': 'Phương thức thanh toán không tồn tại hoặc đã bị tắt',
+    '支付链接为空': 'Liên kết thanh toán đang trống',
+    '支付链接为空，请重试': 'Liên kết thanh toán đang trống, vui lòng thử lại',
+
+    '${clientName} 手动导入': 'Nhập thủ công vào ${clientName}',
+    '${Math.floor(diff / 3600)}小时前': '${Math.floor(diff / 3600)} giờ trước',
+    '${Math.floor(diff / 60)}分钟前': '${Math.floor(diff / 60)} phút trước',
+    '安全便捷的支付方式': 'Phương thức thanh toán an toàn và tiện lợi',
+    '充值订单创建成功！': 'Tạo đơn nạp tiền thành công!',
+    '充值失败，请稍后重试': 'Nạp tiền thất bại, vui lòng thử lại sau',
+    '导入步骤': 'Các bước nhập',
+    '导入到': 'Nhập vào',
+    '导入订阅到 ${client.name}': 'Nhập liên kết đăng ký vào ${client.name}',
+    '点击下方按钮直接导入订阅到对应客户端': 'Nhấn nút bên dưới để nhập trực tiếp vào ứng dụng tương ứng',
+    '订阅链接不可用': 'Liên kết đăng ký không khả dụng',
+    '刚刚': 'Vừa xong',
+    '获取支付方式失败，请重试': 'Không lấy được phương thức thanh toán, vui lòng thử lại',
+    '获取支付方式失败，跳转到订单页面': 'Không lấy được phương thức thanh toán, đang chuyển đến trang đơn hàng',
+    '流量即将耗尽': 'Lưu lượng sắp hết',
+    '流量使用较多': 'Đã sử dụng nhiều lưu lượng',
+    '绿色版': 'Bản portable',
+    '没有可支付的订单，请重试': 'Không có đơn hàng có thể thanh toán, vui lòng thử lại',
+    '没有其他支付方式可用，请联系管理员': 'Không có phương thức thanh toán khác, vui lòng liên hệ quản trị viên',
+    '每月${subscribeInfo.value.reset_day}日重置': 'Đặt lại vào ngày ${subscribeInfo.value.reset_day} hàng tháng',
+    '请按以下步骤导入订阅：\\n1. 打开Clash Verge软件\\n2. 点击左侧"配置"选项卡\\n3. 点击"新建"按钮\\n4. 选择"从链接导入"\\n5. 将订阅链接粘贴到输入框中\\n6. 点击"导入"按钮': 'Nhập liên kết vào Clash Verge theo các bước:\\n1. Mở Clash Verge\\n2. Chọn tab Cấu hình\\n3. Nhấn Tạo mới\\n4. Chọn Nhập từ liên kết\\n5. Dán liên kết đăng ký\\n6. Nhấn Nhập',
+    '请按以下步骤导入订阅：\\n1. 打开SingBox软件\\n2. 点击"配置"选项卡\\n3. 点击"添加配置"按钮\\n4. 选择"从URL导入"\\n5. 将订阅链接粘贴到输入框中\\n6. 点击"导入"按钮': 'Nhập liên kết vào SingBox theo các bước:\\n1. Mở SingBox\\n2. Chọn tab Cấu hình\\n3. Nhấn Thêm cấu hình\\n4. Chọn Nhập từ URL\\n5. Dán liên kết đăng ký\\n6. Nhấn Nhập',
+    '请按以下步骤导入订阅：\\n1. 打开V2rayN软件\\n2. 右键点击系统托盘中的V2rayN图标\\n3. 选择"订阅分组" → "订阅设置"\\n4. 点击"添加"按钮\\n5. 将订阅链接粘贴到"地址(url)"框中\\n6. 点击"确定"保存\\n7. 右键托盘图标选择"更新订阅"': 'Nhập liên kết vào V2rayN theo các bước:\\n1. Mở V2rayN\\n2. Nhấp phải biểu tượng ở khay hệ thống\\n3. Chọn Nhóm đăng ký → Cài đặt đăng ký\\n4. Nhấn Thêm\\n5. Dán liên kết vào ô địa chỉ URL\\n6. Nhấn Xác nhận để lưu\\n7. Chọn Cập nhật đăng ký',
+    '请按照以下步骤导入订阅链接': 'Hãy làm theo các bước sau để nhập liên kết đăng ký',
+    '请手动将订阅链接导入到 ${clientName} 中：': 'Hãy nhập thủ công liên kết đăng ký vào ${clientName}:',
+    '请输入有效的充值金额': 'Vui lòng nhập số tiền nạp hợp lệ',
+    '设置自动续费失败': 'Cài đặt tự động gia hạn thất bại',
+    '剩余需要支付：¥${(remainingAmount / 100).toFixed(2)}': 'Còn phải thanh toán: ¥${(remainingAmount / 100).toFixed(2)}',
+    '跳转URL为空，请重试': 'URL chuyển hướng đang trống, vui lòng thử lại',
+    '通知详情': 'Chi tiết thông báo',
+    '微信': 'WeChat',
+    '一键导入到客户端': 'Nhập nhanh vào ứng dụng',
+    '已打开支付页面，请完成支付': 'Đã mở trang thanh toán, vui lòng hoàn tất thanh toán',
+    '已过期': 'Đã hết hạn',
+    '已使用余额支付部分金额，请选择其他支付方式完成剩余支付': 'Đã thanh toán một phần bằng số dư. Hãy chọn phương thức khác để trả phần còn lại.',
+    '暂无可用的支付方式': 'Chưa có phương thức thanh toán khả dụng',
+    '正在创建充值订单...': 'Đang tạo đơn nạp tiền...',
+    '支付宝': 'Alipay',
+    '支付处理失败，请稍后重试': 'Xử lý thanh toán thất bại, vui lòng thử lại sau',
+    '支付结果数据格式错误，请重试': 'Dữ liệu kết quả thanh toán không hợp lệ, vui lòng thử lại',
+    '自动续费已关闭': 'Đã tắt tự động gia hạn',
+
+    '点击查看详细内容': 'Nhấn để xem chi tiết',
+    '更新时间：': 'Thời gian cập nhật:',
+    '获取文档详情失败': 'Không tải được chi tiết tài liệu',
+    '暂无内容': 'Chưa có nội dung',
+
+    '成功兑换 ¥${(response.value / 100).toFixed(2)} 余额': 'Đã quy đổi ¥${(response.value / 100).toFixed(2)} vào số dư',
+    '成功激活 ${response.value} 天套餐': 'Đã kích hoạt gói ${response.value} ngày',
+    '成功延长 ${response.value} 天有效期': 'Đã gia hạn thêm ${response.value} ngày',
+    '成功增加 ${response.value}GB 流量': 'Đã cộng thêm ${response.value} GB lưu lượng',
+    '兑换失败，请稍后重试': 'Đổi thẻ thất bại, vui lòng thử lại sau',
+    '该礼品卡已被您使用过': 'Bạn đã sử dụng thẻ quà tặng này',
+    '礼品卡不存在': 'Thẻ quà tặng không tồn tại',
+    '礼品卡类型不适用': 'Loại thẻ quà tặng không áp dụng được',
+    '礼品卡尚未生效': 'Thẻ quà tặng chưa có hiệu lực',
+    '礼品卡使用次数已达上限': 'Thẻ quà tặng đã đạt giới hạn sử dụng',
+    '礼品卡已过期': 'Thẻ quà tặng đã hết hạn',
+    '未知的礼品卡类型': 'Không xác định được loại thẻ quà tặng',
+
+    '优惠 -¥': 'Giảm giá -¥',
+    '充值到账户余额，可用于购买套餐': 'Nạp vào số dư tài khoản để mua gói',
+    '充值说明': 'Hướng dẫn nạp tiền',
+    '登录已过期，请重新登录': 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại',
+    '订单仍在等待支付，请继续扫码支付': 'Đơn hàng vẫn chờ thanh toán, vui lòng tiếp tục quét mã',
+    '订单已被取消': 'Đơn hàng đã bị hủy',
+    '订单已成功取消': 'Đã hủy đơn hàng thành công',
+    '订单正在开通中，请稍候': 'Đơn hàng đang được kích hoạt, vui lòng đợi',
+    '订单状态已更新: ${getStatusText(orderStatus)}': 'Đã cập nhật trạng thái đơn hàng: ${getStatusText(orderStatus)}',
+    '获取支付方式失败:': 'Không lấy được phương thức thanh toán:',
+    '加载订单列表失败，请刷新重试': 'Không tải được danh sách đơn hàng, vui lòng làm mới rồi thử lại',
+    '加载订单列表失败:': 'Không tải được danh sách đơn hàng:',
+    '跨域请求被阻止，请联系管理员': 'Yêu cầu khác miền bị chặn, vui lòng liên hệ quản trị viên',
+    '没有权限访问，请重新登录': 'Không có quyền truy cập, vui lòng đăng nhập lại',
+    '请求的资源不存在，请联系管理员': 'Tài nguyên yêu cầu không tồn tại, vui lòng liên hệ quản trị viên',
+    '请求失败，请稍后重试': 'Yêu cầu thất bại, vui lòng thử lại sau',
+    '剩余价值': 'Giá trị còn lại',
+    '网络请求超时，请检查网络连接后重试': 'Yêu cầu mạng quá hạn, hãy kiểm tra kết nối rồi thử lại',
+    '无法连接到服务器，请稍后重试': 'Không thể kết nối máy chủ, vui lòng thử lại sau',
+    '已退款': 'Đã hoàn tiền',
+    '优惠金额': 'Số tiền giảm',
+    '支付处理失败:': 'Xử lý thanh toán thất bại:',
+    '重置包': 'Gói đặt lại',
+
+    '等待支付中...': 'Đang chờ thanh toán...',
+    '快速安全的支付方式': 'Phương thức thanh toán nhanh và an toàn',
+    '免费订单处理成功': 'Xử lý đơn hàng 0đ thành công',
+    '请联系客服': 'Vui lòng liên hệ hỗ trợ',
+    '台': 'thiết bị',
+    '余额支付失败，可能是余额不足': 'Thanh toán bằng số dư thất bại, có thể số dư không đủ',
+    '余额支付失败，请尝试其他支付方式': 'Thanh toán bằng số dư thất bại, hãy thử phương thức khác',
+    '正在使用余额支付...': 'Đang thanh toán bằng số dư...',
+    '正在跳转到支付宝，请完成支付': 'Đang chuyển đến Alipay, vui lòng hoàn tất thanh toán',
+    '支付类型未知 (type: ${paymentResult.type})，请检查支付配置': 'Không xác định được loại thanh toán (type: ${paymentResult.type}), hãy kiểm tra cấu hình thanh toán',
+
+    '到期邮件提醒已关闭': 'Đã tắt nhắc hạn qua email',
+    '流量邮件提醒已关闭': 'Đã tắt nhắc lưu lượng qua email',
+    '密码修改成功，即将跳转到登录页面': 'Đổi mật khẩu thành công, đang chuyển đến trang đăng nhập',
+    '密码修改失败': 'Đổi mật khẩu thất bại',
+    '设置通知失败': 'Cài đặt thông báo thất bại',
+    '设置通知失败:': 'Cài đặt thông báo thất bại:',
+    '新的订阅链接:': 'Liên kết đăng ký mới:',
+
+    '<p>服务条款内容</p>': '<p>Nội dung điều khoản dịch vụ</p>',
+    '发送邮箱验证码失败:': 'Gửi mã xác minh email thất bại:',
+    '发送中...': 'Đang gửi...',
+    '该邮箱后缀不在允许的白名单中': 'Tên miền email không nằm trong danh sách được phép',
+    '格式错误': 'Định dạng không hợp lệ',
+    '获取后端配置失败:': 'Không lấy được cấu hình hệ thống:',
+    '两次密码输入不一致': 'Mật khẩu nhập hai lần không khớp',
+    '请完成验证码验证后再注册': 'Vui lòng xác minh mã trước khi đăng ký',
+    '请先输入邮箱地址': 'Vui lòng nhập địa chỉ email trước',
+    '请选择邮箱域名': 'Vui lòng chọn tên miền email',
+    '选择邮箱域名': 'Chọn tên miền email',
+    '验证码错误:': 'Mã xác minh không đúng:',
+    '验证码验证成功:': 'Xác minh mã thành công:',
+    '验证码已过期': 'Mã xác minh đã hết hạn',
+    '邮箱格式不正确: ${email}': 'Định dạng email không hợp lệ: ${email}',
+    '邮箱后缀不在白名单': 'Tên miền email không nằm trong danh sách được phép',
+    '邮箱为空': 'Chưa nhập email',
+    '邮箱验证码功能暂未开启': 'Tính năng xác minh email hiện chưa được bật',
+    '注册成功但未能自动登录，请手动登录': 'Đăng ký thành công nhưng không thể tự đăng nhập. Vui lòng đăng nhập thủ công.',
+
+    '处理中...': 'Đang xử lý...',
+    '工单功能已被禁用': 'Tính năng ticket đã bị tắt',
+    '流量明细功能已被禁用': 'Tính năng chi tiết lưu lượng đã bị tắt',
+    '文档不存在或无权限访问': 'Tài liệu không tồn tại hoặc bạn không có quyền truy cập',
+
+    '此工单已关闭，无法继续回复。': 'Ticket này đã đóng, không thể tiếp tục trả lời.',
+    '发送回复': 'Gửi trả lời',
+    '查看': 'Xem', '待回复': 'Chờ trả lời', '低': 'Thấp', '中': 'Trung bình', '高': 'Cao',
+    '发送回复失败': 'Gửi trả lời thất bại',
+    '发送回复失败:': 'Gửi trả lời thất bại:',
+    '工单创建成功': 'Tạo ticket thành công',
+    '工单已关闭': 'Ticket đã đóng',
+    '回复发送成功': 'Gửi trả lời thành công',
+    '回复内容不能少于5个字符': 'Nội dung trả lời phải có ít nhất 5 ký tự',
+    '加载工单列表失败': 'Không tải được danh sách ticket',
+    '请输入回复内容': 'Vui lòng nhập nội dung trả lời',
+    '请输入回复内容...': 'Nhập nội dung trả lời...',
+    '请输入问题描述': 'Vui lòng nhập mô tả vấn đề',
+    '请选择优先级': 'Vui lòng chọn mức độ ưu tiên',
+    '问题描述不能超过1000个字符': 'Mô tả vấn đề không được vượt quá 1000 ký tự',
+    '问题描述不能少于10个字符': 'Mô tả vấn đề phải có ít nhất 10 ký tự',
+    '已关闭': 'Đã đóng', '已回复': 'Đã trả lời', '暂无消息': 'Chưa có tin nhắn',
+    '主题不能超过100个字符': 'Chủ đề không được vượt quá 100 ký tự',
+    '主题不能少于5个字符': 'Chủ đề phải có ít nhất 5 ký tự',
+
+    '通知图片加载失败:': 'Không tải được ảnh thông báo:',
+    '对话框确认操作失败:': 'Xác nhận thao tác hộp thoại thất bại:',
+    '获取文档列表失败:': 'Không lấy được danh sách tài liệu:',
+    '获取文档详情失败:': 'Không lấy được chi tiết tài liệu:',
+    '获取用户信息失败:': 'Không lấy được thông tin người dùng:',
+    '检查登录状态失败:': 'Kiểm tra trạng thái đăng nhập thất bại:',
+    '解析用户信息失败:': 'Phân tích thông tin người dùng thất bại:',
+    '请求错误:': 'Lỗi yêu cầu:',
+    '设置认证数据失败:': 'Lưu dữ liệu xác thực thất bại:',
+    '响应错误:': 'Lỗi phản hồi:',
+
+    '澳门特别行政区': 'Ma Cao', '香港特别行政区': 'Hồng Kông',
+    '巴林': 'Bahrain', '波斯尼亚和黑塞哥维那': 'Bosnia và Herzegovina', '博奈尔': 'Bonaire',
+    '不丹': 'Bhutan', '法属南部和南极领土': 'Vùng đất phía Nam thuộc Pháp', '柬埔寨': 'Campuchia',
+    '老挝': 'Lào', '马尔代夫': 'Maldives', '美属小离岛': 'Các đảo xa thuộc Hoa Kỳ',
+    '萨巴': 'Saba', '沙特': 'Ả Rập Xê Út', '圣尤斯特歇斯': 'Sint Eustatius',
+    '斯瓦尔巴': 'Svalbard', '塔吉克斯坦': 'Tajikistan', '特里斯坦达库尼亚': 'Tristan da Cunha',
+    '土库曼斯坦': 'Turkmenistan', '文莱': 'Brunei', '乌兹别克斯坦': 'Uzbekistan',
+    '扬马延': 'Jan Mayen', '印尼': 'Indonesia', '英属印度洋领土': 'Lãnh thổ Ấn Độ Dương thuộc Anh',
+    '中非共和国': 'Cộng hòa Trung Phi'
+  };
   var extraZh = {
     'Mua': '购买', 'Lưu ý': '提示', 'Nâng cấp': '升级', 'Thông tin cơ bản': '基本信息', 'Chu kỳ': '周期', 'Chi tiết giá': '费用明细',
     'Đã thanh toán': '实付', 'Chọn phương thức thanh toán': '选择支付方式', 'Vui lòng chọn phương thức thanh toán': '请选择支付方式',
@@ -657,7 +956,7 @@
     '适用于 SingBox 系列客户端': '适用于 SingBox 客户端', '适用于 Hiddify 系列客户端': '适用于 Hiddify 客户端',
     '链接': '链接', '客户端': '客户端', '客户端订阅': '客户端订阅'
   };
-  Object.assign(en, extraEn); Object.assign(vi, extraVi); Object.assign(zh, extraZh);
+  Object.assign(en, extraEn); Object.assign(vi, extraVi, productionVi); Object.assign(zh, extraZh);
   Object.assign(tw, extraEn); Object.assign(ja, extraEn); Object.assign(ko, extraEn); Object.assign(fa, extraEn); Object.assign(ru, extraEn);
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
   // A partially translated locale must never fall back to Chinese.  English is
@@ -675,7 +974,7 @@
     var viLocale = locale === 'vi-VN';
     var notice = viLocale ? 'Lưu ý mua gói' : 'Purchase notice';
     var quota = viLocale ? 'Hạn mức lưu lượng của gói mới có hiệu lực ngay' : 'The new plan traffic quota takes effect immediately';
-    var limits = viLocale ? 'Giới hạn thiết bị và giới hạn tốc độ sẽ áp dụng theo gói mới' : 'Device and speed limits follow the new plan';
+    var limits = viLocale ? 'Giới hạn thiết bị và tốc độ sẽ áp dụng theo gói mới' : 'Device and speed limits follow the new plan';
     var advice = viLocale ? 'Nên mua gói mới vào đầu tháng hoặc khi sắp hết lưu lượng để tránh lãng phí.' : 'Buy a new plan at the start of the month or when traffic is nearly exhausted to avoid waste.';
     var orderDetails = viLocale ? 'Chi tiết đơn hàng' : 'Order details';
     var basicInfo = viLocale ? 'Thông tin cơ bản' : 'Basic information';
@@ -699,11 +998,9 @@
     return value
       .replace(/(?:购买|Mua)\s*Gói?提醒/g, notice)
       .replace(/Mua gói提醒/g, notice)
-      .replace(/gói mới\s*的\s*Hạn mức lưu lượng\s*将立即生效/g, quota)
-      .replace(/(?:新Gói|gói mới)\s*的\s*Hạn mức lưu lượng\s*将立即生效/g, quota)
-      .replace(/Giới hạn thiết bị\s*和\s*Giới hạn tốc độ\s*将按(?:gói mới|新Gói)执行/g, limits)
-      .replace(/建议在(?:月初|tháng初)或(?:流量|Lưu lượng)即将用完时(?:购买|Mua)gói mới，以避免浪费。/g, advice)
-      .replace(/建议在月初或流量即将用完时购买Gói mới，以避免浪费。/g, advice)
+      .replace(/(?:新Gói|gói mới)\s*的\s*Hạn mức lưu lượng\s*将立即生效/gi, quota)
+      .replace(/Giới hạn thiết bị\s*和\s*Giới hạn tốc độ\s*将按\s*(?:gói mới|新Gói)\s*执行/gi, limits)
+      .replace(/建议在(?:月初|tháng\s*初)或(?:流量|Lưu lượng)即将用完时(?:购买|Mua)\s*(?:新Gói|gói mới)，以避免浪费。/gi, advice)
       .replace(/Gói\s*(Clash|V2RayN|Shadowsocks|SingBox|Hiddify)liên kết/g, function (_, client) {
         return viLocale ? 'Liên kết đăng ký ' + client : client + ' subscription link';
       })
@@ -718,7 +1015,8 @@
       .replace(/Đã thanh toánSố tiền/g, paidAmount)
       .replace(/(\d+)\s*台/g, '$1' + deviceUnit)
       .replace(/Hủy后如使用Thanh toán bằng số dư，Số dư将自动退回到您的Tài khoản/g, cancelNotice)
-      .replace(/Mua gói khác sẽ ảnh hưởng đếnđặt lại/g, 'Mua gói khác sẽ ảnh hưởng đến đặt lại')
+      .replace(/Mua gói khác sẽ ảnh hưởng đến\s*đặt lại/g, 'Mua gói khác sẽ đặt lại')
+      .replace(/Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại/g, 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại')
       // Chart labels are rendered asynchronously by the chart component and
       // may include either full-width or ASCII parentheses (sometimes with a
       // space before the opening parenthesis). Normalize every form here so
@@ -799,6 +1097,7 @@
         .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ')
         .replace(/网络Lỗi|MạngLỗi/g, 'Lỗi mạng')
         .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
+        .replace(/请\s*Xác nhận\s*(?:mật khẩu|密码)/gi, 'Vui lòng xác nhận mật khẩu')
         .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email')
         .replace(/Mạng速度/g, 'Tốc độ mạng')
         .replace(/Không giới hạn速/g, 'Không giới hạn tốc độ')
@@ -825,8 +1124,8 @@
         .replace(/Hủy购买/g, 'Hủy mua')
         .replace(/最终Giá/g, 'Giá cuối')
         .replace(/当前的Tình trạng sử dụng lưu lượng/g, 'trạng thái lưu lượng hiện tại')
-        .replace(/购买其他Gói将会对(?:当前的)?Tình trạng sử dụng lưu lượng(?: hiện tại)?，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
-        .replace(/购买其他Gói将会对trạng thái lưu lượng hiện tại，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
+        .replace(/购买其他Gói将会对(?:当前的)?Tình trạng sử dụng lưu lượng(?: hiện tại)?，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
+        .replace(/购买其他Gói将会对trạng thái lưu lượng hiện tại，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
         .replace(/并立即生成新的Gói配置：/g, 'và tạo cấu hình gói mới ngay:')
         .replace(/新的Gói配置/g, 'cấu hình gói mới')
         .replace(/新Gói/g, 'gói mới')
@@ -882,6 +1181,24 @@
         translatedCore = translatedCore.split(key).join(dictionary[key]);
       });
       translatedCore = translatedCore.replace(/(\d+)\s*(ngày trước|ngày|days ago|day|日前|日|일 전|일|روز قبل|روز)/g, '$1 $2');
+    }
+    // Last-resort production guard for strings introduced by a future Luck
+    // bundle or returned verbatim by an upstream API. A Vietnamese session must
+    // never expose raw CJK. Known strings retain their exact translations above;
+    // unknown strings fall back to a useful, category-specific Vietnamese
+    // message instead of a broken half-translated sentence.
+    if (locale === 'vi-VN' && /[\u3400-\u9fff]/.test(translatedCore)) {
+      if (/(?:加载|获取|读取|处理中|跳转|等待)/.test(originalCore)) {
+        translatedCore = 'Đang xử lý dữ liệu...';
+      } else if (/(?:请输入|请选择|不能为空|至少|格式)/.test(originalCore)) {
+        translatedCore = 'Vui lòng kiểm tra thông tin bắt buộc';
+      } else if (/(?:成功|完成|已开启|已关闭)/.test(originalCore)) {
+        translatedCore = 'Thao tác đã hoàn tất';
+      } else if (/(?:失败|错误|无法|异常|不存在|无效|超时|不足|禁止)/.test(originalCore)) {
+        translatedCore = 'Thao tác thất bại, vui lòng thử lại';
+      } else {
+        translatedCore = 'Thông báo hệ thống';
+      }
     }
     return translatedCore !== originalCore ? leading + translatedCore + trailing : text;
   }
@@ -960,7 +1277,8 @@
           .replace(/恶意攻击Máy chủ/g, 'Tấn công máy chủ')
           .replace(/改善Dịch vụ质量/g, 'cải thiện chất lượng dịch vụ')
           .replace(/网络Lỗi|MạngLỗi/g, 'Lỗi mạng')
-          .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
+        .replace(/Thông tinchưa đầy đủ|信息不完整/g, 'Thông tin chưa đầy đủ')
+        .replace(/请\s*Xác nhận\s*(?:mật khẩu|密码)/gi, 'Vui lòng xác nhận mật khẩu')
           .replace(/Nhập emailĐịa chỉ|Nhập email địa chỉ/g, 'Nhập địa chỉ email')
           .replace(/Mạng速度/g, 'Tốc độ mạng')
           .replace(/Không giới hạn速/g, 'Không giới hạn tốc độ')
@@ -987,8 +1305,8 @@
           .replace(/Hủy购买/g, 'Hủy mua')
           .replace(/最终Giá/g, 'Giá cuối')
           .replace(/当前的Tình trạng sử dụng lưu lượng/g, 'trạng thái lưu lượng hiện tại')
-          .replace(/购买其他Gói将会对(?:当前的)?Tình trạng sử dụng lưu lượng(?: hiện tại)?，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
-          .replace(/购买其他Gói将会对trạng thái lưu lượng hiện tại，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ ảnh hưởng đến trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
+          .replace(/购买其他Gói将会对(?:当前的)?Tình trạng sử dụng lưu lượng(?: hiện tại)?，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
+          .replace(/购买其他Gói将会对trạng thái lưu lượng hiện tại，?并立即生成新的Gói配置：/g, 'Mua gói khác sẽ đặt lại trạng thái lưu lượng hiện tại và tạo cấu hình gói mới ngay:')
           .replace(/并立即生成新的Gói配置：/g, 'và tạo cấu hình gói mới ngay:')
           .replace(/新的Gói配置/g, 'cấu hình gói mới')
           .replace(/新Gói/g, 'gói mới')

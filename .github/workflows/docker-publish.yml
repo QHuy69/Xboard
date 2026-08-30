@@ -31,6 +31,8 @@ jobs:
       - name: Verify customized frontend sources
         run: |
           node tests/luck-i18n-source-audit.test.js
+          node tests/luck-i18n-production-bundle-audit.test.js
+          node tests/luck-purchase-modal-layout.test.js
           node tests/mail-template-localization-source.test.js
           node tests/custom-frontend-source-audit.test.js
 

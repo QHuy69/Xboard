@@ -56,12 +56,14 @@ class PluginConfigService
         if (empty($defaultConfig)) {
             throw new \Exception('插件配置结构不存在');
         }
-        $values = [];
+        // Preserve valid existing values that were not submitted (notably
+        // password fields). Some admin clients only submit changed controls.
+        $values = array_intersect_key($this->getDbConfig($pluginCode), $defaultConfig);
         foreach ($config as $key => $value) {
             if (!isset($defaultConfig[$key])) {
                 continue;
             }
-            $values[$key] = $value;
+            $values[$key] = $this->normalizeValue($value, (string) ($defaultConfig[$key]['type'] ?? 'string'));
         }
         Plugin::query()
             ->where('code', $pluginCode)
@@ -71,6 +73,23 @@ class PluginConfigService
             ]);
 
         return true;
+    }
+
+    private function normalizeValue(mixed $value, string $type): mixed
+    {
+        if ($type === 'boolean' && !is_bool($value)) {
+            return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+
+        if ($type === 'number' && is_numeric($value)) {
+            return str_contains((string) $value, '.') ? (float) $value : (int) $value;
+        }
+
+        if ($type === 'string' || $type === 'password') {
+            return is_scalar($value) || $value === null ? trim((string) $value) : '';
+        }
+
+        return $value;
     }
 
     /**

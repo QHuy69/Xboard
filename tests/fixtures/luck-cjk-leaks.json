@@ -1,0 +1,2974 @@
+{
+  "metadata": {
+    "generated_at": "2026-08-30",
+    "source": "/www/public/theme/Luck/assets in production container xboard-xboard-1",
+    "audit": "Every quoted CJK literal from one canonical file per Luck asset stem was passed through window.__LUCK_T__ with vi-VN. Entries below still contained CJK.",
+    "counts": {
+      "user_facing": 246,
+      "technical_or_console": 10,
+      "map_aliases": 24,
+      "map_dataset_literals": 208,
+      "total": 488
+    }
+  },
+  "user_facing": [
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "发送失败",
+      "current_output": "发送thất bại"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "发送忘记密码验证码失败:",
+      "current_output": "发送忘记Mật khẩu验证码thất bại:"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "发送验证码失败，请稍后重试",
+      "current_output": "发送验证码thất bại，请稍后thử lại"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "该邮箱未注册，请检查邮箱地址或前往注册",
+      "current_output": "该Email未Đăng ký，请检查Địa chỉ email或前往Đăng ký"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "两次输入的密码不一致",
+      "current_output": "两次输入的Mật khẩu不一致"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "密码不匹配",
+      "current_output": "Mật khẩu不匹配"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "密码格式错误",
+      "current_output": "Mật khẩu格式Lỗi"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "密码长度不能少于6位",
+      "current_output": "Mật khẩu长度不能少于6位"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "密码长度不能少于8位",
+      "current_output": "Mật khẩu长度不能少于8位"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "密码重置成功，请使用新密码登录",
+      "current_output": "Mật khẩuĐặt lại thành công，请使用Mật khẩu mớiĐăng nhập"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "请完成验证",
+      "current_output": "请完成验证"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "请完成验证码验证后再登录",
+      "current_output": "请完成验证码验证后再Đăng nhập"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "验证码错误",
+      "current_output": "验证码Lỗi"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "验证码发送过于频繁，请稍后再试",
+      "current_output": "验证码发送过于频繁，请稍后再试"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "验证码已发送",
+      "current_output": "验证码已发送"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "邮箱未注册",
+      "current_output": "Email未Đăng ký"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "邮箱验证码",
+      "current_output": "Xác minh email码"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "邮箱验证码错误，请重新输入",
+      "current_output": "Xác minh email码Lỗi，请重新输入"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "重置密码失败，请稍后重试",
+      "current_output": "Đặt lại mật khẩuthất bại，请稍后thử lại"
+    },
+    {
+      "group": "authentication",
+      "file": "BBIEjj8f.js",
+      "source": "重置失败次数过多，请稍后再试",
+      "current_output": "Đặt lạithất bại次数过多，请稍后再试"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "当前暂停新用户注册，请联系管理员",
+      "current_output": "当前暂停新Người dùngĐăng ký，请Liên hệQuản trị viên"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "服务器暂时无法响应，请稍后重试",
+      "current_output": "Máy chủ暂时无法响应，请稍后thử lại"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "该邮箱已被注册，请使用其他邮箱或直接登录",
+      "current_output": "该Email已被Đăng ký，请使用其他Email或直接Đăng nhập"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "连接",
+      "current_output": "连接"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "密码错误次数过多",
+      "current_output": "Mật khẩu không đúng次数过多"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "密码错误次数过多，请稍后再试",
+      "current_output": "Mật khẩu không đúng次数过多，请稍后再试"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "您的账户已被管理员封禁，请联系客服",
+      "current_output": "您的Tài khoản已被Quản trị viên封禁，请Liên hệ客服"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "请检查网络连接后重试",
+      "current_output": "请检查Mạng连接后thử lại"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "请稍后再试",
+      "current_output": "请稍后再试"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "网络连接失败",
+      "current_output": "Mạng连接thất bại"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "邮箱已被使用",
+      "current_output": "Email已被使用"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "邮箱已存在",
+      "current_output": "Email已存在"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "暂停注册",
+      "current_output": "暂停Đăng ký"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "账户被封禁",
+      "current_output": "Tài khoản被封禁"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "账户已被封禁",
+      "current_output": "Tài khoản已被封禁"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "账户暂时锁定",
+      "current_output": "Tài khoản暂时锁定"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "注册过于频繁",
+      "current_output": "Đăng ký过于频繁"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "注册频繁",
+      "current_output": "Đăng ký频繁"
+    },
+    {
+      "group": "authentication",
+      "file": "ByaxWMaA.js",
+      "source": "注册已关闭",
+      "current_output": "Đăng ký已Đóng"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": " 打开支付宝APP ",
+      "current_output": " 打开Thanh toán宝APP "
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "半年付",
+      "current_output": "半年付"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "此订单为免费订单，确认后将立即激活",
+      "current_output": "此Đơn hàng为0đĐơn hàng，Xác nhận后将立即激活"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "订单不存在或已失效",
+      "current_output": "Đơn hàng不存在或已失效"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "订单已过期，请重新下单",
+      "current_output": "Đơn hàng已过期，请重新下单"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "订单已支付，无需重复支付",
+      "current_output": "Đơn hàng已Thanh toán，无需重复Thanh toán"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "订单状态未知，请稍后再试",
+      "current_output": "Đơn hàngTrạng tháiKhông xác định，请稍后再试"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "服务器内部错误，请稍后重试",
+      "current_output": "Máy chủ内部Lỗi，请稍后thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "服务器响应超时，请稍后重试",
+      "current_output": "Máy chủ响应超时，请稍后thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "服务暂时不可用，请稍后重试",
+      "current_output": "Dịch vụ暂时不可用，请稍后thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "恭喜！此套餐完全免费",
+      "current_output": "恭喜！此Gói完全0đ"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "获取订单详情失败，请重试",
+      "current_output": "获取Chi tiết đơn hàngthất bại，Vui lòng thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "季付",
+      "current_output": "季付"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "加载支付方式失败，请重试",
+      "current_output": "TảiThanh toán方式thất bại，Vui lòng thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "两年付",
+      "current_output": "两年付"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "没有可用的支付方式，请联系管理员",
+      "current_output": "没有可用的Thanh toán方式，请Liên hệQuản trị viên"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "免费订阅",
+      "current_output": "0đ订阅"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "免费套餐订单已创建，请到后台手动激活订单，或联系管理员配置支付方式",
+      "current_output": "0đGóiĐơn hàng已创建，请到后台手动激活Đơn hàng，或Liên hệQuản trị viên配置Thanh toán方式"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "免费套餐激活失败: ${getChineseErrorMessage(error)}",
+      "current_output": "0đGói激活thất bại: ${getChineseErrorMessage(error)}"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "免费套餐已激活！",
+      "current_output": "0đGói已激活！"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "年付",
+      "current_output": "年付"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "请求参数错误",
+      "current_output": "请求参数Lỗi"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "请求超时，请稍后重试",
+      "current_output": "请求超时，请稍后thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "请求的资源不存在",
+      "current_output": "请求的资源不存在"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "权限不足，无法执行此操作",
+      "current_output": "权限不足，无法执行此Thao tác"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "确认订阅",
+      "current_output": "Xác nhận订阅"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "三年付",
+      "current_output": "三年付"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "身份验证失败，请重新登录",
+      "current_output": "身份验证thất bại，请重新Đăng nhập"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "使用优惠券后，此订单完全免费！",
+      "current_output": "使用Mã giảm giá后，此Đơn hàng完全0đ！"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "套餐不存在",
+      "current_output": "Gói不存在"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "套餐不存在或已下架",
+      "current_output": "Gói不存在或已下架"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "套餐介绍",
+      "current_output": "Gói介绍"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "套餐ID无效",
+      "current_output": "GóiID无效"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "推荐",
+      "current_output": "推荐"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "网络连接失败，请检查网络连接",
+      "current_output": "Mạng连接thất bại，请检查Mạng连接"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "无限制",
+      "current_output": "Không giới hạn制"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "无效的支付方式",
+      "current_output": "无效的Thanh toán方式"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "一次性",
+      "current_output": "一次性"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "已使用余额支付 ¥${(orderDetail.balance_amount / 100).toFixed(2)}，剩余需要支付：¥${(orderDetail.total_amount / 100).toFixed(2)}",
+      "current_output": "已使用Thanh toán bằng số dư ¥${(orderDetail.balance_amount / 100).toFixed(2)}，剩余需要Thanh toán：¥${(orderDetail.total_amount / 100).toFixed(2)}"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "已应用",
+      "current_output": "已Áp dụng"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "已在新窗口打开支付链接",
+      "current_output": "已在新窗口Mở liên kết thanh toán"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠金额：¥",
+      "current_output": "优惠Số tiền：¥"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券不存在或已失效",
+      "current_output": "Mã giảm giá不存在或已失效"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券订单激活失败: ${getChineseErrorMessage(error)}",
+      "current_output": "Mã giảm giáĐơn hàng激活thất bại: ${getChineseErrorMessage(error)}"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券订单已创建，请到后台手动激活订单，或联系管理员配置支付方式",
+      "current_output": "Mã giảm giáĐơn hàng已创建，请到后台手动激活Đơn hàng，或Liên hệQuản trị viên配置Thanh toán方式"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券订单已激活！享受免费服务！",
+      "current_output": "Mã giảm giáĐơn hàng已激活！享受0đDịch vụ！"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券无效",
+      "current_output": "Mã giảm giá无效"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券已被使用",
+      "current_output": "Mã giảm giá已被使用"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券已过期",
+      "current_output": "Mã giảm giá已过期"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券已应用",
+      "current_output": "Mã giảm giá已Áp dụng"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "优惠券折扣",
+      "current_output": "Mã giảm giá折扣"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "余额不足，请充值后重试",
+      "current_output": "Số dư不足，请Nạp tiền后thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "余额支付成功！已使用余额 ¥${(orderDetail.balance_amount / 100).toFixed(2)}",
+      "current_output": "Số dưThanh toán thành công!已使用Số dư ¥${(orderDetail.balance_amount / 100).toFixed(2)}"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "正在跳转到支付页面，请完成支付",
+      "current_output": "正在跳转到Thanh toánTrang，请完成Thanh toán"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "正在跳转到支付应用，请完成支付",
+      "current_output": "正在跳转到Thanh toánÁp dụng，请完成Thanh toán"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付成功！套餐已激活",
+      "current_output": "Thanh toán thành công!Gói已激活"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付处理失败",
+      "current_output": "Thanh toán处理thất bại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付处理失败，请重试",
+      "current_output": "Thanh toán处理thất bại，Vui lòng thử lại"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付处理失败: ${errorMessage}",
+      "current_output": "Thanh toán处理thất bại: ${errorMessage}"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付方式不存在或已停用",
+      "current_output": "Thanh toán方式不存在或已停用"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付链接为空",
+      "current_output": "Thanh toánliên kết为空"
+    },
+    {
+      "group": "checkout",
+      "file": "C0KnXkt1.js",
+      "source": "支付链接为空，请重试",
+      "current_output": "Thanh toánliên kết为空，Vui lòng thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "${clientName} 手动导入",
+      "current_output": "${clientName} 手动导入"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "${Math.floor(diff / 3600)}小时前",
+      "current_output": "${Math.floor(diff / 3600)}小时前"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "${Math.floor(diff / 60)}分钟前",
+      "current_output": "${Math.floor(diff / 60)}分钟前"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "安全便捷的支付方式",
+      "current_output": "安全便捷的Thanh toán方式"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "充值订单创建成功！",
+      "current_output": "Nạp tiềnĐơn hàng创建Thành công！"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "充值失败，请稍后重试",
+      "current_output": "Nạp tiềnthất bại，请稍后thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "导入步骤",
+      "current_output": "导入步骤"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "导入到 ",
+      "current_output": "导入到 "
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "导入订阅到 ${client.name}",
+      "current_output": "导入订阅到 ${client.name}"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "点击下方按钮直接导入订阅到对应客户端",
+      "current_output": "点击下方按钮直接导入订阅到对应ứng dụng"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "订阅链接不可用",
+      "current_output": "Liên kết đăng ký不可用"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "刚刚",
+      "current_output": "刚刚"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "获取支付方式失败，请重试",
+      "current_output": "获取Thanh toán方式thất bại，Vui lòng thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "获取支付方式失败，跳转到订单页面",
+      "current_output": "获取Thanh toán方式thất bại，跳转到Đơn hàngTrang"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "流量即将耗尽",
+      "current_output": "Lưu lượng即将耗尽"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "流量使用较多",
+      "current_output": "Lưu lượng使用较多"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "绿色版",
+      "current_output": "绿色版"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "没有可支付的订单，请重试",
+      "current_output": "没有可Thanh toán的Đơn hàng，Vui lòng thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "没有其他支付方式可用，请联系管理员",
+      "current_output": "没有其他Thanh toán方式可用，请Liên hệQuản trị viên"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "每月${subscribeInfo.value.reset_day}日重置",
+      "current_output": "每月${subscribeInfo.value.reset_day}日Đặt lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "请按以下步骤导入订阅：\\n1. 打开Clash Verge软件\\n2. 点击左侧\"配置\"选项卡\\n3. 点击\"新建\"按钮\\n4. 选择\"从链接导入\"\\n5. 将订阅链接粘贴到输入框中\\n6. 点击\"导入\"按钮",
+      "current_output": "请按以下步骤导入订阅：\\n1. 打开Clash Verge软件\\n2. 点击左侧\"配置\"选项卡\\n3. 点击\"新建\"按钮\\n4. 选择\"从liên kết导入\"\\n5. 将Liên kết đăng ký粘贴到输入框中\\n6. 点击\"导入\"按钮"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "请按以下步骤导入订阅：\\n1. 打开SingBox软件\\n2. 点击\"配置\"选项卡\\n3. 点击\"添加配置\"按钮\\n4. 选择\"从URL导入\"\\n5. 将订阅链接粘贴到输入框中\\n6. 点击\"导入\"按钮",
+      "current_output": "请按以下步骤导入订阅：\\n1. 打开SingBox软件\\n2. 点击\"配置\"选项卡\\n3. 点击\"添加配置\"按钮\\n4. 选择\"从URL导入\"\\n5. 将Liên kết đăng ký粘贴到输入框中\\n6. 点击\"导入\"按钮"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "请按以下步骤导入订阅：\\n1. 打开V2rayN软件\\n2. 右键点击系统托盘中的V2rayN图标\\n3. 选择\"订阅分组\" → \"订阅设置\"\\n4. 点击\"添加\"按钮\\n5. 将订阅链接粘贴到\"地址(url)\"框中\\n6. 点击\"确定\"保存\\n7. 右键托盘图标选择\"更新订阅\"",
+      "current_output": "请按以下步骤导入订阅：\\n1. 打开V2rayN软件\\n2. 右键点击系统托盘中的V2rayN图标\\n3. 选择\"订阅分组\" → \"订阅设置\"\\n4. 点击\"添加\"按钮\\n5. 将Liên kết đăng ký粘贴到\"Địa chỉ(url)\"框中\\n6. 点击\"Đồng ý\"Lưu\\n7. 右键托盘图标选择\"更新订阅\""
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "请按照以下步骤导入订阅链接",
+      "current_output": "请按照以下步骤导入Liên kết đăng ký"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "请手动将订阅链接导入到 ${clientName} 中：",
+      "current_output": "请手动将Liên kết đăng ký导入到 ${clientName} 中："
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "请输入有效的充值金额",
+      "current_output": "请输入Còn hiệu lực的Số tiền nạp"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "设置自动续费失败",
+      "current_output": "设置Tự động gia hạnthất bại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "剩余需要支付：¥${(remainingAmount / 100).toFixed(2)}",
+      "current_output": "剩余需要Thanh toán：¥${(remainingAmount / 100).toFixed(2)}"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "跳转URL为空，请重试",
+      "current_output": "跳转URL为空，Vui lòng thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "通知详情",
+      "current_output": "通知Chi tiết"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "微信",
+      "current_output": "微信"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "一键导入到客户端",
+      "current_output": "一键导入到ứng dụng"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "已打开支付页面，请完成支付",
+      "current_output": "已打开Thanh toánTrang，请完成Thanh toán"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "已过期",
+      "current_output": "已过期"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "已使用余额支付部分金额，请选择其他支付方式完成剩余支付",
+      "current_output": "已使用Thanh toán bằng số dư部分Số tiền，请选择其他Thanh toán方式完成剩余Thanh toán"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "暂无可用的支付方式",
+      "current_output": "暂无可用的Thanh toán方式"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "正在创建充值订单...",
+      "current_output": "正在创建Nạp tiềnĐơn hàng..."
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "支付宝",
+      "current_output": "Thanh toán宝"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "支付处理失败，请稍后重试",
+      "current_output": "Thanh toán处理thất bại，请稍后thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "支付结果数据格式错误，请重试",
+      "current_output": "Thanh toán结果数据格式Lỗi，Vui lòng thử lại"
+    },
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "自动续费已关闭",
+      "current_output": "Tự động gia hạn已Đóng"
+    },
+    {
+      "group": "documentation",
+      "file": "Dg9FJUWi.js",
+      "source": " 点击查看详细内容 ",
+      "current_output": " 点击查看详细内容 "
+    },
+    {
+      "group": "documentation",
+      "file": "Dg9FJUWi.js",
+      "source": "更新时间：",
+      "current_output": "更新Thời gian："
+    },
+    {
+      "group": "documentation",
+      "file": "Dg9FJUWi.js",
+      "source": "获取文档详情失败",
+      "current_output": "获取Tài liệuChi tiếtthất bại"
+    },
+    {
+      "group": "documentation",
+      "file": "Dg9FJUWi.js",
+      "source": "暂无内容",
+      "current_output": "暂无内容"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "成功兑换 ¥${(response.value / 100).toFixed(2)} 余额",
+      "current_output": "Thành công兑换 ¥${(response.value / 100).toFixed(2)} Số dư"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "成功激活 ${response.value} 天套餐",
+      "current_output": "Thành công激活 ${response.value} ngàyGói"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "成功延长 ${response.value} 天有效期",
+      "current_output": "Thành công延长 ${response.value} ngàyCòn hiệu lực期"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "成功增加 ${response.value}GB 流量",
+      "current_output": "Thành công增加 ${response.value}GB Lưu lượng"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "兑换失败，请稍后重试",
+      "current_output": "兑换thất bại，请稍后thử lại"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "该礼品卡已被您使用过",
+      "current_output": "该礼品卡已被您使用过"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "礼品卡不存在",
+      "current_output": "礼品卡不存在"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "礼品卡类型不适用",
+      "current_output": "礼品卡Loại不适用"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "礼品卡尚未生效",
+      "current_output": "礼品卡尚未生效"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "礼品卡使用次数已达上限",
+      "current_output": "礼品卡使用次数已达上限"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "礼品卡已过期",
+      "current_output": "礼品卡已过期"
+    },
+    {
+      "group": "gift-card",
+      "file": "CO5Ntz5l.js",
+      "source": "未知的礼品卡类型",
+      "current_output": "Không xác định的礼品卡Loại"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": " 优惠 -¥",
+      "current_output": " 优惠 -¥"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "充值到账户余额，可用于购买套餐",
+      "current_output": "Nạp tiềnvào số dư tài khoản，可用于Mua gói"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "充值说明",
+      "current_output": "Nạp tiền说明"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "登录已过期，请重新登录",
+      "current_output": "Đăng nhập已过期，请重新Đăng nhập"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "订单仍在等待支付，请继续扫码支付",
+      "current_output": "Đơn hàng仍在等Chờ thanh toán，请继续Quét mã thanh toán"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "订单已被取消",
+      "current_output": "Đơn hàng已被Hủy"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "订单已成功取消",
+      "current_output": "Đơn hàng已Thành côngHủy"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "订单正在开通中，请稍候",
+      "current_output": "Đơn hàng正在Đang kích hoạt，请稍候"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "订单状态已更新: ${getStatusText(orderStatus)}",
+      "current_output": "Đơn hàngTrạng thái已更新: ${getStatusText(orderStatus)}"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "获取支付方式失败:",
+      "current_output": "获取Thanh toán方式thất bại:"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "加载订单列表失败，请刷新重试",
+      "current_output": "TảiĐơn hàng列表thất bại，请Làm mớithử lại"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "加载订单列表失败:",
+      "current_output": "TảiĐơn hàng列表thất bại:"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "跨域请求被阻止，请联系管理员",
+      "current_output": "跨域请求被阻止，请Liên hệQuản trị viên"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "没有权限访问，请重新登录",
+      "current_output": "Bạn không có quyền truy cập，请重新Đăng nhập"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "请求的资源不存在，请联系管理员",
+      "current_output": "请求的资源不存在，请Liên hệQuản trị viên"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "请求失败，请稍后重试",
+      "current_output": "请求thất bại，请稍后thử lại"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "剩余价值",
+      "current_output": "剩余价值"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "网络请求超时，请检查网络连接后重试",
+      "current_output": "Mạng请求超时，请检查Mạng连接后thử lại"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "无法连接到服务器，请稍后重试",
+      "current_output": "无法连接到Máy chủ，请稍后thử lại"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "已退款",
+      "current_output": "已退款"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "优惠金额",
+      "current_output": "优惠Số tiền"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "支付处理失败:",
+      "current_output": "Thanh toán处理thất bại:"
+    },
+    {
+      "group": "orders",
+      "file": "lsrL0SOU.js",
+      "source": "重置包",
+      "current_output": "Đặt lại包"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "等待支付中...",
+      "current_output": "等Chờ thanh toán中..."
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "快速安全的支付方式",
+      "current_output": "快速安全的Thanh toán方式"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "免费订单处理成功",
+      "current_output": "0đĐơn hàng处理Thành công"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "请联系客服",
+      "current_output": "请Liên hệ客服"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "台",
+      "current_output": "台"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "余额支付失败，可能是余额不足",
+      "current_output": "Thanh toán bằng số dưthất bại，可能是Số dư不足"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "余额支付失败，请尝试其他支付方式",
+      "current_output": "Thanh toán bằng số dưthất bại，请尝试其他Thanh toán方式"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "正在使用余额支付...",
+      "current_output": "正在使用Thanh toán bằng số dư..."
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "正在跳转到支付宝，请完成支付",
+      "current_output": "正在跳转到Thanh toán宝，请完成Thanh toán"
+    },
+    {
+      "group": "plans-checkout",
+      "file": "CK-I2Xx_.js",
+      "source": "支付类型未知 (type: ${paymentResult.type})，请检查支付配置",
+      "current_output": "Thanh toánLoạiKhông xác định (type: ${paymentResult.type})，请检查Thanh toán配置"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "到期邮件提醒已关闭",
+      "current_output": "Nhắc hạn qua email已Đóng"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "流量邮件提醒已关闭",
+      "current_output": "Nhắc lưu lượng qua email已Đóng"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "密码修改成功，即将跳转到登录页面",
+      "current_output": "Mật khẩu修改Thành công，即将跳转到Đăng nhậpTrang"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "密码修改失败",
+      "current_output": "Mật khẩu修改thất bại"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "设置通知失败",
+      "current_output": "设置通知thất bại"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "设置通知失败:",
+      "current_output": "设置通知thất bại:"
+    },
+    {
+      "group": "profile",
+      "file": "_d5ASL-Z.js",
+      "source": "新的订阅链接:",
+      "current_output": "新的Liên kết đăng ký:"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "<p>服务条款内容</p>",
+      "current_output": "<p>Điều khoản dịch vụ内容</p>"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "发送邮箱验证码失败:",
+      "current_output": "发送Xác minh email码thất bại:"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "发送中...",
+      "current_output": "发送中..."
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "该邮箱后缀不在允许的白名单中",
+      "current_output": "该Email后缀不在允许的白名单中"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "格式错误",
+      "current_output": "格式Lỗi"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "获取后端配置失败:",
+      "current_output": "获取后端配置thất bại:"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "两次密码输入不一致",
+      "current_output": "两次Mật khẩu输入不一致"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "请完成验证码验证后再注册",
+      "current_output": "请完成验证码验证后再Đăng ký"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "请先输入邮箱地址",
+      "current_output": "请先输入Địa chỉ email"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "请选择邮箱域名",
+      "current_output": "请选择Email域名"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "选择邮箱域名",
+      "current_output": "选择Email域名"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "验证码错误:",
+      "current_output": "验证码Lỗi:"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "验证码验证成功:",
+      "current_output": "验证码验证Thành công:"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "验证码已过期",
+      "current_output": "验证码已过期"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "邮箱格式不正确: ${email}",
+      "current_output": "Email格式不正确: ${email}"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "邮箱后缀不在白名单",
+      "current_output": "Email后缀不在白名单"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "邮箱为空",
+      "current_output": "Email为空"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "邮箱验证码功能暂未开启",
+      "current_output": "Xác minh email码功能暂未开启"
+    },
+    {
+      "group": "registration",
+      "file": "q_WC3BFv.js",
+      "source": "注册成功但未能自动登录，请手动登录",
+      "current_output": "Đăng kýThành công但未能自动Đăng nhập，请手动Đăng nhập"
+    },
+    {
+      "group": "shared-dialog",
+      "file": "3u1s8V6K.js",
+      "source": "处理中...",
+      "current_output": "处理中..."
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "工单功能已被禁用",
+      "current_output": "Ticket功能已被Vô hiệu hóa"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "流量明细功能已被禁用",
+      "current_output": "Chi tiết lưu lượng功能已被Vô hiệu hóa"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "文档不存在或无权限访问",
+      "current_output": "Tài liệu不存在或无权限访问"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": " 此工单已关闭，无法继续回复。 ",
+      "current_output": " 此Ticket已Đóng，无法继续回复。 "
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": " 发送回复 ",
+      "current_output": " 发送回复 "
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "查看",
+      "current_output": "查看"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "待回复",
+      "current_output": "待回复"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "低",
+      "current_output": "低"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "发送回复失败",
+      "current_output": "发送回复thất bại"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "发送回复失败:",
+      "current_output": "发送回复thất bại:"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "高",
+      "current_output": "高"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "工单创建成功",
+      "current_output": "Ticket创建Thành công"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "工单已关闭",
+      "current_output": "Ticket已Đóng"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "回复发送成功",
+      "current_output": "回复Gửi thành công"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "回复内容不能少于5个字符",
+      "current_output": "回复内容不能少于5个字符"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "加载工单列表失败",
+      "current_output": "TảiTicket列表thất bại"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "请输入回复内容",
+      "current_output": "请输入回复内容"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "请输入回复内容...",
+      "current_output": "请输入回复内容..."
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "请输入问题描述",
+      "current_output": "请输入Mô tả vấn đề"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "请选择优先级",
+      "current_output": "请选择Mức độ ưu tiên"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "问题描述不能超过1000个字符",
+      "current_output": "Mô tả vấn đề不能超过1000个字符"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "问题描述不能少于10个字符",
+      "current_output": "Mô tả vấn đề不能少于10个字符"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "已关闭",
+      "current_output": "已Đóng"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "已回复",
+      "current_output": "已回复"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "暂无消息",
+      "current_output": "暂无消息"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "中",
+      "current_output": "中"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "主题不能超过100个字符",
+      "current_output": "Chủ đề不能超过100个字符"
+    },
+    {
+      "group": "tickets",
+      "file": "yuHauBoh.js",
+      "source": "主题不能少于5个字符",
+      "current_output": "Chủ đề不能少于5个字符"
+    }
+  ],
+  "technical_or_console": [
+    {
+      "group": "dashboard-payment",
+      "file": "C6e3mGRa.js",
+      "source": "通知图片加载失败:",
+      "current_output": "通知图片Tải thất bại:"
+    },
+    {
+      "group": "shared-dialog",
+      "file": "3u1s8V6K.js",
+      "source": "对话框确认操作失败:",
+      "current_output": "对话框Xác nhậnThao tácthất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "获取文档列表失败:",
+      "current_output": "获取Tài liệu列表thất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "获取文档详情失败:",
+      "current_output": "获取Tài liệuChi tiếtthất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "获取用户信息失败:",
+      "current_output": "获取Người dùngthông tinthất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "检查登录状态失败:",
+      "current_output": "检查Đăng nhậpTrạng tháithất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "解析用户信息失败:",
+      "current_output": "解析Người dùngthông tinthất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "请求错误:",
+      "current_output": "请求Lỗi:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "设置认证数据失败:",
+      "current_output": "设置认证数据thất bại:"
+    },
+    {
+      "group": "shared-runtime",
+      "file": "BBbuoBq5.js",
+      "source": "响应错误:",
+      "current_output": "响应Lỗi:"
+    }
+  ],
+  "map_aliases": [
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "澳门特别行政区",
+      "current_output": "澳门特别行政区",
+      "region_code": "MO"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "巴林",
+      "current_output": "巴林",
+      "region_code": "BH"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "波斯尼亚和黑塞哥维那",
+      "current_output": "波斯尼亚和黑塞哥维那",
+      "region_code": "BA"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "博奈尔",
+      "current_output": "博奈尔",
+      "region_code": "BQ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "不丹",
+      "current_output": "不丹",
+      "region_code": "BT"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "法属南部和南极领土",
+      "current_output": "法属南部和南极领土",
+      "region_code": "TF"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "柬埔寨",
+      "current_output": "柬埔寨",
+      "region_code": "KH"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "老挝",
+      "current_output": "老挝",
+      "region_code": "LA"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "马尔代夫",
+      "current_output": "马尔代夫",
+      "region_code": "MV"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "美属小离岛",
+      "current_output": "美属小离岛",
+      "region_code": "UM"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨巴",
+      "current_output": "萨巴",
+      "region_code": "BQ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "沙特",
+      "current_output": "沙特",
+      "region_code": "SA"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "圣尤斯特歇斯",
+      "current_output": "圣尤斯特歇斯",
+      "region_code": "BQ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "斯瓦尔巴",
+      "current_output": "斯瓦尔巴",
+      "region_code": "SJ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "塔吉克斯坦",
+      "current_output": "塔吉克斯坦",
+      "region_code": "TJ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "特里斯坦达库尼亚",
+      "current_output": "特里斯坦达库尼亚",
+      "region_code": "SH"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "土库曼斯坦",
+      "current_output": "土库曼斯坦",
+      "region_code": "TM"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "文莱",
+      "current_output": "文莱",
+      "region_code": "BN"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "乌兹别克斯坦",
+      "current_output": "乌兹别克斯坦",
+      "region_code": "UZ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "香港特别行政区",
+      "current_output": "香港特别行政区",
+      "region_code": "HK"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "扬马延",
+      "current_output": "扬马延",
+      "region_code": "SJ"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "印尼",
+      "current_output": "印尼",
+      "region_code": "ID"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "英属印度洋领土",
+      "current_output": "英属印度洋领土",
+      "region_code": "IO"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "中非共和国",
+      "current_output": "中非共和国",
+      "region_code": "CF"
+    }
+  ],
+  "map_dataset_literals": [
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿布哈兹",
+      "current_output": "阿布哈兹"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿德利地",
+      "current_output": "阿德利地"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿尔萨斯",
+      "current_output": "阿尔萨斯"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿尔萨斯-洛林",
+      "current_output": "阿尔萨斯-洛林"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿尔萨斯共和国",
+      "current_output": "阿尔萨斯共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿基坦",
+      "current_output": "阿基坦"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿克罗蒂里和德凯利亚",
+      "current_output": "阿克罗蒂里和德凯利亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿拉伯联盟",
+      "current_output": "阿拉伯联盟"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿姆斯特丹岛",
+      "current_output": "阿姆斯特丹岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿什莫尔和卡捷岛",
+      "current_output": "阿什莫尔和卡捷岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "阿韦斯岛",
+      "current_output": "阿韦斯岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "爱沙尼亚苏维埃社会主义共和国",
+      "current_output": "爱沙尼亚苏维埃社会主义共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "安达曼和尼科巴群岛",
+      "current_output": "安达曼和尼科巴群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "安道尔公国",
+      "current_output": "安道尔公国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "安茹",
+      "current_output": "安茹"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "奥尔良",
+      "current_output": "奥尔良"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "奥弗涅",
+      "current_output": "奥弗涅"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "奥林匹克",
+      "current_output": "奥林匹克"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "奥斯曼帝国",
+      "current_output": "奥斯曼帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "奥匈帝国",
+      "current_output": "奥匈帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "巴登",
+      "current_output": "巴登"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "巴伐利亚",
+      "current_output": "巴伐利亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "巴利阿里群岛",
+      "current_output": "巴利阿里群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "巴斯克",
+      "current_output": "巴斯克"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "拜占庭帝国",
+      "current_output": "拜占庭帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "邦特兰",
+      "current_output": "邦特兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "北爱尔兰",
+      "current_output": "北爱尔兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "北地群岛",
+      "current_output": "北地群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "北塞浦路斯",
+      "current_output": "北塞浦路斯"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "北石勒苏益格",
+      "current_output": "北石勒苏益格"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "北约",
+      "current_output": "北约"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "北越",
+      "current_output": "北越"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "贝克岛",
+      "current_output": "贝克岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "贝里",
+      "current_output": "贝里"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "贝萨拉比亚",
+      "current_output": "贝萨拉比亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "波兰立陶宛联邦",
+      "current_output": "波兰立陶宛联邦"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "波美拉尼亚",
+      "current_output": "波美拉尼亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "波希米亚",
+      "current_output": "波希米亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "勃艮第",
+      "current_output": "勃艮第"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "勃兰登堡",
+      "current_output": "勃兰登堡"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "布尔博内",
+      "current_output": "布尔博内"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "布科维纳",
+      "current_output": "布科维纳"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "布列塔尼",
+      "current_output": "布列塔尼"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "冲绳",
+      "current_output": "冲绳"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "大英帝国",
+      "current_output": "大英帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "但泽自由市",
+      "current_output": "但泽自由市"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "德涅斯特河沿岸",
+      "current_output": "德涅斯特河沿岸"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "德意志帝国",
+      "current_output": "德意志帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "东德",
+      "current_output": "东德"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "东南亚国家联盟",
+      "current_output": "东南亚国家联盟"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "东普鲁士",
+      "current_output": "东普鲁士"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "独联体",
+      "current_output": "独联体"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "顿涅茨克人民共和国",
+      "current_output": "顿涅茨克人民共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "多布罗加",
+      "current_output": "多布罗加"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "多菲内",
+      "current_output": "多菲内"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "俄罗斯帝国",
+      "current_output": "俄罗斯帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "法兰士约瑟夫地",
+      "current_output": "法兰士约瑟夫地"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "法兰西帝国",
+      "current_output": "法兰西帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "梵蒂冈城国",
+      "current_output": "梵蒂冈城国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "非洲联盟",
+      "current_output": "非洲联盟"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "费尔南多迪诺罗尼亚",
+      "current_output": "费尔南多迪诺罗尼亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "芬兰王国",
+      "current_output": "芬兰王国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "弗兰德",
+      "current_output": "弗兰德"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "弗兰格尔岛",
+      "current_output": "弗兰格尔岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "弗里西亚",
+      "current_output": "弗里西亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "符腾堡",
+      "current_output": "符腾堡"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "复活节岛",
+      "current_output": "复活节岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "广西壮族自治区",
+      "current_output": "广西壮族自治区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "国际货币基金组织",
+      "current_output": "国际货币基金组织"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "汉诺威",
+      "current_output": "汉诺威"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "汉萨同盟",
+      "current_output": "汉萨同盟"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "豪兰岛",
+      "current_output": "豪兰岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "荷兰帝国",
+      "current_output": "荷兰帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "黑森",
+      "current_output": "黑森"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "红十字国际委员会",
+      "current_output": "红十字国际委员会"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "胡安费尔南德斯群岛",
+      "current_output": "胡安费尔南德斯群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "华沙条约组织",
+      "current_output": "华沙条约组织"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加拉帕戈斯群岛",
+      "current_output": "加拉帕戈斯群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加里宁格勒",
+      "current_output": "加里宁格勒"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加利西亚",
+      "current_output": "加利西亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加利西亚-洛多梅里亚",
+      "current_output": "加利西亚-洛多梅里亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加利西亚-沃里尼亚王国",
+      "current_output": "加利西亚-沃里尼亚王国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加那利群岛",
+      "current_output": "加那利群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加斯科涅",
+      "current_output": "加斯科涅"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "加泰罗尼亚",
+      "current_output": "加泰罗尼亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "捷克斯洛伐克",
+      "current_output": "捷克斯洛伐克"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "金曼礁",
+      "current_output": "金曼礁"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "经济合作与发展组织",
+      "current_output": "经济合作与发展组织"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "凯尔盖朗群岛",
+      "current_output": "凯尔盖朗群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "科西嘉",
+      "current_output": "科西嘉"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "科西嘉共和国",
+      "current_output": "科西嘉共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "克拉科夫自由市",
+      "current_output": "克拉科夫自由市"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "克里米亚共和国",
+      "current_output": "克里米亚共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "克利珀顿岛",
+      "current_output": "克利珀顿岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "克罗地亚独立国",
+      "current_output": "克罗地亚独立国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "克罗泽群岛",
+      "current_output": "克罗泽群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "拉克沙群岛",
+      "current_output": "拉克沙群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "拉脱维亚苏维埃社会主义共和国",
+      "current_output": "拉脱维亚苏维埃社会主义共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "莱茵兰",
+      "current_output": "莱茵兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "莱茵兰共和国",
+      "current_output": "莱茵兰共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "兰佩杜萨",
+      "current_output": "兰佩杜萨"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "朗格多克",
+      "current_output": "朗格多克"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "立陶宛大公国",
+      "current_output": "立陶宛大公国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "立陶宛苏维埃社会主义共和国",
+      "current_output": "立陶宛苏维埃社会主义共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "利昂内",
+      "current_output": "利昂内"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "利穆赞",
+      "current_output": "利穆赞"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "联合国",
+      "current_output": "联合国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "列支敦士登公国",
+      "current_output": "列支敦士登公国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "卢甘斯克人民共和国",
+      "current_output": "卢甘斯克人民共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "卢森堡大公国",
+      "current_output": "卢森堡大公国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "鲁尔区",
+      "current_output": "鲁尔区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "罗德西亚",
+      "current_output": "罗德西亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "罗斯属地",
+      "current_output": "罗斯属地"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "洛林",
+      "current_output": "洛林"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "洛林公国",
+      "current_output": "洛林公国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "马德拉",
+      "current_output": "马德拉"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "马尔佩洛岛",
+      "current_output": "马尔佩洛岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "马尔什",
+      "current_output": "马尔什"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "马耳他共和国",
+      "current_output": "马耳他共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "满洲国",
+      "current_output": "满洲国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "梅克伦堡",
+      "current_output": "梅克伦堡"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "梅利利亚",
+      "current_output": "梅利利亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "美属太平洋岛屿",
+      "current_output": "美属太平洋岛屿"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "缅甸联邦",
+      "current_output": "缅甸联邦"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "缅因",
+      "current_output": "缅因"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "摩尔达维亚",
+      "current_output": "摩尔达维亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "摩拉维亚",
+      "current_output": "摩拉维亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "摩纳哥公国",
+      "current_output": "摩纳哥公国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "纳戈尔诺-卡拉巴赫",
+      "current_output": "纳戈尔诺-卡拉巴赫"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "纳瓦萨岛",
+      "current_output": "纳瓦萨岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "南奥塞梯",
+      "current_output": "南奥塞梯"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "南极阿根廷",
+      "current_output": "南极阿根廷"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "南极领土",
+      "current_output": "南极领土"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "南石勒苏益格",
+      "current_output": "南石勒苏益格"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "南斯拉夫",
+      "current_output": "南斯拉夫"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "南越",
+      "current_output": "南越"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "内蒙古自治区",
+      "current_output": "内蒙古自治区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "尼斯",
+      "current_output": "尼斯"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "宁夏回族自治区",
+      "current_output": "宁夏回族自治区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "努纳武特",
+      "current_output": "努纳武特"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "诺曼底",
+      "current_output": "诺曼底"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "欧本-马尔梅迪",
+      "current_output": "欧本-马尔梅迪"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "欧盟",
+      "current_output": "欧盟"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "帕尔米拉环礁",
+      "current_output": "帕尔米拉环礁"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "潘泰莱里亚",
+      "current_output": "潘泰莱里亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "葡萄牙帝国",
+      "current_output": "葡萄牙帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "普鲁士",
+      "current_output": "普鲁士"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "普罗旺斯",
+      "current_output": "普罗旺斯"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "普瓦图",
+      "current_output": "普瓦图"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "千岛群岛",
+      "current_output": "千岛群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "日本帝国",
+      "current_output": "日本帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "撒拉威阿拉伯民主共和国",
+      "current_output": "撒拉威阿拉伯民主共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨尔",
+      "current_output": "萨尔"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨尔保护领",
+      "current_output": "萨尔保护领"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨尔兰",
+      "current_output": "萨尔兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨哈林",
+      "current_output": "萨哈林"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨克森",
+      "current_output": "萨克森"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "萨瓦",
+      "current_output": "萨瓦"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "塞浦路斯共和国",
+      "current_output": "塞浦路斯共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "塞瓦斯托波尔",
+      "current_output": "塞瓦斯托波尔"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "珊瑚海群岛",
+      "current_output": "珊瑚海群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "上海合作组织",
+      "current_output": "上海合作组织"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "神圣罗马帝国",
+      "current_output": "神圣罗马帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "圣保罗岛",
+      "current_output": "圣保罗岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "圣马丁",
+      "current_output": "圣马丁"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "圣马力诺共和国",
+      "current_output": "圣马力诺共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "圣佩德罗和圣保罗群岛",
+      "current_output": "圣佩德罗和圣保罗群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "石勒苏益格-荷尔斯泰因",
+      "current_output": "石勒苏益格-荷尔斯泰因"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "世界贸易组织",
+      "current_output": "世界贸易组织"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "世界银行",
+      "current_output": "世界银行"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "斯洛伐克共和国",
+      "current_output": "斯洛伐克共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "苏格兰",
+      "current_output": "苏格兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "苏联",
+      "current_output": "苏联"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "索马里兰",
+      "current_output": "索马里兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "特兰西瓦尼亚",
+      "current_output": "特兰西瓦尼亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "特立尼达",
+      "current_output": "特立尼达"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "特林达德和马丁瓦斯",
+      "current_output": "特林达德和马丁瓦斯"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "图兰",
+      "current_output": "图兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "瓦拉几亚",
+      "current_output": "瓦拉几亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "瓦隆",
+      "current_output": "瓦隆"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "汪精卫政权",
+      "current_output": "汪精卫政权"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "威尔士",
+      "current_output": "威尔士"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "威克岛",
+      "current_output": "威克岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "威斯特法伦",
+      "current_output": "威斯特法伦"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "维希法国",
+      "current_output": "维希法国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "西班牙帝国",
+      "current_output": "西班牙帝国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "西北地区",
+      "current_output": "西北地区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "西藏自治区",
+      "current_output": "西藏自治区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "西德",
+      "current_output": "西德"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "西里西亚",
+      "current_output": "西里西亚"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "西普鲁士",
+      "current_output": "西普鲁士"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "香槟",
+      "current_output": "香槟"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "小笠原群岛",
+      "current_output": "小笠原群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "新地岛",
+      "current_output": "新地岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "新疆维吾尔自治区",
+      "current_output": "新疆维吾尔自治区"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "新西伯利亚群岛",
+      "current_output": "新西伯利亚群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "匈牙利王国",
+      "current_output": "匈牙利王国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "休达",
+      "current_output": "休达"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "亚速尔群岛",
+      "current_output": "亚速尔群岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "意大利社会共和国",
+      "current_output": "意大利社会共和国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "英格兰",
+      "current_output": "英格兰"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "育空",
+      "current_output": "育空"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "约翰斯顿环礁",
+      "current_output": "约翰斯顿环礁"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "暂无",
+      "current_output": "暂无"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "扎伊尔",
+      "current_output": "扎伊尔"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "中华民国",
+      "current_output": "中华民国"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "中途岛",
+      "current_output": "中途岛"
+    },
+    {
+      "group": "world-map",
+      "file": "oPGsis9D.js",
+      "source": "自由法国",
+      "current_output": "自由法国"
+    }
+  ]
+}

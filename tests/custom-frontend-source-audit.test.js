@@ -20,10 +20,14 @@ includesAll('luck-dashboard.blade.php', [
   "window.__LUCK_SET_LOCALE__(select.value)",
   "subscription && subscription.locale",
   "CRISP_RUNTIME_CONFIG.locale",
+  "theme.support.crisp.website_id",
+  "theme.support.messenger.page_username",
   "messenger_page_username",
 ]);
 
 includesAll('app/Services/LuckThemeAssetPatcher.php', [
+  "DIRECTORY_SEPARATOR . '*.js'",
+  'public static function patchLoadingAnimations',
   'formData.email.trim().toLowerCase()',
   'formData.password.length < 8',
   'error.luckAuthStage === "profile"',
@@ -34,6 +38,12 @@ includesAll('app/Services/LuckThemeAssetPatcher.php', [
   'const rawPaymentResult =',
   'Number(paymentResult.type) ===',
   'window.location.assign(paymentResult.data)',
+]);
+
+includesAll('routes/web.php', [
+  'LuckThemeAssetPatcher::discoverJavascriptAssets($themePath)',
+  'LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents)',
+  'if ($loadingPatchedContents !== false)',
 ]);
 
 includesAll('luck-overrides.css', [

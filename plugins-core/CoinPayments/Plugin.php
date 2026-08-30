@@ -19,7 +19,7 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     public function boot(): void
     {
         $this->filter('available_payment_methods', function (array $methods): array {
-            if ($this->getConfig('enabled', true)) {
+            if ($this->isConfiguredAndEnabled()) {
                 $methods['CoinPayments'] = [
                     'name' => $this->getConfig('display_name', 'CoinPayments'),
                     'icon' => $this->getConfig('icon', '💰'),
@@ -29,6 +29,21 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             }
             return $methods;
         });
+    }
+
+    private function isConfiguredAndEnabled(): bool
+    {
+        $enabled = $this->getConfig('enabled', true);
+        if (!is_bool($enabled)) {
+            $enabled = filter_var($enabled, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false;
+        }
+
+        return $enabled
+            && trim((string) $this->getConfig('coinpayments_client_id', '')) !== ''
+            && trim((string) $this->getConfig('coinpayments_client_secret', '')) !== ''
+            && trim((string) $this->getConfig('coinpayments_invoice_currency', '')) !== ''
+            && trim((string) $this->getConfig('coinpayments_invoice_currency_id', '')) !== ''
+            && (float) $this->getConfig('coinpayments_cny_invoice_rate', 0) > 0;
     }
 
     public function form(): array

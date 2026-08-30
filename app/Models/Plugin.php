@@ -38,6 +38,8 @@ class Plugin extends Model
         'mgate',          // MGate
         'sepay',          // SePay
         'telegram',       // Telegram
+        'crisp',          // Crisp support chat
+        'messenger',      // Messenger support link
     ];
 
     protected $guarded = [

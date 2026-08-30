@@ -6,6 +6,33 @@ final class LuckThemeAssetPatcher
 {
     private const FONT_FAMILY = '"Be Vietnam Pro", "Inter", "Segoe UI", Arial, sans-serif';
 
+    /**
+     * Discover every compiled JavaScript chunk in a Luck theme.
+     *
+     * Lazy-route hashes and version suffixes change between Luck releases, so
+     * keeping a hand-maintained filename list inevitably leaves some route
+     * animations unpatched. Returning relative asset paths also keeps the
+     * publishing loop independent from the host operating system separator.
+     *
+     * @return list<string>
+     */
+    public static function discoverJavascriptAssets(string $themePath): array
+    {
+        $assetPattern = rtrim($themePath, "\\/") . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . '*.js';
+        $assets = [];
+
+        foreach (glob($assetPattern) ?: [] as $asset) {
+            if (is_file($asset)) {
+                $assets[] = 'assets/' . basename($asset);
+            }
+        }
+
+        $assets = array_values(array_unique($assets));
+        sort($assets, SORT_STRING);
+
+        return $assets;
+    }
+
     public static function rewriteAssetImport(string $contents, string $assetStem, string $suffix): string
     {
         $pattern = '#(?<prefix>\./|assets/)(?<name>' . preg_quote($assetStem, '#') . '[^"\'\?]*\.js)(?:\?v=\d+)?#';
@@ -17,6 +44,69 @@ final class LuckThemeAssetPatcher
             }
             return $match['prefix'] . $name;
         }, $contents) ?? $contents;
+    }
+
+    public static function patchLoadingAnimations(string $contents): string
+    {
+        // Luck renders route-level loading VNodes before the DOM translation
+        // observer gets its first mutation. On an uncached lazy route this is
+        // long enough for the original Chinese label to flash on screen. Run
+        // those transient labels through the locale runtime while the VNode is
+        // being created instead of translating them one frame later.
+        $fallbacks = [
+            'Loading...' => ['加载中...'],
+            'Processing...' => ['处理中...'],
+            'Signing in...' => ['登录中...'],
+            'Resetting...' => ['重置中...'],
+            'Sending...' => ['发送中...'],
+            'Registering...' => ['注册中...'],
+            'Redeeming...' => ['兑换中...'],
+            'Adding funds...' => ['充值中...'],
+            'Loading dashboard...' => ['正在加载主页数据...'],
+            'Loading plans...' => ['加载套餐列表中...', '正在加载套餐信息...'],
+            'Loading nodes...' => ['正在加载节点列表...'],
+            ' Loading world map... ' => [' 正在加载世界地图... '],
+            'Loading orders...' => ['加载订单中...'],
+            'Loading ticket...' => ['工单内容加载中...'],
+            'Loading documents...' => ['正在加载文档...'],
+            'Loading document...' => ['正在加载文档内容...'],
+            'Loading chart data...' => ['正在加载图表数据...'],
+            'Loading traffic table...' => ['正在加载流量数据表...'],
+            'Loading traffic data...' => ['流量数据加载中...'],
+            'Loading payment methods...' => ['正在加载支付方式，请稍候...', '正在获取支付方式...'],
+            'Creating order...' => ['正在创建订单...'],
+            'Creating top-up order...' => ['正在创建充值订单...'],
+            'Processing payment...' => ['正在处理支付...'],
+            'Paying with balance...' => ['正在使用余额支付...'],
+            'Completing balance payment...' => ['正在完成余额支付...'],
+            'Checking payment status...' => ['正在检查支付状态...'],
+            'Activating free order...' => ['正在激活免费订单...'],
+            ' Generating QR code... ' => [' 正在生成二维码... '],
+            'Opening payment...' => ['正在跳转支付...'],
+            'Opening Alipay. Please complete payment.' => ['正在跳转到支付宝，请完成支付'],
+            'Opening the payment app. Please complete payment.' => ['正在跳转到支付应用，请完成支付'],
+            'Opening the payment page. Please complete payment.' => ['正在跳转到支付页面，请完成支付'],
+            'Waiting for payment...' => ['等待支付中...'],
+            'Loading invitation data...' => ['正在加载邀请数据...'],
+        ];
+
+        foreach ($fallbacks as $fallback => $sources) {
+            foreach ($sources as $source) {
+                $sourceJson = json_encode($source, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+                $fallbackJson = json_encode($fallback, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+                $translatedExpression = '(typeof window.__LUCK_T__ === "function" ? window.__LUCK_T__(' . $sourceJson . ') : ' . $fallbackJson . ')';
+
+                // Match only complete JS string literals used as values. The
+                // negative lookbehind makes the transformation idempotent;
+                // the negative lookahead avoids rewriting object keys.
+                $pattern = '#(?<!__LUCK_T__\()(?<quote>["\x27\x60])'
+                    . preg_quote($source, '#')
+                    . '\k<quote>(?!\s*:)#u';
+                $contents = preg_replace($pattern, $translatedExpression, $contents) ?? $contents;
+            }
+        }
+
+        return $contents;
     }
 
     public static function patchTrafficChart(string $contents): string

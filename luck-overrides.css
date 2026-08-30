@@ -786,3 +786,80 @@ body.luck-donate-open {
   .luck-language-picker { top: 8px; right: 8px; padding: 6px 8px; }
   .luck-language-picker select { max-width: 108px; font-size: 13px; }
 }
+
+/* The stock purchase-warning dialog is capped at 520px, leaving both plan
+   headers too narrow once Vietnamese labels are inserted. Give only this
+   dialog a little more room and keep the title/badge pair on one line. */
+.desktop-modal[data-v-6538462c]:has(.plan-comparison[data-v-7a517f7f]) {
+  width: min(640px, calc(100vw - 32px)) !important;
+  max-width: min(640px, calc(100vw - 32px)) !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .comparison-container[data-v-7a517f7f] {
+  align-items: stretch !important;
+  gap: 12px !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .plan-column[data-v-7a517f7f] {
+  min-width: 0 !important;
+  padding: 14px !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .column-header[data-v-7a517f7f] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .column-title[data-v-7a517f7f],
+.plan-comparison[data-v-7a517f7f] .status-badge[data-v-7a517f7f],
+.plan-comparison[data-v-7a517f7f] .arrow-text[data-v-7a517f7f] {
+  white-space: nowrap !important;
+  text-transform: none !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .status-badge[data-v-7a517f7f] {
+  min-width: 0 !important;
+  padding: 4px 6px !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .plan-name[data-v-7a517f7f] {
+  overflow-wrap: anywhere !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .spec-item[data-v-7a517f7f] {
+  gap: 10px !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .spec-label[data-v-7a517f7f] {
+  white-space: nowrap !important;
+}
+
+.plan-comparison[data-v-7a517f7f] .spec-value[data-v-7a517f7f] {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+  text-align: right !important;
+}
+
+@media (max-width: 680px) {
+  .plan-comparison[data-v-7a517f7f] {
+    padding: 14px !important;
+  }
+
+  .plan-comparison[data-v-7a517f7f] .comparison-container[data-v-7a517f7f] {
+    flex-direction: column !important;
+  }
+
+  .plan-comparison[data-v-7a517f7f] .plan-column[data-v-7a517f7f] {
+    width: 100% !important;
+  }
+
+  .plan-comparison[data-v-7a517f7f] .arrow-container[data-v-7a517f7f] {
+    min-height: 24px !important;
+  }
+
+  .plan-comparison[data-v-7a517f7f] .arrow-container[data-v-7a517f7f]:not(.mobile) .arrow-icon[data-v-7a517f7f] {
+    transform: rotate(90deg) !important;
+  }
+}
