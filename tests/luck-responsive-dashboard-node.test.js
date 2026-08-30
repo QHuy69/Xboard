@@ -78,24 +78,36 @@ expect(
   '320-390px phones and narrow foldables must stack label/value rows'
 );
 expect(
-  /\.servers-table-container\[data-v-85145c70\][\s\S]*?overflow-x:\s*hidden\s*!important/,
-  'the node card must delegate horizontal scrolling to one inner owner'
+  /\.servers-table-container\[data-v-85145c70\][\s\S]*?overflow-x:\s*scroll\s*!important[\s\S]*?scrollbar-gutter:\s*stable/,
+  'the node card must keep a visible stable native horizontal scroll owner'
+);
+expect(
+  /\.servers-table-container\[data-v-85145c70\]::-webkit-scrollbar\s*\{[\s\S]*?height:\s*11px/,
+  'the node card must expose a visibly sized WebKit horizontal rail'
+);
+expect(
+  /\.servers-table-container\[data-v-85145c70\]::-webkit-scrollbar-thumb\s*\{[\s\S]*?min-width:\s*40px[\s\S]*?background:\s*rgba\(71,\s*85,\s*105,\s*\.72\)/,
+  'the node card native scrollbar must have a visible usable thumb'
+);
+expect(
+  /\.compact-table\.desktop-table\[data-v-85145c70\]\s*\{[\s\S]*?width:\s*max\(100%,\s*1200px\)\s*!important[\s\S]*?min-width:\s*1200px\s*!important/,
+  'desktop and tablet node tables must retain the width required by scroll-x'
 );
 expect(
   /\.compact-table\[data-v-85145c70\] \.n-data-table-wrapper[\s\S]*?overflow-x:\s*hidden\s*!important/,
   'the Naive wrapper must not create a second horizontal scrollbar'
 );
 expect(
-  /\.compact-table\[data-v-85145c70\] \.n-scrollbar-container[\s\S]*?padding-bottom:\s*11px\s*!important/,
-  'the real Naive scroll container must reserve space for its persistent rail'
+  /\.compact-table\[data-v-85145c70\] \.n-scrollbar-container[\s\S]*?padding-bottom:\s*0\s*!important/,
+  'the hidden inner Naive rail must not reserve duplicate scrollbar space'
 );
 expect(
-  /\.compact-table\[data-v-85145c70\] \.n-scrollbar-rail--horizontal\s*\{[\s\S]*?height:\s*10px\s*!important[\s\S]*?opacity:\s*1\s*!important/,
-  'the Naive horizontal rail must be visible without hover'
+  /\.compact-table\[data-v-85145c70\] \.n-scrollbar-rail--horizontal\s*\{[\s\S]*?display:\s*none\s*!important/,
+  'the conditional Naive rail must be hidden so the card remains the only scroll owner'
 );
 expect(
-  /\.n-scrollbar-rail--horizontal \.n-scrollbar-rail__scrollbar\s*\{[\s\S]*?height:\s*8px\s*!important[\s\S]*?min-width:\s*32px\s*!important/,
-  'the Naive horizontal thumb must stay visible and usable'
+  /@media \(max-width:\s*768px\)[\s\S]*?\.servers-table-container\[data-v-85145c70\][\s\S]*?overflow-x:\s*hidden\s*!important[\s\S]*?\.compact-table\.desktop-table\[data-v-85145c70\][\s\S]*?min-width:\s*0\s*!important/,
+  'mobile node cards must reset the desktop scrolling contract'
 );
 expect(
   /\.luck-node-flag\s*\{[\s\S]*?place-items:\s*center[\s\S]*?overflow:\s*hidden/,

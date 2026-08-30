@@ -6,8 +6,8 @@ const css = fs.readFileSync('luck-overrides.css', 'utf8');
 
 assert.match(
   css,
-  /\.orders-table-container\[data-v-95571e5b\][\s\S]*?overflow:\s*auto\s*!important/,
-  'the order ledger container must expose a horizontal scrollbar when needed'
+  /\.orders-table-container\[data-v-95571e5b\][\s\S]*?overflow-x:\s*scroll\s*!important/,
+  'the order ledger container must keep a visible horizontal scrollbar in table mode'
 );
 assert.match(
   css,

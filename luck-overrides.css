@@ -247,7 +247,8 @@ button {
   max-width: 100% !important;
   min-height: 0 !important;
   min-width: 0 !important;
-  overflow: auto !important;
+  overflow-x: scroll !important;
+  overflow-y: auto !important;
   overscroll-behavior-inline: contain;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
@@ -444,6 +445,135 @@ button {
   html[lang^="ru"] .plan-info[data-v-95571e5b]::before { content: "Детали тарифа" !important; }
   html[lang^="ru"] .amount-info[data-v-95571e5b]::before { content: "Сумма платежа" !important; }
   html[lang^="ru"] .time-info[data-v-95571e5b]::before { content: "Дата создания" !important; }
+}
+
+/* Ticket history remains a seven-column NDataTable at every breakpoint. Its
+   declared columns need 1020px, so shrinking the table produces unreadable
+   headers on tablets and phones. Let the immediate Naive wrapper own the one
+   horizontal scrollbar while the page itself remains width-bounded. */
+.tickets-page[data-v-7de65899],
+.tickets-table[data-v-7de65899] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-wrapper {
+  max-width: 100% !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(71, 85, 105, .72) rgba(226, 232, 240, .75);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-base-table {
+  box-sizing: border-box !important;
+  width: max(100%, 1020px) !important;
+  min-width: 1020px !important;
+  max-width: none !important;
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-base-table-body {
+  overflow-x: hidden !important;
+}
+
+.tickets-table[data-v-7de65899] .n-scrollbar-rail--horizontal {
+  display: none !important;
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-wrapper::-webkit-scrollbar {
+  height: 11px;
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-wrapper::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(226, 232, 240, .75);
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-wrapper::-webkit-scrollbar-thumb {
+  min-width: 40px;
+  border: 2px solid rgba(226, 232, 240, .75);
+  border-radius: 999px;
+  background: rgba(71, 85, 105, .72);
+  background-clip: padding-box;
+}
+
+.tickets-table[data-v-7de65899] .n-data-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(51, 65, 85, .9);
+  background-clip: padding-box;
+}
+
+/* Traffic history has a separate mobile-card renderer below 769px. Keep only
+   its desktop wrapper scrollable, with enough width for the five fixed-width
+   columns and translated headers. The NDataTable stays the content surface,
+   so no second inner scrollbar is introduced. */
+@media (min-width: 769px) {
+  .traffic-details-page[data-v-88d3a2ea],
+  .desktop-table[data-v-88d3a2ea] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .desktop-table[data-v-88d3a2ea] {
+    overflow-x: scroll !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(71, 85, 105, .72) rgba(226, 232, 240, .75);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .desktop-table[data-v-88d3a2ea] .traffic-table[data-v-88d3a2ea] {
+    box-sizing: border-box !important;
+    width: max(100%, 640px) !important;
+    min-width: 640px !important;
+    max-width: none !important;
+  }
+
+  .desktop-table[data-v-88d3a2ea] .traffic-table[data-v-88d3a2ea] .n-scrollbar-rail--horizontal {
+    display: none !important;
+  }
+
+  .desktop-table[data-v-88d3a2ea]::-webkit-scrollbar {
+    height: 11px;
+  }
+
+  .desktop-table[data-v-88d3a2ea]::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: rgba(226, 232, 240, .75);
+  }
+
+  .desktop-table[data-v-88d3a2ea]::-webkit-scrollbar-thumb {
+    min-width: 40px;
+    border: 2px solid rgba(226, 232, 240, .75);
+    border-radius: 999px;
+    background: rgba(71, 85, 105, .72);
+    background-clip: padding-box;
+  }
+
+  .desktop-table[data-v-88d3a2ea]::-webkit-scrollbar-thumb:hover {
+    background: rgba(51, 65, 85, .9);
+    background-clip: padding-box;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-table[data-v-88d3a2ea] {
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    scrollbar-gutter: auto;
+  }
+
+  .desktop-table[data-v-88d3a2ea] .traffic-table[data-v-88d3a2ea] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
 }
 
 @media (max-width: 380px) {
@@ -1929,8 +2059,13 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
 
 /* Node table: the upstream route requests /flags/{code}.svg, but the theme
    contains no /flags directory and emoji flags are platform-dependent. The
-   asset patcher uses a packaged SVG sprite plus a visible ISO fallback. Keep
-   it aligned with the node name and expose a real horizontal scrollbar. */
+   asset patcher uses a packaged SVG sprite plus a visible ISO fallback.
+
+   NDataTable's internal horizontal rail is conditional: when the component is
+   allowed to shrink to the card width, its 1200px scroll-x contract does not
+   reliably produce a usable rail. Keep the desktop table intrinsically wide
+   and make the immediate card the single native horizontal scroll owner. This
+   keeps translated headers readable without leaking overflow to the page. */
 .servers-page[data-v-85145c70],
 .servers-container[data-v-85145c70],
 .servers-table-container[data-v-85145c70] {
@@ -1944,11 +2079,46 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
 }
 
 .servers-table-container[data-v-85145c70] {
-  overflow-x: hidden !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(71, 85, 105, .72) rgba(226, 232, 240, .75);
+  -webkit-overflow-scrolling: touch;
+}
+
+.servers-table-container[data-v-85145c70]::-webkit-scrollbar {
+  height: 11px;
+}
+
+.servers-table-container[data-v-85145c70]::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(226, 232, 240, .75);
+}
+
+.servers-table-container[data-v-85145c70]::-webkit-scrollbar-thumb {
+  min-width: 40px;
+  border: 2px solid rgba(226, 232, 240, .75);
+  border-radius: 999px;
+  background: rgba(71, 85, 105, .72);
+  background-clip: padding-box;
+}
+
+.servers-table-container[data-v-85145c70]::-webkit-scrollbar-thumb:hover {
+  background: rgba(51, 65, 85, .9);
+  background-clip: padding-box;
+}
+
+.compact-table.desktop-table[data-v-85145c70] {
+  box-sizing: border-box !important;
+  width: max(100%, 1200px) !important;
+  min-width: 1200px !important;
+  max-width: none !important;
 }
 
 .compact-table[data-v-85145c70] .n-data-table-wrapper {
-  max-width: 100% !important;
+  max-width: none !important;
   overflow-x: hidden !important;
 }
 
@@ -1958,34 +2128,15 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
   overscroll-behavior-inline: contain;
 }
 
-/* Naive UI scrolls through its inner NScrollbar container and paints a custom
-   rail. The table-body wrapper is not the scroll owner. A non-hover trigger is
-   injected into the NDataTable props so this rail always exists. */
+/* The outer card owns horizontal movement. Suppress the conditional Naive UI
+   rail so users never get two competing scrollbars for the same table. */
 .compact-table[data-v-85145c70] .n-scrollbar-container {
-  padding-bottom: 11px !important;
+  padding-bottom: 0 !important;
   overscroll-behavior-inline: contain;
 }
 
 .compact-table[data-v-85145c70] .n-scrollbar-rail--horizontal {
-  display: block !important;
-  right: 2px !important;
-  bottom: 1px !important;
-  left: 2px !important;
-  height: 10px !important;
-  border-radius: 999px !important;
-  background: rgba(226, 232, 240, .75) !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-}
-
-.compact-table[data-v-85145c70] .n-scrollbar-rail--horizontal .n-scrollbar-rail__scrollbar {
-  bottom: 1px !important;
-  height: 8px !important;
-  min-width: 32px !important;
-  border: 1px solid rgba(226, 232, 240, .8) !important;
-  border-radius: 999px !important;
-  background: rgba(71, 85, 105, .72) !important;
-  opacity: 1 !important;
+  display: none !important;
 }
 
 .compact-table[data-v-85145c70] .n-data-table-th,
@@ -2050,6 +2201,15 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payme
     margin-inline: 0 !important;
     padding-bottom: 3px !important;
     border-radius: 10px !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    scrollbar-gutter: auto;
+  }
+
+  .compact-table.desktop-table[data-v-85145c70] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .compact-table[data-v-85145c70] .n-data-table-th,
