@@ -281,11 +281,56 @@ JS,
 JS,
             <<<'JS'
         if (error && error.luckAuthStage === "profile") {
-          customMessage.loginError("登录成功，但暂时无法加载账户信息，请重试");
+          const profileStatus = error.response && error.response.status;
+          if (error.luckAuthFailure === "auth" || profileStatus === 401 || profileStatus === 403) {
+            customMessage.loginError("身份验证失败，请重新登录");
+          } else if (error.luckAuthFailure === "network" || (!error.luckAuthFailure && !error.response)) {
+            customMessage.networkError();
+          } else {
+            const profileMessage = error.response && error.response.data && error.response.data.message;
+            customMessage.loginError(profileMessage || "登录成功，但暂时无法加载账户信息，请重试");
+          }
         } else if (error.response && error.response.status !== 422) {
           const serverMessage = error.response.data && error.response.data.message;
           customMessage.loginError(serverMessage || "登录失败，请检查邮箱和密码");
         } else if (((_c2 = error.response) == null ? void 0 : _c2.status) === 422) {
+JS,
+            $contents
+        );
+
+        // Pinia's loading state changes synchronously inside login(), but an
+        // explicit handler guard also protects keyboard submits and stale DOM
+        // events from issuing a second request.
+        if (!str_contains($contents, 'if (authStore.isLoading) return;')) {
+            $contents = str_replace(
+                'const handleLogin = async () => {',
+                'const handleLogin = async () => {' . "\n" . '      if (authStore.isLoading) return;',
+                $contents
+            );
+        }
+
+        // Authentication is complete only after /user/info has populated the
+        // store. Do not show a success toast or navigate on a token-only state.
+        $contents = str_replace(
+            <<<'JS'
+        await authStore.login(loginData);
+        customMessage.loginSuccess();
+        router.push("/dashboard");
+JS,
+            <<<'JS'
+        await authStore.login(loginData);
+        if (!authStore.isAuthenticated) {
+          const profileError = new Error("Authenticated user profile was not initialized");
+          profileError.luckAuthStage = "profile";
+          profileError.luckAuthFailure = "server";
+          throw profileError;
+        }
+        customMessage.loginSuccess();
+        if (router.currentRoute.value.path !== "/dashboard") {
+          void router.replace("/dashboard").catch((navigationError) => {
+            console.error("Post-login navigation failed:", navigationError);
+          });
+        }
 JS,
             $contents
         );
@@ -298,11 +343,13 @@ JS,
                 'if (formData.password.length < 6) {',
                 'const loginData = { ...formData };',
                 'const goToRegister = () => {' . "\n" . '      router.push("/register");' . "\n" . '    };',
+                'const goToRegister = () => {' . "\n" . '      void router.push("/register");' . "\n" . '    };',
             ],
             [
                 'if (formData.password.length < 8) {',
                 'const loginData = { ...formData, email: formData.email.trim().toLowerCase() };',
-                'const goToRegister = () => {' . "\n" . '      void router.push("/register");' . "\n" . '    };',
+                'const goToRegister = () => {' . "\n" . '      if (router.currentRoute.value.path !== "/register") {' . "\n" . '        void router.push("/register").catch((navigationError) => {' . "\n" . '          console.error("Register navigation failed:", navigationError);' . "\n" . '        });' . "\n" . '      }' . "\n" . '    };',
+                'const goToRegister = () => {' . "\n" . '      if (router.currentRoute.value.path !== "/register") {' . "\n" . '        void router.push("/register").catch((navigationError) => {' . "\n" . '          console.error("Register navigation failed:", navigationError);' . "\n" . '        });' . "\n" . '      }' . "\n" . '    };',
             ],
             $contents
         );
@@ -312,6 +359,25 @@ JS,
 
     public static function patchRegisterFlow(string $contents): string
     {
+        // Registration spends time in apiClient.register() before Pinia's
+        // setAuthData() toggles isLoading. Track the whole transaction so a
+        // fast double click cannot create two accounts or two navigation jobs.
+        if (!str_contains($contents, 'const registerSubmitting = ref(false);')) {
+            $contents = str_replace(
+                '    const authStore = useAuthStore();',
+                '    const authStore = useAuthStore();' . "\n" . '    const registerSubmitting = ref(false);',
+                $contents
+            );
+        }
+
+        if (!str_contains($contents, 'if (registerSubmitting.value || authStore.isLoading) return;')) {
+            $contents = str_replace(
+                'const handleRegister = async () => {',
+                'const handleRegister = async () => {' . "\n" . '      if (registerSubmitting.value || authStore.isLoading) return;',
+                $contents
+            );
+        }
+
         // Invitation links must pre-fill the code regardless of whether the
         // current Luck bundle exposes Vue Router's useRoute helper.
         if (!str_contains($contents, 'const invitationCodeFromUrl =')) {
@@ -388,7 +454,15 @@ JS,
         }
 JS,
             <<<'JS'
-        if (error.response) {
+        if (error && error.luckAuthStage === "profile") {
+          authStore.logout();
+          customMessage.registerError("注册成功但未能自动登录，请手动登录");
+          if (router.currentRoute.value.path !== "/login") {
+            void router.replace("/login").catch((navigationError) => {
+              console.error("Post-registration navigation failed:", navigationError);
+            });
+          }
+        } else if (error.response) {
           const responseData = error.response.data || {};
           const errors = responseData.errors || responseData.error;
           if (errors && typeof errors === "object") {
@@ -401,6 +475,94 @@ JS,
           customMessage.networkError();
         }
 JS,
+            $contents
+        );
+
+        // Set the local lock immediately before the first registration
+        // request, and release it for every success or failure path.
+        $contents = str_replace(
+            <<<'JS'
+      try {
+        const finalEmail =
+JS,
+            <<<'JS'
+      registerSubmitting.value = true;
+      try {
+        const finalEmail =
+JS,
+            $contents
+        );
+
+        $contents = str_replace(
+            <<<'JS'
+        const response = await apiClient.register(registerData);
+        if (response.data) {
+          await authStore.setAuthData(response.data);
+          customMessage.registerSuccess();
+          router.push("/dashboard");
+        } else {
+          customMessage.registerError("注册成功但未能自动登录，请手动登录");
+          router.push("/login");
+        }
+JS,
+            <<<'JS'
+        const response = await apiClient.register(registerData);
+        if (response.data) {
+          await authStore.setAuthData(response.data);
+          if (!authStore.isAuthenticated) {
+            const profileError = new Error("Registered user profile was not initialized");
+            profileError.luckAuthStage = "profile";
+            profileError.luckAuthFailure = "server";
+            throw profileError;
+          }
+          customMessage.registerSuccess();
+          if (router.currentRoute.value.path !== "/dashboard") {
+            void router.replace("/dashboard").catch((navigationError) => {
+              console.error("Post-registration navigation failed:", navigationError);
+            });
+          }
+        } else {
+          authStore.logout();
+          customMessage.registerError("注册成功但未能自动登录，请手动登录");
+          if (router.currentRoute.value.path !== "/login") {
+            void router.replace("/login").catch((navigationError) => {
+              console.error("Post-registration navigation failed:", navigationError);
+            });
+          }
+        }
+JS,
+            $contents
+        );
+
+        $contents = str_replace(
+            <<<'JS'
+        } else {
+          customMessage.networkError();
+        }
+      }
+JS,
+            <<<'JS'
+        } else {
+          customMessage.networkError();
+        }
+      } finally {
+        registerSubmitting.value = false;
+      }
+JS,
+            $contents
+        );
+
+        $contents = str_replace(
+            [
+                'disabled: unref(authStore).isLoading,',
+                'loading: unref(authStore).isLoading,',
+                'toDisplayString(unref(authStore).isLoading ? "注册中..." : "注册")',
+            ],
+            [
+                'disabled: unref(authStore).isLoading || registerSubmitting.value,',
+                'loading: unref(authStore).isLoading || registerSubmitting.value,' . "\n" . '                  disabled: unref(authStore).isLoading || registerSubmitting.value,',
+                'toDisplayString(unref(authStore).isLoading || registerSubmitting.value ? "注册中..." : "注册")',
+            ],
             $contents
         );
 
@@ -431,29 +593,98 @@ JS,
 
     public static function patchSharedAuth(string $contents): string
     {
-        // A valid login can be followed by a transient /user/info failure.
-        // Mark that stage explicitly and keep the token so the UI never lies
-        // that the password was wrong. Xboard's User middleware returns 403
-        // for a missing/expired token, while some auth stacks use 401; both
-        // statuses prove that the saved token must be discarded.
-        $contents = str_replace(
-            <<<'JS'
-      } else {
-        logout();
-        throw error;
+        // Older Luck bundles persisted a fabricated user on /user/info 403.
+        // That made `isAuthenticated` true, showed a success toast, and routed
+        // to the dashboard even though Xboard had rejected the token. Remove
+        // that placeholder from existing browser storage during bootstrap.
+        if (!str_contains($contents, 'const restoredUser = JSON.parse(savedUser);')) {
+            $contents = str_replace(
+                <<<'JS'
+    if (savedUser) {
+      try {
+        user.value = JSON.parse(savedUser);
+      } catch (error) {
+        console.error("解析用户信息失败:", error);
+        localStorage.removeItem("v2board_user");
       }
+    }
 JS,
-            <<<'JS'
-      } else {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-          logout();
+                <<<'JS'
+    if (savedUser) {
+      try {
+        const restoredUser = JSON.parse(savedUser);
+        const isLegacyPlaceholder = restoredUser && Number(restoredUser.id) === 0 && restoredUser.email === "unknown@example.com";
+        if (!restoredUser || typeof restoredUser !== "object" || Array.isArray(restoredUser) || isLegacyPlaceholder) {
+          token.value = "";
+          user.value = null;
+          localStorage.removeItem("v2board_token");
+          localStorage.removeItem("v2board_user");
+          apiClient.clearAuthToken();
+        } else {
+          user.value = restoredUser;
         }
-        error.luckAuthStage = "profile";
-        throw error;
+      } catch (error) {
+        console.error("解析用户信息失败:", error);
+        token.value = "";
+        user.value = null;
+        localStorage.removeItem("v2board_token");
+        localStorage.removeItem("v2board_user");
+        apiClient.clearAuthToken();
       }
+    }
 JS,
-            $contents
-        );
+                $contents
+            );
+        }
+
+        // A token is not a completed login. /user/info must return a real
+        // object before the store can persist a user. 401/403 are auth
+        // failures (Xboard's User middleware uses 403); HTTP failures with a
+        // response are server/application errors, and only no-response cases
+        // are reported as network errors.
+        $fetchUserStart = strpos($contents, '  const fetchUserInfo = async () => {');
+        $checkAuthStart = $fetchUserStart === false
+            ? false
+            : strpos($contents, '  const checkAuth = async () => {', $fetchUserStart);
+
+        if ($fetchUserStart !== false && $checkAuthStart !== false) {
+            $fetchUserInfo = <<<'JS'
+  const fetchUserInfo = async () => {
+    try {
+      const userInfo = await apiClient.getUserInfo();
+      const isLegacyPlaceholder = userInfo && Number(userInfo.id) === 0 && userInfo.email === "unknown@example.com";
+      if (!userInfo || typeof userInfo !== "object" || Array.isArray(userInfo) || isLegacyPlaceholder) {
+        const invalidProfileError = new Error("Invalid user profile response");
+        invalidProfileError.luckAuthStage = "profile";
+        invalidProfileError.luckAuthFailure = "server";
+        throw invalidProfileError;
+      }
+      user.value = userInfo;
+      localStorage.setItem("v2board_user", JSON.stringify(userInfo));
+    } catch (error) {
+      console.error("获取用户信息失败:", error);
+      const profileError = error && typeof error === "object" ? error : new Error("Unable to load user profile");
+      const profileStatus = profileError.response && profileError.response.status;
+      const isAuthFailure = profileStatus === 401 || profileStatus === 403;
+      user.value = null;
+      localStorage.removeItem("v2board_user");
+      if (isAuthFailure) {
+        logout();
+      }
+      profileError.luckAuthStage = "profile";
+      profileError.luckAuthFailure = profileError.luckAuthFailure || (isAuthFailure ? "auth" : (profileError.response ? "server" : "network"));
+      throw profileError;
+    }
+  };
+
+JS;
+            $contents = substr_replace(
+                $contents,
+                $fetchUserInfo,
+                $fetchUserStart,
+                $checkAuthStart - $fetchUserStart
+            );
+        }
 
         return $contents;
     }

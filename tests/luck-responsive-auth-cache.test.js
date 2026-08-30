@@ -60,7 +60,9 @@ assert(routes.includes('LuckThemeAssetPatcher::nodeAccessAssetName($runtimeFile)
 assert(patcher.includes("'-access-v2.js'"), 'node patch needs a new physical cache-busted suffix');
 assert(!routes.includes("preg_replace('/\\.js$/', '-access.js'"), 'legacy suffix appending can create access-access files');
 assert(
-  patcher.includes('error.response.status === 401 || error.response.status === 403'),
+  patcher.includes('profileStatus === 401 || profileStatus === 403')
+    && patcher.includes('if (isAuthFailure)')
+    && patcher.includes('logout();'),
   'expired Xboard tokens (403) must be cleared instead of trapping the UI in a profile/network-error loop'
 );
 assert(

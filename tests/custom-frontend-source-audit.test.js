@@ -33,7 +33,7 @@ includesAll('app/Services/LuckThemeAssetPatcher.php', [
   'formData.email.trim().toLowerCase()',
   'formData.password.length < 8',
   'error.luckAuthStage === "profile"',
-  'error.response.status === 401',
+  'profileStatus === 401 || profileStatus === 403',
   'const invitationCodeFromUrl =',
   'backendConfig.value.is_invite_force && !formData.inviteCode.trim()',
   'if (error.response)',

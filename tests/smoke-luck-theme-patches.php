@@ -170,21 +170,48 @@ if ($entryAsset && is_file($entryAsset)) {
 
 $login = <<<'JS'
 import { useAuthStore } from "./BBbuoBq5-v3-fresh.js";
+    const handleLogin = async () => {
+      var _a2, _b2, _c2, _d2;
+      try {
+        const loginData = { ...formData };
+        await authStore.login(loginData);
+        customMessage.loginSuccess();
+        router.push("/dashboard");
+      } catch (error) {
         if (((_a2 = error.response) == null ? void 0 : _a2.status) === 500) {
           customMessage.loginError(((_b2 = error.response.data) == null ? void 0 : _b2.message) || "邮箱或密码错误");
         } else if (((_c2 = error.response) == null ? void 0 : _c2.status) === 422) {
+        }
+      }
+    };
+    const goToRegister = () => {
+      router.push("/register");
+    };
 JS;
 $login = LuckThemeAssetPatcher::patchLoginErrors($login);
 $login = LuckThemeAssetPatcher::rewriteAssetImport($login, 'BBbuoBq5', '-runtime-v2');
 if (!str_contains($login, 'error.response.status !== 422')
     || !str_contains($login, 'serverMessage')
     || !str_contains($login, 'error.luckAuthStage === "profile"')
+    || !str_contains($login, 'error.luckAuthFailure === "auth"')
+    || !str_contains($login, 'if (authStore.isLoading) return;')
+    || !str_contains($login, 'if (!authStore.isAuthenticated)')
+    || !str_contains($login, 'customMessage.loginSuccess();')
+    || strpos($login, 'if (!authStore.isAuthenticated)') > strpos($login, 'customMessage.loginSuccess();')
+    || !str_contains($login, 'router.currentRoute.value.path !== "/dashboard"')
+    || !str_contains($login, 'router.currentRoute.value.path !== "/register"')
+    || str_contains($login, 'router.push("/dashboard")')
     || !str_contains($login, 'BBbuoBq5-v3-fresh-runtime-v2.js')) {
     fwrite(STDERR, "Luck login-error classification patch failed.\n");
     exit(1);
 }
+if (LuckThemeAssetPatcher::patchLoginErrors($login) !== $login) {
+    fwrite(STDERR, "Luck login patch must be idempotent.\n");
+    exit(1);
+}
 
 $register = <<<'JS'
+    const authStore = useAuthStore();
     const formData = reactive({
       email: "",
       emailPrefix: "",
@@ -194,10 +221,25 @@ $register = <<<'JS'
       inviteCode: "",
       emailCode: ""
     });
+    const handleRegister = async () => {
+      var _a2, _b2, _c2, _d2, _e2, _f2, _g2;
       if (((_b2 = backendConfig.value) == null ? void 0 : _b2.is_email_verify) && !formData.emailCode.trim()) {
         customMessage.error("请输入邮箱验证码", { title: "验证码为空" });
         return;
       }
+      try {
+        const finalEmail = formData.email;
+        const registerData = { email: finalEmail, password: formData.password };
+        const response = await apiClient.register(registerData);
+        if (response.data) {
+          await authStore.setAuthData(response.data);
+          customMessage.registerSuccess();
+          router.push("/dashboard");
+        } else {
+          customMessage.registerError("注册成功但未能自动登录，请手动登录");
+          router.push("/login");
+        }
+      } catch (error) {
         if (((_d2 = error.response) == null ? void 0 : _d2.status) === 500) {
           customMessage.registerError(((_e2 = error.response.data) == null ? void 0 : _e2.message) || "注册失败，请稍后重试");
         } else if (((_f2 = error.response) == null ? void 0 : _f2.status) === 422) {
@@ -211,28 +253,97 @@ $register = <<<'JS'
         } else {
           customMessage.networkError();
         }
+      }
+    };
+                createVNode(_component_n_button, {
+                  disabled: unref(authStore).isLoading,
+                  loading: unref(authStore).isLoading,
+                  onClick: handleRegister
+                }, {
+                  default: withCtx(() => [
+                    createTextVNode(toDisplayString(unref(authStore).isLoading ? "注册中..." : "注册"), 1)
+                  ])
+                });
         placeholder: "邀请码（可选）",
 JS;
 $register = LuckThemeAssetPatcher::patchRegisterFlow($register);
 if (!str_contains($register, 'const invitationCodeFromUrl =')
+    || !str_contains($register, 'const registerSubmitting = ref(false);')
+    || !str_contains($register, 'if (registerSubmitting.value || authStore.isLoading) return;')
+    || !str_contains($register, 'registerSubmitting.value = true;')
+    || !str_contains($register, 'registerSubmitting.value = false;')
     || !str_contains($register, 'backendConfig.value && backendConfig.value.is_invite_force && !formData.inviteCode.trim()')
     || !str_contains($register, 'placeholder: backendConfig.value && backendConfig.value.is_invite_force')
-    || !str_contains($register, 'if (error.response)')
+    || !str_contains($register, 'if (error && error.luckAuthStage === "profile")')
+    || !str_contains($register, 'authStore.logout();')
+    || !str_contains($register, 'if (!authStore.isAuthenticated)')
+    || strpos($register, 'if (!authStore.isAuthenticated)') > strpos($register, 'customMessage.registerSuccess();')
+    || !str_contains($register, 'router.currentRoute.value.path !== "/dashboard"')
+    || !str_contains($register, 'router.currentRoute.value.path !== "/login"')
+    || !str_contains($register, 'loading: unref(authStore).isLoading || registerSubmitting.value')
+    || !str_contains($register, 'disabled: unref(authStore).isLoading || registerSubmitting.value')
+    || str_contains($register, 'router.push("/dashboard")')
     || !str_contains($register, '邀请码（必填）')) {
     fwrite(STDERR, "Luck registration and invitation patch failed.\n");
     exit(1);
 }
+if (LuckThemeAssetPatcher::patchRegisterFlow($register) !== $register) {
+    fwrite(STDERR, "Luck registration patch must be idempotent.\n");
+    exit(1);
+}
 
 $sharedAuth = <<<'JS'
+  const initAuth = () => {
+    const savedToken = localStorage.getItem("v2board_token");
+    const savedUser = localStorage.getItem("v2board_user");
+    if (savedToken) {
+      token.value = savedToken;
+      apiClient.setAuthToken(savedToken);
+    }
+    if (savedUser) {
+      try {
+        user.value = JSON.parse(savedUser);
+      } catch (error) {
+        console.error("解析用户信息失败:", error);
+        localStorage.removeItem("v2board_user");
+      }
+    }
+  };
+  const fetchUserInfo = async () => {
+    var _a;
+    try {
+      const userInfo = await apiClient.getUserInfo();
+      user.value = userInfo;
+      localStorage.setItem("v2board_user", JSON.stringify(userInfo));
+    } catch (error) {
+      if (((_a = error.response) == null ? void 0 : _a.status) === 403) {
+        user.value = { id: 0, email: "unknown@example.com" };
+        localStorage.setItem("v2board_user", JSON.stringify(user.value));
       } else {
         logout();
         throw error;
       }
+    }
+  };
+  const checkAuth = async () => {
+    return true;
+  };
 JS;
 $sharedAuth = LuckThemeAssetPatcher::patchSharedAuth($sharedAuth);
-if (!str_contains($sharedAuth, 'error.response.status === 401 || error.response.status === 403')
-    || !str_contains($sharedAuth, 'error.luckAuthStage = "profile"')) {
+if (!str_contains($sharedAuth, 'const restoredUser = JSON.parse(savedUser);')
+    || !str_contains($sharedAuth, 'isLegacyPlaceholder')
+    || !str_contains($sharedAuth, 'profileStatus === 401 || profileStatus === 403')
+    || !str_contains($sharedAuth, 'profileError.luckAuthStage = "profile"')
+    || !str_contains($sharedAuth, 'isAuthFailure ? "auth"')
+    || !str_contains($sharedAuth, 'profileError.response ? "server" : "network"')
+    || !str_contains($sharedAuth, 'user.value = null;')
+    || str_contains($sharedAuth, 'user.value = { id: 0')
+    || str_contains($sharedAuth, 'JSON.stringify(user.value)')) {
     fwrite(STDERR, "Luck authenticated-profile error patch failed.\n");
+    exit(1);
+}
+if (LuckThemeAssetPatcher::patchSharedAuth($sharedAuth) !== $sharedAuth) {
+    fwrite(STDERR, "Luck shared-auth patch must be idempotent.\n");
     exit(1);
 }
 
