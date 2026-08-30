@@ -16,7 +16,11 @@ class Setting
 
     public function __construct()
     {
-        $this->cache = Cache::store('redis');
+        // Respect the configured default cache store. Production keeps using
+        // Redis through CACHE_DRIVER=redis, while installers and test suites
+        // can deliberately select the in-memory array store without needing a
+        // Redis daemon.
+        $this->cache = Cache::store();
     }
 
     /**

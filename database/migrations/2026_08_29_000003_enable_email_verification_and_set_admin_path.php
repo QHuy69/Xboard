@@ -31,7 +31,9 @@ return new class extends Migration {
         }
 
         try {
-            Cache::store('redis')->forget('admin_settings');
+            // Follow the active cache driver so fresh installs and CI can use
+            // the array store without attempting a Redis connection.
+            Cache::forget('admin_settings');
         } catch (\Throwable) {
             // The database values are authoritative; cache can be cleared later.
         }

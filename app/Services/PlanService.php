@@ -182,7 +182,8 @@ class PlanService
     {
         return array_filter(
             $plan->getActivePeriods(),
-            fn($period) => isset($plan->prices[$period]) && $plan->prices[$period] >= 0
+            fn(string $period): bool => isset($plan->prices[$period]) && $plan->prices[$period] >= 0,
+            ARRAY_FILTER_USE_KEY
         );
     }
 

@@ -45,7 +45,8 @@ class PlanFreePriceTest extends TestCase
         $this->assertSame(0, $plan->getPriceList()[Plan::PERIOD_MONTHLY]['price']);
 
         $available = (new PlanService($plan))->getAvailablePeriods($plan);
-        $this->assertArrayHasKey(Plan::PERIOD_MONTHLY, $available);
-        $this->assertArrayNotHasKey(Plan::PERIOD_QUARTERLY, $available);
+        $this->assertSame([
+            Plan::PERIOD_MONTHLY => Plan::getAvailablePeriods()[Plan::PERIOD_MONTHLY],
+        ], $available);
     }
 }
