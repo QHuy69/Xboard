@@ -32,12 +32,20 @@ video {
 
 /* Generated dialogs use several different class names. Keep all of them
    inside the visual viewport and let short screens scroll their contents. */
-:where(.dialog-content, .dialog-container, .modal-content, .modal-container, .purchase-dialog, .subscription-dialog, [role="dialog"] > *) {
+:where(.dialog-content, .dialog-container, .modal-container, .purchase-dialog, .subscription-dialog, [role="dialog"]) {
   max-width: calc(100vw - 24px) !important;
   max-height: calc(100dvh - 24px) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
+}
+
+/* Modal body sections may scroll vertically, but headers and footers must
+   never become independent scroll panes. The former `[role="dialog"] > *`
+   rule applied overflow to every direct child and produced nested scrollbars. */
+:where(.modal-content, .dialog-body, .modal-body) {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
 }
 
 input,
@@ -84,6 +92,95 @@ button {
   }
 }
 
+/* Registration has two compound rows whose fixed icon/domain/action widths
+   consume the entire input on small phones. Stack the verification action and
+   keep the local-part field deliberately usable instead of letting it resolve
+   to zero pixels. */
+@media (max-width: 430px) {
+  :where(.ios-login-container, .ios-register-container) {
+    padding-top: max(58px, calc(env(safe-area-inset-top) + 50px)) !important;
+  }
+
+  .email-verify-wrapper {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .email-code-input,
+  .send-code-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .email-code-input .ios-input,
+  .email-code-input .n-input-wrapper,
+  .email-code-input .n-input__input,
+  .email-code-input input {
+    width: 100% !important;
+    min-width: 6ch !important;
+  }
+
+  .send-code-button {
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (max-width: 360px) {
+  :where(.ios-login-container, .ios-register-container) {
+    padding-inline: 8px !important;
+  }
+
+  :where(.login-card, .register-card) {
+    width: calc(100vw - 16px) !important;
+  }
+
+  :where(.login-card, .register-card) .card-content {
+    padding-inline: 12px !important;
+  }
+
+  .unified-container .email-icon {
+    width: auto !important;
+    padding-left: 10px !important;
+  }
+
+  .unified-container .prefix-input {
+    min-width: 70px !important;
+    margin-left: 6px !important;
+    padding: 8px !important;
+  }
+
+  .unified-container .at-symbol {
+    margin-inline: 2px !important;
+  }
+
+  .unified-container .domain-selector {
+    min-width: 72px !important;
+    max-width: 86px !important;
+    padding-right: 8px !important;
+  }
+
+  .register-card .ios-input-wrapper {
+    padding-inline: 12px !important;
+  }
+
+  .register-card .input-icon {
+    margin-right: 8px !important;
+  }
+}
+
+@media (max-height: 760px) {
+  :where(.ios-login-container, .ios-register-container) {
+    padding-top: max(58px, calc(env(safe-area-inset-top) + 50px)) !important;
+  }
+}
+
 .plan-card .plan-features {
   padding: 0 24px 22px !important;
 }
@@ -100,9 +197,172 @@ button {
   white-space: nowrap !important;
 }
 
+/* Keep the order ledger readable at every desktop aspect ratio. The stock
+   seven-column grid gives the order type only .2fr and clips the whole table
+   because its container uses overflow:hidden. That makes badges and long
+   order numbers wrap one character at a time. Let the ledger scroll as one
+   unit, give every column a deliberate minimum, and use the same alignment
+   rules for its header and body. */
+.orders-page[data-v-95571e5b] {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.orders-page[data-v-95571e5b] .filter-tabs[data-v-95571e5b] {
+  flex-wrap: nowrap !important;
+  max-width: 100% !important;
+  padding-bottom: 5px !important;
+  overflow-x: auto !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, .45) transparent;
+}
+
+.orders-page[data-v-95571e5b] .filter-tab[data-v-95571e5b] {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+.orders-table-container[data-v-95571e5b] {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, .55) rgba(226, 232, 240, .55);
+}
+
+.orders-table-container[data-v-95571e5b]::-webkit-scrollbar,
+.orders-page[data-v-95571e5b] .filter-tabs[data-v-95571e5b]::-webkit-scrollbar {
+  height: 9px;
+}
+
+.orders-table-container[data-v-95571e5b]::-webkit-scrollbar-track,
+.orders-page[data-v-95571e5b] .filter-tabs[data-v-95571e5b]::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(226, 232, 240, .55);
+}
+
+.orders-table-container[data-v-95571e5b]::-webkit-scrollbar-thumb,
+.orders-page[data-v-95571e5b] .filter-tabs[data-v-95571e5b]::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(100, 116, 139, .55);
+}
+
+@media (min-width: 769px) {
+  .orders-table[data-v-95571e5b] {
+    width: 100% !important;
+    min-width: 1060px !important;
+  }
+
+  .orders-table[data-v-95571e5b] .table-header[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .table-row[data-v-95571e5b] {
+    grid-template-columns: 72px 230px minmax(170px, 1fr) 130px 112px 134px 108px !important;
+    gap: 12px !important;
+    padding-inline: 16px !important;
+  }
+
+  .orders-table[data-v-95571e5b] .table-header[data-v-95571e5b] {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    align-items: center !important;
+  }
+
+  .orders-table[data-v-95571e5b] .table-row[data-v-95571e5b] {
+    min-height: 68px;
+    padding-block: 9px !important;
+  }
+
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .table-cell[data-v-95571e5b] {
+    min-width: 0 !important;
+    line-height: 1.4 !important;
+  }
+
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(1),
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(5),
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(6),
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(7) {
+    text-align: center !important;
+  }
+
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(2),
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(3) {
+    text-align: start !important;
+  }
+
+  .orders-table[data-v-95571e5b] .header-cell[data-v-95571e5b]:nth-child(4) {
+    text-align: end !important;
+  }
+
+  .orders-table[data-v-95571e5b] .type-info[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .status-info[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .time-info[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .actions[data-v-95571e5b] {
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .orders-table[data-v-95571e5b] .order-info[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .plan-info[data-v-95571e5b] {
+    align-items: flex-start !important;
+    justify-content: center !important;
+    text-align: start !important;
+  }
+
+  .orders-table[data-v-95571e5b] .amount-info[data-v-95571e5b] {
+    align-items: flex-end !important;
+    justify-content: center !important;
+    text-align: end !important;
+  }
+
+  .orders-table[data-v-95571e5b] .amount-details[data-v-95571e5b] {
+    align-items: flex-end !important;
+  }
+
+  .orders-table[data-v-95571e5b] .order-number[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .order-type[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .plan-details[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .plan-traffic[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .plan-period[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .plan-deposit[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .plan-amount[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .amount-main[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .amount-discount[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .amount-balance[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .status-badge[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .time-date[data-v-95571e5b],
+  .orders-table[data-v-95571e5b] .time-time[data-v-95571e5b] {
+    white-space: nowrap !important;
+  }
+
+  .orders-table[data-v-95571e5b] .order-number[data-v-95571e5b] {
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    text-align: start !important;
+  }
+
+  .orders-table[data-v-95571e5b] .plan-details[data-v-95571e5b] {
+    flex-wrap: nowrap !important;
+  }
+}
+
 /* The compiled orders stylesheet renders these mobile labels through
    pseudo-elements, so the DOM translator cannot see or replace them. */
 @media (max-width: 768px) {
+  .orders-table-container[data-v-95571e5b] {
+    overflow-x: visible !important;
+  }
+
+  .orders-table[data-v-95571e5b] {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
   html[lang^="vi"] .order-info[data-v-95571e5b]::before {
     content: "Mã đơn hàng" !important;
   }
@@ -134,6 +394,36 @@ button {
   html[lang^="en"] .time-info[data-v-95571e5b]::before {
     content: "Created at" !important;
   }
+
+  html[lang="zh-CN"] .order-info[data-v-95571e5b]::before { content: "订单编号" !important; }
+  html[lang="zh-CN"] .plan-info[data-v-95571e5b]::before { content: "套餐详情" !important; }
+  html[lang="zh-CN"] .amount-info[data-v-95571e5b]::before { content: "支付金额" !important; }
+  html[lang="zh-CN"] .time-info[data-v-95571e5b]::before { content: "创建时间" !important; }
+
+  html[lang="zh-TW"] .order-info[data-v-95571e5b]::before { content: "訂單編號" !important; }
+  html[lang="zh-TW"] .plan-info[data-v-95571e5b]::before { content: "方案詳情" !important; }
+  html[lang="zh-TW"] .amount-info[data-v-95571e5b]::before { content: "付款金額" !important; }
+  html[lang="zh-TW"] .time-info[data-v-95571e5b]::before { content: "建立時間" !important; }
+
+  html[lang^="ja"] .order-info[data-v-95571e5b]::before { content: "注文番号" !important; }
+  html[lang^="ja"] .plan-info[data-v-95571e5b]::before { content: "プラン詳細" !important; }
+  html[lang^="ja"] .amount-info[data-v-95571e5b]::before { content: "支払金額" !important; }
+  html[lang^="ja"] .time-info[data-v-95571e5b]::before { content: "作成日時" !important; }
+
+  html[lang^="ko"] .order-info[data-v-95571e5b]::before { content: "주문 번호" !important; }
+  html[lang^="ko"] .plan-info[data-v-95571e5b]::before { content: "요금제 상세" !important; }
+  html[lang^="ko"] .amount-info[data-v-95571e5b]::before { content: "결제 금액" !important; }
+  html[lang^="ko"] .time-info[data-v-95571e5b]::before { content: "생성 시간" !important; }
+
+  html[lang^="fa"] .order-info[data-v-95571e5b]::before { content: "شماره سفارش" !important; }
+  html[lang^="fa"] .plan-info[data-v-95571e5b]::before { content: "جزئیات طرح" !important; }
+  html[lang^="fa"] .amount-info[data-v-95571e5b]::before { content: "مبلغ پرداخت" !important; }
+  html[lang^="fa"] .time-info[data-v-95571e5b]::before { content: "زمان ایجاد" !important; }
+
+  html[lang^="ru"] .order-info[data-v-95571e5b]::before { content: "Номер заказа" !important; }
+  html[lang^="ru"] .plan-info[data-v-95571e5b]::before { content: "Детали тарифа" !important; }
+  html[lang^="ru"] .amount-info[data-v-95571e5b]::before { content: "Сумма платежа" !important; }
+  html[lang^="ru"] .time-info[data-v-95571e5b]::before { content: "Дата создания" !important; }
 }
 
 @media (max-width: 380px) {
@@ -693,19 +983,20 @@ body.luck-donate-open {
   }
 
   .user-subscription-item .subscription-label {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    overflow-wrap: anywhere !important;
+    flex: 1 1 140px !important;
+    min-width: min-content !important;
+    overflow-wrap: normal !important;
+    word-break: keep-all !important;
   }
 
   .user-subscription-item .subscription-value {
     flex: 0 1 auto !important;
     width: auto !important;
     max-width: 58% !important;
-    min-width: 0 !important;
+    min-width: min-content !important;
     white-space: normal !important;
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
+    overflow-wrap: normal !important;
+    word-break: keep-all !important;
     text-align: right !important;
   }
 
@@ -758,6 +1049,7 @@ body.luck-donate-open {
   backdrop-filter: blur(10px);
 }
 .luck-language-picker select {
+  min-width: 0;
   max-width: 132px;
   border: 0;
   outline: 0;
@@ -766,9 +1058,84 @@ body.luck-donate-open {
   font: inherit;
   cursor: pointer;
 }
+
+/* Persian is the only RTL locale shipped by Luck. Keep document-level flow
+   correct while preserving left-to-right entry for protocol data, email,
+   passwords, verification codes and order identifiers. */
+html[dir="rtl"] .luck-language-picker {
+  right: auto;
+  left: max(14px, env(safe-area-inset-left));
+}
+
+html[dir="rtl"] :where(
+  .unified-container,
+  .email-verify-wrapper input,
+  input[type="email"],
+  input[type="password"],
+  input[inputmode="numeric"],
+  .order-number[data-v-95571e5b],
+  .luck-node-flag
+) {
+  direction: ltr;
+}
+
+html[dir="rtl"] .luck-language-picker select {
+  direction: rtl;
+}
+
+/* Auth pages keep the picker in a reserved safe-area row. Once the app shell
+   is mounted it is moved into the real desktop/mobile header, so it no longer
+   floats over the account menu or dashboard cards. */
+.luck-language-picker.luck-language-picker--inline,
+.luck-language-picker.luck-language-picker--mobile,
+.luck-language-picker.luck-language-picker--tablet {
+  position: static;
+  inset: auto;
+  z-index: auto;
+}
+
+.luck-language-picker.luck-language-picker--inline {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  box-shadow: none;
+}
+
+.luck-language-picker.luck-language-picker--mobile {
+  width: 100%;
+  max-width: 100%;
+  justify-content: flex-start;
+  margin-top: 8px;
+  padding: 7px 10px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .1);
+}
+
+.luck-language-picker.luck-language-picker--mobile select,
+.luck-language-picker.luck-language-picker--tablet select {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: none;
+}
+
+/* The desktop shell remains active on 769-1180px tablets. Give language its
+   own header row there instead of squeezing the title, download/donate actions
+   and account menu into one line. */
+.header-content.luck-language-host--tablet {
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  padding-inline: clamp(12px, 2vw, 24px) !important;
+}
+
+.luck-language-picker.luck-language-picker--tablet {
+  flex: 1 0 100%;
+  order: 10;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 7px 10px;
+  box-shadow: none;
+}
 .luck-messenger-support {
   position: fixed;
-  right: max(20px, env(safe-area-inset-right));
+  inset-inline-end: max(20px, env(safe-area-inset-right), env(safe-area-inset-left));
   bottom: calc(max(24px, env(safe-area-inset-bottom)) + 76px);
   z-index: 2147481999;
   display: grid;
@@ -781,10 +1148,14 @@ body.luck-donate-open {
   box-shadow: 0 8px 26px rgba(8, 102, 255, .35);
   font: 800 30px/1 Arial, sans-serif;
   text-decoration: none !important;
+  unicode-bidi: isolate;
 }
 @media (max-width: 520px) {
   .luck-language-picker { top: 8px; right: 8px; padding: 6px 8px; }
+  html[dir="rtl"] .luck-language-picker { right: auto; left: 8px; }
   .luck-language-picker select { max-width: 108px; font-size: 13px; }
+  .luck-language-picker.luck-language-picker--mobile { padding: 7px 9px; }
+  .luck-language-picker.luck-language-picker--mobile select { max-width: none; }
 }
 
 /* The stock purchase-warning dialog is capped at 520px, leaving both plan
@@ -861,5 +1232,942 @@ body.luck-donate-open {
 
   .plan-comparison[data-v-7a517f7f] .arrow-container[data-v-7a517f7f]:not(.mobile) .arrow-icon[data-v-7a517f7f] {
     transform: rotate(90deg) !important;
+  }
+}
+
+/* Dashboard layout: collapse columns before translated labels are squeezed to
+   one character per line. The stock card combines a fixed 520px balance row
+   with a flexible profile block inside a two-thirds column; on Windows split
+   screens, 16:10 laptops and tablets the profile is allowed to shrink almost
+   to zero. These rules use the card's own width as the breakpoint and keep
+   every label, value and action available. */
+.dashboard-content[data-v-3709f5eb],
+.main-layout[data-v-3709f5eb],
+.left-column[data-v-3709f5eb],
+.right-column[data-v-3709f5eb] {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.dashboard-content[data-v-3709f5eb] {
+  padding: clamp(12px, 1.8vw, 24px) !important;
+}
+
+.main-layout[data-v-3709f5eb] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr) !important;
+  align-items: start !important;
+  gap: clamp(14px, 1.6vw, 24px) !important;
+}
+
+.left-column[data-v-3709f5eb],
+.right-column[data-v-3709f5eb] {
+  display: grid !important;
+  align-content: start !important;
+  gap: clamp(12px, 1.4vw, 20px) !important;
+}
+
+.left-column[data-v-3709f5eb] > *,
+.right-column[data-v-3709f5eb] > * {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin-inline: 0 !important;
+}
+
+.user-card[data-v-3709f5eb] {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: clamp(18px, 2vw, 30px) !important;
+  /* The stock avatar has an 80px image plus a white border. When the profile
+     column was squeezed, the image was compressed to a thin white crescent
+     and leaked outside the green card. Keep all card artwork contained. */
+  overflow: hidden !important;
+  isolation: isolate;
+  container: luck-user-card / inline-size;
+}
+
+.user-main-info[data-v-3709f5eb] {
+  display: grid !important;
+  grid-template-columns: minmax(230px, .85fr) minmax(420px, 1.5fr) !important;
+  align-items: start !important;
+  gap: clamp(18px, 2vw, 30px) !important;
+}
+
+.user-profile[data-v-3709f5eb],
+.user-details[data-v-3709f5eb],
+.subscription-items[data-v-3709f5eb] {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.user-profile[data-v-3709f5eb] {
+  display: grid !important;
+  grid-template-columns: 88px minmax(0, 1fr) !important;
+  align-items: flex-start !important;
+  gap: clamp(14px, 1.5vw, 20px) !important;
+}
+
+.user-profile .avatar-container[data-v-3709f5eb] {
+  box-sizing: border-box !important;
+  flex: 0 0 88px !important;
+  width: 88px !important;
+  min-width: 88px !important;
+  max-width: 88px !important;
+  align-self: start !important;
+  justify-self: start !important;
+}
+
+.user-profile .user-avatar-wrapper[data-v-3709f5eb] {
+  box-sizing: border-box !important;
+  display: block !important;
+  flex: 0 0 88px !important;
+  width: 88px !important;
+  min-width: 88px !important;
+  max-width: 88px !important;
+  height: 88px !important;
+}
+
+.user-profile .user-avatar-enhanced[data-v-3709f5eb] {
+  box-sizing: border-box !important;
+  display: block !important;
+  flex: none !important;
+  width: 88px !important;
+  min-width: 88px !important;
+  max-width: 88px !important;
+  height: 88px !important;
+  min-height: 88px !important;
+  max-height: 88px !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+}
+
+.user-profile .avatar-status-indicator[data-v-3709f5eb] {
+  box-sizing: border-box !important;
+  flex: none !important;
+}
+
+.user-details[data-v-3709f5eb] {
+  display: grid !important;
+  align-content: start !important;
+  gap: 8px !important;
+}
+
+.subscription-items[data-v-3709f5eb] {
+  display: grid !important;
+  gap: 6px !important;
+}
+
+.user-subscription-item[data-v-3709f5eb] {
+  display: grid !important;
+  grid-template-columns: minmax(145px, 1fr) minmax(96px, 45%) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  min-height: 38px !important;
+  padding: 7px 9px !important;
+}
+
+.user-subscription-item .subscription-label[data-v-3709f5eb],
+.user-subscription-item .subscription-value[data-v-3709f5eb] {
+  width: auto !important;
+  min-width: min-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+}
+
+.user-subscription-item .subscription-label[data-v-3709f5eb] {
+  text-align: start !important;
+}
+
+.user-subscription-item .subscription-value[data-v-3709f5eb] {
+  min-width: 0 !important;
+  justify-self: end !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  text-align: end !important;
+}
+
+/* CJK has no spaces between many words. `keep-all` is useful for Vietnamese,
+   English and Russian labels, but would make Japanese, Korean and Chinese
+   overflow instead of wrapping at a sensible glyph boundary. */
+html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
+  .user-subscription-item .subscription-label[data-v-3709f5eb],
+  .balance-card-premium .card-label-premium[data-v-3709f5eb]
+) {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+.balance-cards-premium[data-v-3709f5eb] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(132px, 1fr)) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  gap: clamp(10px, 1.2vw, 16px) !important;
+  overflow: visible !important;
+}
+
+.balance-card-premium[data-v-3709f5eb],
+.balance-card-premium.commission-card-wide[data-v-3709f5eb],
+.balance-card-premium.account-card-wide[data-v-3709f5eb],
+.balance-card-premium.wallet-card-wide[data-v-3709f5eb],
+.balance-card-premium.commission-premium[data-v-3709f5eb] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 160px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+.balance-card-premium .card-content-premium[data-v-3709f5eb],
+.commission-card-wide .card-content-premium[data-v-3709f5eb],
+.account-card-wide .card-content-premium[data-v-3709f5eb],
+.wallet-card-wide .card-content-premium[data-v-3709f5eb] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  gap: 12px !important;
+  padding: clamp(16px, 1.7vw, 24px) !important;
+}
+
+.balance-card-premium .card-label-premium[data-v-3709f5eb],
+.balance-card-premium .card-amount[data-v-3709f5eb] {
+  min-width: 0 !important;
+  margin: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+}
+
+@container luck-user-card (max-width: 800px) {
+  .user-main-info[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .user-profile[data-v-3709f5eb] {
+    align-self: stretch !important;
+  }
+}
+
+@container luck-user-card (max-width: 520px) {
+  .user-profile[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .user-profile .avatar-container[data-v-3709f5eb] {
+    justify-self: center !important;
+  }
+
+  .user-details[data-v-3709f5eb] {
+    text-align: center !important;
+  }
+
+  .user-email-wrapper[data-v-3709f5eb],
+  .user-badges[data-v-3709f5eb] {
+    justify-content: center !important;
+  }
+
+  .subscription-items[data-v-3709f5eb] {
+    text-align: start !important;
+  }
+
+  .balance-cards-premium[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .balance-card-premium[data-v-3709f5eb],
+  .balance-card-premium.commission-card-wide[data-v-3709f5eb],
+  .balance-card-premium.account-card-wide[data-v-3709f5eb],
+  .balance-card-premium.wallet-card-wide[data-v-3709f5eb] {
+    min-height: 116px !important;
+  }
+
+  .user-subscription-item[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .user-subscription-item .subscription-value[data-v-3709f5eb] {
+    justify-self: start !important;
+    text-align: start !important;
+  }
+}
+
+@media (max-width: 1500px) {
+  /* Fallback for browsers without container-query support and for desktop
+     shells whose sidebar leaves the main card narrower than the viewport. */
+  .user-main-info[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .main-layout[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .dashboard-content[data-v-3709f5eb] {
+    padding: 10px 8px 32px !important;
+  }
+
+  .user-card[data-v-3709f5eb] {
+    padding: 16px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .user-profile[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+  }
+
+  .user-profile .avatar-container[data-v-3709f5eb] {
+    justify-self: center !important;
+  }
+
+  .balance-cards-premium[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .user-subscription-item[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .user-subscription-item .subscription-value[data-v-3709f5eb] {
+    justify-self: start !important;
+    text-align: start !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .user-profile[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .user-profile .avatar-container[data-v-3709f5eb] {
+    justify-self: center !important;
+  }
+
+  .user-subscription-item[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+  }
+
+  .user-subscription-item .subscription-value[data-v-3709f5eb] {
+    justify-self: start !important;
+    text-align: start !important;
+  }
+}
+
+/* Node table: the upstream route requests /flags/{code}.svg, but the theme
+   contains no /flags directory. The asset patcher replaces that broken white
+   image frame with this native flag glyph. Keep it aligned with the node name
+   and expose a real horizontal scrollbar for the intentionally wide table. */
+.servers-page[data-v-85145c70],
+.servers-container[data-v-85145c70],
+.servers-table-container[data-v-85145c70] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.servers-container[data-v-85145c70] {
+  padding-inline: clamp(8px, 2vw, 24px) !important;
+}
+
+.servers-table-container[data-v-85145c70] {
+  overflow-x: hidden !important;
+}
+
+.compact-table[data-v-85145c70] .n-data-table-base-table-body::-webkit-scrollbar {
+  height: 10px;
+}
+
+.compact-table[data-v-85145c70] .n-data-table-base-table-body::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(226, 232, 240, .75);
+}
+
+.compact-table[data-v-85145c70] .n-data-table-base-table-body::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(226, 232, 240, .75);
+  border-radius: 999px;
+  background: rgba(71, 85, 105, .65);
+}
+
+.compact-table[data-v-85145c70] .n-data-table-wrapper {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
+.compact-table[data-v-85145c70] .n-data-table-base-table-body {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(71, 85, 105, .65) rgba(226, 232, 240, .75);
+}
+
+.compact-table[data-v-85145c70] .n-data-table-table {
+  width: max(100%, 960px) !important;
+  min-width: 960px !important;
+  table-layout: auto !important;
+}
+
+.compact-table[data-v-85145c70] .n-data-table-th,
+.compact-table[data-v-85145c70] .n-data-table-td {
+  min-width: max-content !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.compact-table[data-v-85145c70] .n-data-table-td > div,
+.compact-table[data-v-85145c70] .n-data-table-td > span {
+  min-width: 0 !important;
+  align-items: center !important;
+}
+
+.luck-node-flag {
+  display: inline-grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, .45);
+  border-radius: 5px;
+  background: #f8fafc;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .12);
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .servers-table-container[data-v-85145c70] {
+    margin-inline: 0 !important;
+    padding-bottom: 3px !important;
+    border-radius: 10px !important;
+  }
+
+  .compact-table[data-v-85145c70] .n-data-table-th,
+  .compact-table[data-v-85145c70] .n-data-table-td {
+    padding: 9px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Current user IPs: this panel is injected immediately after the dashboard's
+   traffic card. It is intentionally unscoped because it is not part of the
+   pre-built Vue SFC, while every selector is namespaced to avoid affecting
+   admin or other Luck tables. */
+.luck-current-ip-panel {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin-top: clamp(14px, 1.6vw, 22px);
+  padding: clamp(16px, 2vw, 24px);
+  border: 1px solid rgba(203, 213, 225, .72);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(248, 250, 252, .96), rgba(255, 255, 255, .98));
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .07), 0 3px 9px rgba(15, 23, 42, .04);
+  color: #334155;
+  /* This panel normally lives in the dashboard's one-third right column.
+     Its own width, not the viewport width, decides whether rows become cards. */
+  container: luck-current-ip / inline-size;
+}
+
+.luck-current-ip-header,
+.luck-current-ip-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.luck-current-ip-header {
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.luck-current-ip-heading {
+  flex: 1 1 auto;
+  gap: 9px;
+}
+
+.luck-current-ip-heading h2 {
+  min-width: 0;
+  margin: 0;
+  color: #334155;
+  font-size: clamp(15px, 1.3vw, 18px);
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-heading h2 {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.luck-current-ip-icon {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  box-shadow: 0 5px 12px rgba(59, 130, 246, .22);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.luck-current-ip-count {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 42px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border: 1px solid rgba(59, 130, 246, .16);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, .1);
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.luck-current-ip-refresh {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid rgba(148, 163, 184, .42);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .86);
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: border-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+
+.luck-current-ip-refresh:hover:not(:disabled),
+.luck-current-ip-refresh:focus-visible {
+  border-color: rgba(59, 130, 246, .7);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+  color: #2563eb;
+  outline: none;
+}
+
+.luck-current-ip-refresh:disabled {
+  cursor: wait;
+  opacity: .56;
+}
+
+.luck-current-ip-refresh:disabled .luck-current-ip-refresh-icon {
+  animation: luck-current-ip-spin .8s linear infinite;
+}
+
+.luck-current-ip-refresh-icon {
+  display: inline-block;
+  font-size: 17px;
+  line-height: 1;
+}
+
+@keyframes luck-current-ip-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luck-current-ip-refresh-icon { animation: none !important; }
+}
+
+.luck-current-ip-body,
+.luck-current-ip-table-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.luck-current-ip-table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid rgba(226, 232, 240, .95);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, .72);
+}
+
+.luck-current-ip-table {
+  width: 100%;
+  min-width: 610px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #334155;
+  font-size: 13px;
+}
+
+.luck-current-ip-table th,
+.luck-current-ip-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, .92);
+  text-align: start;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.luck-current-ip-table th {
+  background: rgba(241, 245, 249, .78);
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.luck-current-ip-table th:nth-child(1) { width: 29%; }
+.luck-current-ip-table th:nth-child(2) { width: 37%; }
+.luck-current-ip-table th:nth-child(3) { width: 16%; }
+.luck-current-ip-table th:nth-child(4) { width: 18%; }
+
+.luck-current-ip-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.luck-current-ip-table tbody tr:hover {
+  background: rgba(239, 246, 255, .58);
+}
+
+.luck-current-ip-address {
+  direction: ltr;
+  unicode-bidi: isolate;
+  color: #0f172a;
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  user-select: all;
+}
+
+.luck-current-ip-node {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.luck-current-ip-protocol {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: rgba(99, 102, 241, .1);
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .02em;
+  direction: ltr;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.luck-current-ip-activity {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.luck-current-ip-state {
+  display: grid;
+  min-height: 92px;
+  place-items: center;
+  padding: 18px;
+  border: 1px dashed rgba(148, 163, 184, .45);
+  border-radius: 13px;
+  background: rgba(248, 250, 252, .72);
+  color: #64748b;
+  text-align: center;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-state {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.luck-current-ip-state--error {
+  border-color: rgba(239, 68, 68, .34);
+  background: rgba(254, 242, 242, .66);
+  color: #b91c1c;
+}
+
+.luck-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+html[dir="rtl"] .luck-current-ip-table th,
+html[dir="rtl"] .luck-current-ip-table td {
+  text-align: right;
+}
+
+html[dir="rtl"] .luck-current-ip-address,
+html[dir="rtl"] .luck-current-ip-protocol {
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .luck-current-ip-panel {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .luck-current-ip-table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .luck-current-ip-table,
+  .luck-current-ip-table tbody,
+  .luck-current-ip-table tr,
+  .luck-current-ip-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .luck-current-ip-table thead {
+    display: none;
+  }
+
+  .luck-current-ip-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .luck-current-ip-table tr {
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, .95);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+  }
+
+  .luck-current-ip-table td {
+    display: grid;
+    grid-template-columns: minmax(108px, 34%) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 9px 11px;
+    text-align: end;
+    white-space: normal;
+  }
+
+  .luck-current-ip-table td::before {
+    content: attr(data-label);
+    min-width: 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: keep-all;
+  }
+
+  html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-table td::before {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .luck-current-ip-address,
+  .luck-current-ip-node,
+  .luck-current-ip-activity {
+    justify-self: end;
+    text-align: end;
+  }
+
+  .luck-current-ip-address {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .luck-current-ip-protocol {
+    justify-self: end;
+  }
+
+  html[dir="rtl"] .luck-current-ip-table td {
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+  .luck-current-ip-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .luck-current-ip-refresh {
+    margin-inline-start: 39px;
+  }
+
+  .luck-current-ip-table td {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .luck-current-ip-address,
+  .luck-current-ip-node,
+  .luck-current-ip-activity,
+  .luck-current-ip-protocol {
+    justify-self: start;
+    text-align: start;
+  }
+}
+
+/* A 1366/1440px desktop can still leave the dashboard right column below
+   700px. Container queries prevent the IP table from becoming a narrow,
+   horizontally-scrolling desktop table in that otherwise-wide viewport. */
+@container luck-current-ip (max-width: 720px) {
+  .luck-current-ip-table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .luck-current-ip-table,
+  .luck-current-ip-table tbody,
+  .luck-current-ip-table tr,
+  .luck-current-ip-table td {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .luck-current-ip-table thead {
+    display: none;
+  }
+
+  .luck-current-ip-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .luck-current-ip-table tr {
+    overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, .95);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+  }
+
+  .luck-current-ip-table td {
+    display: grid;
+    grid-template-columns: minmax(108px, 34%) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 9px 11px;
+    text-align: end;
+    white-space: normal;
+  }
+
+  .luck-current-ip-table td::before {
+    content: attr(data-label);
+    min-width: 0;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: keep-all;
+  }
+
+  html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) .luck-current-ip-table td::before {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .luck-current-ip-address,
+  .luck-current-ip-node,
+  .luck-current-ip-activity {
+    max-width: 100%;
+    justify-self: end;
+    text-align: end;
+  }
+
+  .luck-current-ip-address {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .luck-current-ip-protocol {
+    justify-self: end;
+  }
+}
+
+@container luck-current-ip (max-width: 390px) {
+  .luck-current-ip-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .luck-current-ip-refresh {
+    margin-inline-start: 39px;
+  }
+
+  .luck-current-ip-table td {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .luck-current-ip-address,
+  .luck-current-ip-node,
+  .luck-current-ip-activity,
+  .luck-current-ip-protocol {
+    justify-self: start;
+    text-align: start;
   }
 }

@@ -106,6 +106,51 @@ if (substr_count($localizedLoadingFixture, 'typeof window.__LUCK_T__ === "functi
     exit(1);
 }
 
+$nodeFlagFixture = <<<'JS'
+          const countryInfo = getCountryInfo(row.name);
+          return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
+            h("img", {
+              src: `/flags/${countryInfo.code.toLowerCase()}.svg`,
+              alt: countryInfo.name,
+              style: {
+                width: "32px",
+                height: "22px",
+                borderRadius: "4px",
+                border: "1px solid rgba(0,0,0,0.2)",
+                flexShrink: "0",
+                objectFit: "cover",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+              },
+              onError: (e) => {
+                const target = e.target;
+                target.src = "/flags/un.svg";
+              }
+            }),
+            h("span", { style: { fontWeight: "600" } }, row.name)
+          ]);
+JS;
+$patchedNodeFlagFixture = LuckThemeAssetPatcher::patchNodeFlags($nodeFlagFixture);
+if (str_contains($patchedNodeFlagFixture, '/flags/')
+    || !str_contains($patchedNodeFlagFixture, 'class: "luck-node-flag"')
+    || !str_contains($patchedNodeFlagFixture, '"aria-label": countryInfo.name')
+    || !str_contains($patchedNodeFlagFixture, 'String.fromCodePoint')
+    || !str_contains($patchedNodeFlagFixture, 'displayName')
+    || LuckThemeAssetPatcher::patchNodeFlags($patchedNodeFlagFixture) !== $patchedNodeFlagFixture) {
+    fwrite(STDERR, "Luck node flag replacement failed.\n");
+    exit(1);
+}
+
+$incompleteNodeFlagFixture = str_replace(
+    'h("span", { style: { fontWeight: "600" } }, row.name)',
+    'h("span", row.name)',
+    $nodeFlagFixture
+);
+if (LuckThemeAssetPatcher::patchNodeFlags($incompleteNodeFlagFixture) !== $incompleteNodeFlagFixture
+    || str_contains(LuckThemeAssetPatcher::patchNodeFlags($incompleteNodeFlagFixture), 'flagCode')) {
+    fwrite(STDERR, "Luck node flag patch must be atomic when upstream markup changes.\n");
+    exit(1);
+}
+
 $entryAsset = getenv('LUCK_ENTRY_ASSET');
 if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = (string) file_get_contents($entryAsset);
@@ -170,7 +215,8 @@ $register = <<<'JS'
 JS;
 $register = LuckThemeAssetPatcher::patchRegisterFlow($register);
 if (!str_contains($register, 'const invitationCodeFromUrl =')
-    || !str_contains($register, 'backendConfig.value.is_invite_force && !formData.inviteCode.trim()')
+    || !str_contains($register, 'backendConfig.value && backendConfig.value.is_invite_force && !formData.inviteCode.trim()')
+    || !str_contains($register, 'placeholder: backendConfig.value && backendConfig.value.is_invite_force')
     || !str_contains($register, 'if (error.response)')
     || !str_contains($register, '邀请码（必填）')) {
     fwrite(STDERR, "Luck registration and invitation patch failed.\n");
@@ -184,7 +230,7 @@ $sharedAuth = <<<'JS'
       }
 JS;
 $sharedAuth = LuckThemeAssetPatcher::patchSharedAuth($sharedAuth);
-if (!str_contains($sharedAuth, 'error.response.status === 401')
+if (!str_contains($sharedAuth, 'error.response.status === 401 || error.response.status === 403')
     || !str_contains($sharedAuth, 'error.luckAuthStage = "profile"')) {
     fwrite(STDERR, "Luck authenticated-profile error patch failed.\n");
     exit(1);
@@ -279,9 +325,9 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country,')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
-    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=16')
-    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=58')
-    || !str_contains($dashboardTemplate, 'i18n-v18.js?v=58')) {
+    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=18')
+    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=59')
+    || !str_contains($dashboardTemplate, 'i18n-v18.js?v=60')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);
 }

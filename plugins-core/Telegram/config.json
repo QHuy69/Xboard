@@ -1,8 +1,8 @@
 {
-    "name": "Tích hợp bot Telegram",
+    "name": "Telegram Bot Integration",
     "code": "telegram",
     "version": "2.1.0",
-    "description": "Bot Telegram đa ngôn ngữ, menu, thông báo, báo cáo node và công cụ CTV",
+    "description": "Multilingual Telegram bot with menus, notifications, node reports, and reseller tools.",
     "author": "XBoard Team",
     "require": {
         "xboard": ">=1.0.0"
@@ -11,61 +11,61 @@
         "enable_ticket_notify": {
             "type": "boolean",
             "default": true,
-            "label": "Bật thông báo ticket",
-            "description": "Gửi ticket mới và phản hồi của khách cho admin/staff."
+            "label": "Enable ticket notifications",
+            "description": "Send new tickets and customer replies to administrators and staff."
         },
         "enable_payment_notify": {
             "type": "boolean",
             "default": true,
-            "label": "Bật thông báo thanh toán",
-            "description": "Gửi thông báo thanh toán thành công cho admin/staff."
+            "label": "Enable payment notifications",
+            "description": "Send successful payment notifications to administrators and staff."
         },
         "enable_node_group_report": {
             "type": "boolean",
             "default": false,
-            "label": "Báo cáo node tự động vào nhóm",
-            "description": "Admin gửi /setreportgroup trong nhóm để chọn nhóm nhận báo cáo."
+            "label": "Send scheduled node reports to a group",
+            "description": "An administrator can use /setreportgroup in a group to select the report destination."
         },
         "node_report_interval_minutes": {
             "type": "select",
             "default": "15",
-            "label": "Chu kỳ báo cáo node",
-            "description": "Số phút giữa các báo cáo.",
+            "label": "Node report interval",
+            "description": "Minutes between node reports.",
             "options": [
-                {"value": "5", "label": "5 phút"},
-                {"value": "15", "label": "15 phút"},
-                {"value": "60", "label": "60 phút"}
+                {"value": "5", "label": "5 minutes"},
+                {"value": "15", "label": "15 minutes"},
+                {"value": "60", "label": "60 minutes"}
             ]
         },
         "enable_database_backup": {
             "type": "boolean",
             "default": false,
-            "label": "Tự động backup database qua Telegram",
-            "description": "Mỗi ngày tạo file nén, mã hóa rồi gửi vào chat riêng đã đặt bằng /setbackupchat."
+            "label": "Send automatic database backups through Telegram",
+            "description": "Create, compress, and encrypt a database backup daily, then send it to the private chat selected with /setbackupchat."
         },
         "database_backup_time": {
             "type": "string",
             "default": "03:30",
-            "label": "Giờ backup database",
-            "description": "Giờ theo múi giờ của máy chủ, định dạng HH:MM."
+            "label": "Database backup time",
+            "description": "Server time in HH:MM format."
         },
         "database_backup_chat_id": {
             "type": "string",
             "default": "",
-            "label": "Chat ID nhận backup (không bắt buộc)",
-            "description": "Có thể để trống rồi gửi /setbackupchat cho bot trong chat riêng."
+            "label": "Backup destination chat ID (optional)",
+            "description": "Leave blank and send /setbackupchat to the bot in a private chat."
         },
         "database_backup_password": {
             "type": "password",
             "default": "",
-            "label": "Mật khẩu mã hóa backup",
-            "description": "Tối thiểu 16 ký tự. Nên đặt TELEGRAM_DATABASE_BACKUP_PASSWORD trong .env thay vì lưu tại đây."
+            "label": "Backup encryption password",
+            "description": "At least 16 characters. Prefer TELEGRAM_DATABASE_BACKUP_PASSWORD in .env instead of saving it here."
         },
         "database_backup_max_mb": {
             "type": "select",
             "default": "45",
-            "label": "Dung lượng backup tối đa",
-            "description": "Dừng gửi và báo lỗi nếu file vượt giới hạn đã chọn.",
+            "label": "Maximum backup size",
+            "description": "Stop and report an error if the backup exceeds the selected limit.",
             "options": [
                 {"value": "20", "label": "20 MB"},
                 {"value": "45", "label": "45 MB"}
@@ -74,14 +74,14 @@
         "enable_reseller_bot": {
             "type": "boolean",
             "default": false,
-            "label": "Bật công cụ CTV",
-            "description": "Cho phép admin, staff và Telegram ID được chỉ định tạo tài khoản bằng coupon 100%."
+            "label": "Enable reseller tools",
+            "description": "Allow administrators, staff, and specified Telegram IDs to create accounts using a 100% coupon."
         },
         "reseller_telegram_ids": {
             "type": "string",
             "default": "",
-            "label": "Telegram ID của CTV",
-            "description": "Danh sách ID Telegram được phép, phân cách bằng dấu phẩy."
+            "label": "Authorized reseller Telegram IDs",
+            "description": "Comma-separated Telegram IDs that are allowed to use reseller tools."
         }
     }
 }

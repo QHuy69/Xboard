@@ -36,9 +36,9 @@ class GiftCardRedeemRequest extends FormRequest
     public function messages()
     {
         return [
-            'code.required' => '请输入兑换码',
-            'code.min' => '兑换码长度不能少于8位',
-            'code.max' => '兑换码长度不能超过32位',
+            'code.required' => __('Gift card code is required'),
+            'code.min' => __('Gift card code must be at least 8 characters'),
+            'code.max' => __('Gift card code cannot exceed 32 characters'),
         ];
     }
 }

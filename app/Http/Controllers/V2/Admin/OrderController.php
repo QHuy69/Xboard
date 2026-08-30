@@ -145,14 +145,14 @@ class OrderController extends Controller
         $order = Order::where('trade_no', $request->input('trade_no'))
             ->first();
         if (!$order) {
-            return $this->fail([400202, '订单不存在']);
+            return $this->fail([400202, __('Order does not exist')]);
         }
         if ($order->status !== 0)
-            return $this->fail([400, '只能对待支付的订单进行操作']);
+            return $this->fail([400, __('Order does not exist or has been paid')]);
 
         $orderService = new OrderService($order);
         if (!$orderService->paid('manual_operation')) {
-            return $this->fail([500, '更新失败']);
+            return $this->fail([500, __('Payment failed')]);
         }
         return $this->success(true);
     }
@@ -162,14 +162,17 @@ class OrderController extends Controller
         $order = Order::where('trade_no', $request->input('trade_no'))
             ->first();
         if (!$order) {
-            return $this->fail([400202, '订单不存在']);
+            return $this->fail([400202, __('Order does not exist')]);
         }
         if ($order->status !== 0)
-            return $this->fail([400, '只能对待支付的订单进行操作']);
+            return $this->fail([400, __('You can only cancel pending orders')]);
 
         $orderService = new OrderService($order);
-        if (!$orderService->cancel()) {
-            return $this->fail([400, '更新失败']);
+        // Admin cancellation is the explicit recovery path for an uncertain
+        // CoinPayments create request. The operator must first reconcile the
+        // invoice in CoinPayments to avoid abandoning a still-payable invoice.
+        if (!$orderService->cancelAfterManualPaymentReconciliation()) {
+            return $this->fail([400, __('Cancel failed')]);
         }
         return $this->success(true);
     }

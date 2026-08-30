@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Plugin\HookManager;
 use App\Services\Plugin\PluginManager;
 use Closure;
 use Illuminate\Http\Request;
@@ -28,8 +29,12 @@ class InitializePlugins
      */
     public function handle(Request $request, Closure $next)
     {
-        // This single method call handles loading and booting all enabled plugins.
-        // It's safe to call multiple times, as it will only run once per request.
+        // Hook storage lives in the long-running application container. Clear
+        // the previous Octane request before booting the plugins enabled for
+        // this request; otherwise callbacks accumulate and a disabled plugin
+        // can remain active until the worker restarts.
+        HookManager::reset();
+        $this->pluginManager->prepareForRequest();
         $this->pluginManager->initializeEnabledPlugins();
 
         return $next($request);

@@ -27,7 +27,13 @@ class OctaneServiceProvider extends ServiceProvider
                 HookManager::reset();
             });
         }
-        // 每半钟执行一次调度检查
+        // Docker owns scheduling through a dedicated `schedule:work` process.
+        // This opt-in timer is retained only for legacy Octane deployments
+        // that cannot provide cron or a separate scheduler worker.
+        if (!config('octane.scheduler_tick', false)) {
+            return;
+        }
+
         Octane::tick('scheduler', function () {
             $lock = Cache::lock('scheduler-lock', 30);
 

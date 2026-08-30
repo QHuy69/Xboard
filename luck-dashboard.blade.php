@@ -10,7 +10,7 @@
 <html lang="auto">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#3b82f6">
   <link rel="icon" type="image/svg+xml" href="/theme/{{$theme}}/favicon.svg">
   <title>ZaoGuang Service</title>
@@ -24,7 +24,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=16">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=18">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -49,7 +49,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=58"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=59"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -83,7 +83,218 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=58"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=60"></script>
+  <script>
+    (function () {
+      var ENDPOINT = '/api/v1/user/devices/current';
+      var PANEL_ID = 'luck-current-ip-panel';
+      var requestSequence = 0;
+      var syncTimer = 0;
+
+      var translate = function (value) {
+        return typeof window.__LUCK_T__ === 'function' ? window.__LUCK_T__(value) : value;
+      };
+      var createElement = function (tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      };
+      var normalizeToken = function () {
+        try {
+          var token = window.localStorage.getItem('v2board_token') || '';
+          if (token.charAt(0) === '"') token = JSON.parse(token);
+          return typeof token === 'string' ? token.trim() : '';
+        } catch (ignoreToken) {
+          return '';
+        }
+      };
+      var currentLocale = function () {
+        return (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE)
+          || document.documentElement.lang
+          || 'vi-VN';
+      };
+      var relativeTime = function (ageSeconds) {
+        var seconds = Math.max(0, Number(ageSeconds) || 0);
+        var value = -Math.round(seconds);
+        var unit = 'second';
+        if (seconds >= 60) {
+          value = -Math.round(seconds / 60);
+          unit = 'minute';
+        }
+        try {
+          return new Intl.RelativeTimeFormat(currentLocale(), { numeric: 'auto' }).format(value, unit);
+        } catch (ignoreRelativeTime) {
+          return seconds < 60 ? Math.round(seconds) + 's' : Math.round(seconds / 60) + 'm';
+        }
+      };
+
+      var renderState = function (panel, kind, label) {
+        var body = panel.querySelector('.luck-current-ip-body');
+        if (!body) return;
+        body.replaceChildren(createElement('div', 'luck-current-ip-state luck-current-ip-state--' + kind, label));
+      };
+
+      var renderRows = function (panel, payload) {
+        var body = panel.querySelector('.luck-current-ip-body');
+        var count = panel.querySelector('.luck-current-ip-count');
+        if (!body || !count) return;
+        var rows = payload && Array.isArray(payload.current) ? payload.current : [];
+        var total = Math.max(0, Number(payload && payload.total));
+        if (!Number.isFinite(total)) total = rows.length;
+        count.textContent = String(total) + ' IP';
+
+        if (!rows.length) {
+          renderState(panel, 'empty', translate('当前没有活动IP'));
+          return;
+        }
+
+        var labels = {
+          ip: translate('IP地址'),
+          node: translate('节点'),
+          protocol: translate('协议'),
+          activity: translate('最后活动')
+        };
+        var wrapper = createElement('div', 'luck-current-ip-table-wrap');
+        var table = createElement('table', 'luck-current-ip-table');
+        var caption = createElement('caption', 'luck-visually-hidden', translate('当前使用IP'));
+        var thead = document.createElement('thead');
+        var headerRow = document.createElement('tr');
+        [labels.ip, labels.node, labels.protocol, labels.activity].forEach(function (label) {
+          headerRow.appendChild(createElement('th', '', label));
+        });
+        thead.appendChild(headerRow);
+
+        var tbody = document.createElement('tbody');
+        rows.forEach(function (device) {
+          var row = document.createElement('tr');
+          var ip = createElement('td', 'luck-current-ip-address', String(device.ip || ''));
+          ip.dir = 'ltr';
+          ip.dataset.label = labels.ip;
+          ip.title = String(device.ip || '');
+
+          var node = createElement('td', 'luck-current-ip-node', String(device.node_name || ''));
+          node.dataset.label = labels.node;
+          node.title = String(device.node_name || '');
+
+          var protocol = document.createElement('td');
+          protocol.dataset.label = labels.protocol;
+          protocol.appendChild(createElement('span', 'luck-current-ip-protocol', String(device.type || '').toUpperCase()));
+
+          var activity = createElement('td', 'luck-current-ip-activity', relativeTime(device.age_seconds));
+          activity.dataset.label = labels.activity;
+          var lastSeenAt = Number(device.last_seen_at || 0);
+          if (lastSeenAt > 0) {
+            try { activity.title = new Date(lastSeenAt * 1000).toLocaleString(currentLocale()); } catch (ignoreDate) {}
+          }
+
+          row.append(ip, node, protocol, activity);
+          tbody.appendChild(row);
+        });
+        table.append(caption, thead, tbody);
+        wrapper.appendChild(table);
+        body.replaceChildren(wrapper);
+      };
+
+      var loadDevices = function (panel) {
+        if (!panel || !panel.isConnected) return;
+        var button = panel.querySelector('.luck-current-ip-refresh');
+        var count = panel.querySelector('.luck-current-ip-count');
+        var token = normalizeToken();
+        var requestId = ++requestSequence;
+        if (button) button.disabled = true;
+        if (count) count.textContent = '—';
+        renderState(panel, 'loading', translate('正在加载活动IP...'));
+        if (!token) {
+          if (button) button.disabled = false;
+          renderState(panel, 'error', translate('无法加载活动IP'));
+          return;
+        }
+
+        fetch(ENDPOINT, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json', 'Authorization': token }
+        }).then(function (response) {
+          if (!response.ok) throw new Error('Current device request failed');
+          return response.json();
+        }).then(function (response) {
+          if (requestId !== requestSequence || !panel.isConnected) return;
+          renderRows(panel, response && response.data ? response.data : {});
+        }).catch(function () {
+          if (requestId !== requestSequence || !panel.isConnected) return;
+          renderState(panel, 'error', translate('无法加载活动IP'));
+        }).finally(function () {
+          if (requestId === requestSequence && button && panel.isConnected) button.disabled = false;
+        });
+      };
+
+      var createPanel = function () {
+        var panel = createElement('section', 'luck-current-ip-panel');
+        panel.id = PANEL_ID;
+        panel.setAttribute('aria-labelledby', PANEL_ID + '-title');
+
+        var header = createElement('div', 'luck-current-ip-header');
+        var heading = createElement('div', 'luck-current-ip-heading');
+        var icon = createElement('span', 'luck-current-ip-icon', '◎');
+        icon.setAttribute('aria-hidden', 'true');
+        var title = createElement('h2', '', translate('当前使用IP'));
+        title.id = PANEL_ID + '-title';
+        var count = createElement('span', 'luck-current-ip-count', '—');
+        count.setAttribute('aria-live', 'polite');
+        heading.append(icon, title, count);
+
+        var refresh = createElement('button', 'luck-current-ip-refresh');
+        refresh.type = 'button';
+        refresh.setAttribute('aria-label', translate('刷新'));
+        refresh.append(
+          createElement('span', 'luck-current-ip-refresh-icon', '↻'),
+          createElement('span', '', translate('刷新'))
+        );
+        refresh.addEventListener('click', function () { loadDevices(panel); });
+        header.append(heading, refresh);
+
+        var body = createElement('div', 'luck-current-ip-body');
+        body.setAttribute('aria-live', 'polite');
+        panel.append(header, body);
+        return panel;
+      };
+
+      var syncPanel = function () {
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        var existing = document.getElementById(PANEL_ID);
+        if (path !== '/dashboard') {
+          requestSequence += 1;
+          if (existing) existing.remove();
+          return;
+        }
+
+        var traffic = document.querySelector('.traffic-dashboard');
+        if (!traffic || !traffic.parentNode) return;
+        if (existing && existing.previousElementSibling === traffic) return;
+        if (existing) existing.remove();
+        var panel = createPanel();
+        traffic.insertAdjacentElement('afterend', panel);
+        loadDevices(panel);
+      };
+      var scheduleSync = function () {
+        window.clearTimeout(syncTimer);
+        syncTimer = window.setTimeout(syncPanel, 80);
+      };
+
+      var app = document.getElementById('app');
+      if (app && window.MutationObserver) {
+        new MutationObserver(scheduleSync).observe(app, { childList: true, subtree: true });
+      }
+      window.addEventListener('popstate', scheduleSync);
+      window.addEventListener('pageshow', scheduleSync);
+      window.addEventListener('storage', function (event) {
+        if (event.key === 'v2board_token') scheduleSync();
+      });
+      window.setTimeout(syncPanel, 0);
+    }());
+  </script>
   <script>
     (function () {
       // The stock login chunk occasionally misses the first SPA navigation
@@ -375,18 +586,111 @@
     (function () {
       var select = document.getElementById('luck-language-select');
       if (!select) return;
+      var picker = select.closest('.luck-language-picker');
+      var app = document.getElementById('app');
       var current = (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || 'vi-VN';
       select.value = current;
+
+      var syncDocumentDirection = function (locale) {
+        var normalized = String(locale || '').toLowerCase();
+        document.documentElement.dir = normalized.indexOf('fa') === 0 ? 'rtl' : 'ltr';
+      };
+      syncDocumentDirection(current);
+
+      var firstVisible = function (selector) {
+        var candidates = document.querySelectorAll(selector);
+        for (var index = 0; index < candidates.length; index += 1) {
+          if (candidates[index].getClientRects().length > 0) return candidates[index];
+        }
+        return null;
+      };
+      var syncPickerPlacement = function () {
+        if (!picker) return;
+        var path = window.location.pathname.replace(/\/+$/, '') || '/';
+        var authPage = path === '/login' || path === '/register';
+        var oldTabletHosts = document.querySelectorAll('.luck-language-host--tablet');
+        for (var hostIndex = 0; hostIndex < oldTabletHosts.length; hostIndex += 1) {
+          oldTabletHosts[hostIndex].classList.remove('luck-language-host--tablet');
+        }
+        picker.classList.remove('luck-language-picker--inline', 'luck-language-picker--mobile', 'luck-language-picker--tablet');
+        if (authPage) {
+          if (picker.parentElement !== document.body) document.body.appendChild(picker);
+          return;
+        }
+
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          var mobileHeader = firstVisible('.mobile-header');
+          if (mobileHeader) {
+            picker.classList.add('luck-language-picker--mobile');
+            if (picker.parentElement !== mobileHeader) mobileHeader.appendChild(picker);
+            return;
+          }
+        } else if (window.matchMedia('(max-width: 1180px)').matches) {
+          var tabletHeader = firstVisible('.header-content');
+          if (tabletHeader) {
+            tabletHeader.classList.add('luck-language-host--tablet');
+            picker.classList.add('luck-language-picker--tablet');
+            if (picker.parentElement !== tabletHeader) tabletHeader.appendChild(picker);
+            return;
+          }
+        } else {
+          var headerActions = firstVisible('.header-actions');
+          if (headerActions) {
+            picker.classList.add('luck-language-picker--inline');
+            if (picker.parentElement !== headerActions) headerActions.insertBefore(picker, headerActions.firstElementChild);
+            return;
+          }
+        }
+
+        if (picker.parentElement !== document.body) document.body.appendChild(picker);
+      };
+
       select.addEventListener('change', function () {
-        if (window.__LUCK_SET_LOCALE__) window.__LUCK_SET_LOCALE__(select.value);
+        syncDocumentDirection(select.value);
+        if (window.__LUCK_SET_LOCALE__ && window.__LUCK_SET_LOCALE__(select.value) !== false) return;
+        try {
+          document.cookie = 'luck_locale=' + encodeURIComponent(select.value) + '; path=/; max-age=31536000; SameSite=Lax';
+          document.cookie = 'luck_locale_manual=1; path=/; max-age=31536000; SameSite=Lax';
+          window.localStorage.setItem('luck_locale', select.value);
+          window.localStorage.setItem('luck_locale_manual', '1');
+        } catch (ignoreLocaleStorage) {}
+        window.location.reload();
       });
+
+      var schedulePickerSync = function () { window.requestAnimationFrame(syncPickerPlacement); };
+      if (app && window.MutationObserver) {
+        new MutationObserver(schedulePickerSync).observe(app, { childList: true, subtree: true });
+      }
+      window.addEventListener('popstate', schedulePickerSync);
+      window.addEventListener('pageshow', schedulePickerSync);
+      window.addEventListener('resize', schedulePickerSync);
+      window.setTimeout(syncPickerPlacement, 0);
     }());
   </script>
   @php
-    $crispFallback = (string) admin_setting('crisp_website_id', env('CRISP_WEBSITE_ID', ''));
-    $crispWebsiteId = trim((string) \App\Services\Plugin\HookManager::filter('theme.support.crisp.website_id', $crispFallback));
-    $messengerFallback = (string) admin_setting('messenger_page_username', env('MESSENGER_PAGE_USERNAME', ''));
-    $messengerUsername = trim((string) \App\Services\Plugin\HookManager::filter('theme.support.messenger.page_username', $messengerFallback));
+    // An installed plugin record is the authority for its lifecycle. Legacy
+    // settings remain available only to installations that have never created
+    // the corresponding plugin record; explicitly disabling a plugin must not
+    // leave its old support widget active.
+    $supportPluginStates = \App\Models\Plugin::query()
+      ->whereIn('code', ['crisp', 'messenger'])
+      ->pluck('is_enabled', 'code');
+
+    $crispInstalled = $supportPluginStates->has('crisp');
+    $crispFallback = $crispInstalled
+      ? ''
+      : (string) admin_setting('crisp_website_id', env('CRISP_WEBSITE_ID', ''));
+    $crispWebsiteId = $crispInstalled && !(bool) $supportPluginStates->get('crisp')
+      ? ''
+      : trim((string) \App\Services\Plugin\HookManager::filter('theme.support.crisp.website_id', $crispFallback));
+
+    $messengerInstalled = $supportPluginStates->has('messenger');
+    $messengerFallback = $messengerInstalled
+      ? ''
+      : (string) admin_setting('messenger_page_username', env('MESSENGER_PAGE_USERNAME', ''));
+    $messengerUsername = $messengerInstalled && !(bool) $supportPluginStates->get('messenger')
+      ? ''
+      : trim((string) \App\Services\Plugin\HookManager::filter('theme.support.messenger.page_username', $messengerFallback));
   @endphp
   <script>
     (function () {
@@ -405,7 +709,7 @@
     }());
   </script>
   @if($messengerUsername !== '' && preg_match('/^[A-Za-z0-9._-]{3,100}$/', $messengerUsername))
-    <a class="luck-messenger-support" href="https://m.me/{{ rawurlencode($messengerUsername) }}" target="_blank" rel="noopener noreferrer" aria-label="Messenger support" title="Messenger support">f</a>
+    <a class="luck-messenger-support" href="https://m.me/{{ rawurlencode($messengerUsername) }}" target="_blank" rel="noopener noreferrer" dir="{{ app()->getLocale() === 'fa-IR' ? 'rtl' : 'ltr' }}" aria-label="{{ __('Chat with support on Messenger') }}" title="{{ __('Chat with support on Messenger') }}">f</a>
   @endif
   <script>
     window.V2BOARD_CONFIG = window.V2BOARD_CONFIG || {};

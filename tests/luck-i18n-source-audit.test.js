@@ -247,4 +247,42 @@ assert.strictEqual(sandbox.window.localStorage.getItem('luck_locale_manual'), '1
 assert.match(sandbox.document.cookie, /luck_locale_manual=1/);
 assert.strictEqual(sandbox.window.location.reloadCount, 1);
 
+// A customer can deliberately use English while located in Viet Nam. The
+// Asia/Saigon heuristic is only for first-time automatic detection; after the
+// picker marks a choice as manual, that choice must survive the reload.
+const manualEnglishSandbox = {
+  window: {
+    LUCK_SERVER_LANGUAGES: ['vi-VN'],
+    LUCK_DEFAULT_LANGUAGE: 'vi-VN',
+    localStorage: {
+      values: { luck_locale: 'en-US', luck_locale_manual: '1' },
+      getItem(key) { return this.values[key] || null; },
+      setItem(key, value) { this.values[key] = String(value); }
+    },
+    location: { reloadCount: 0, reload() { this.reloadCount += 1; } }
+  },
+  navigator: { languages: ['en-US'], language: 'en-US' },
+  document: {
+    documentElement: { lang: '', classList: { remove() {} } },
+    title: '',
+    head: null,
+    body: null,
+    cookie: 'luck_locale=en-US; luck_locale_manual=1',
+    addEventListener() {}
+  },
+  MutationObserver: function MutationObserver() { this.observe = function observe() {}; },
+  Intl: Object.assign({}, Intl, {
+    DateTimeFormat: function DateTimeFormat() {
+      return { resolvedOptions() { return { timeZone: 'Asia/Saigon' }; } };
+    }
+  }),
+  console,
+  setTimeout,
+  clearTimeout
+};
+vm.runInNewContext(runtimeSource, manualEnglishSandbox);
+assert.strictEqual(manualEnglishSandbox.document.documentElement.lang, 'en-US');
+assert.strictEqual(manualEnglishSandbox.window.V2BOARD_CONFIG.LANGUAGE, 'en-US');
+assert.strictEqual(manualEnglishSandbox.window.__LUCK_T__('登录'), 'Log in');
+
 console.log(`Verified ${Object.keys(expected).length} source cases and ${vietnameseKeys.size} Vietnamese dictionary entries.`);

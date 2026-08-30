@@ -60,8 +60,7 @@ $configuredCoinPayments->setConfig([
     'enabled' => 'true',
     'coinpayments_client_id' => 'client-123',
     'coinpayments_client_secret' => 'secret-xyz',
-    'coinpayments_invoice_currency' => 'USD',
-    'coinpayments_invoice_currency_id' => 'currency-usd',
+    'coinpayments_invoice_currency_id' => '5057',
     'coinpayments_cny_invoice_rate' => '0.14',
 ]);
 $configuredCoinPayments->boot();
@@ -124,7 +123,7 @@ $plugin->setConfig([
     'coinpayments_webhook_max_age' => 300,
 ]);
 $pendingResult = $plugin->notify([]);
-if (!is_string($pendingResult) || !str_contains($pendingResult, 'pending')) {
+if ($pendingResult !== 'success') {
     fwrite(STDERR, "CoinPayments pending webhook acknowledgement failed.\n");
     exit(1);
 }
@@ -132,6 +131,7 @@ if (!is_string($pendingResult) || !str_contains($pendingResult, 'pending')) {
 expectSource('plugins-core/CoinPayments/Plugin.php', [
     '/api/v2/merchant/invoices',
     'X-CoinPayments-Signature',
+    "'currency' => \$invoiceCurrencyId",
     "eventType !== 'invoicecompleted'",
     "invoiceState !== 'completed'",
     'invoice.amount.currencyId',
@@ -149,7 +149,25 @@ expectSource('plugins-core/Messenger/Plugin.php', [
 ]);
 
 expectSource('app/Services/PaymentService.php', [
-    'array_replace(is_array($pluginConfig) ? $pluginConfig : [], $this->config)',
+    'clone $plugin',
+    'redactPasswordConfig',
+    'preserveBlankPasswords',
+    'onlyKnownConfigFields',
+    'isSensitiveConfigKey',
+    "'value' => \$isSensitive ? '' : \$storedValue",
+]);
+
+expectSource('app/Http/Controllers/V2/Admin/PaymentController.php', [
+    'redactPasswordConfig',
+    'preserveBlankPasswords',
+    'redactSensitiveConfigFallback',
+    'if (!$sameGateway)',
+]);
+
+expectSource('app/Http/Controllers/V1/Guest/PaymentController.php', [
+    'catch (ApiException $e)',
+    "return \$this->fail([\$status, __('Payment gateway request failed')])",
+    'catch (\\JsonException $e)',
 ]);
 
 expectSource('app/Services/OrderService.php', [
@@ -246,18 +264,33 @@ if (($coinPaymentsManifest['auto_enable'] ?? true) !== false) {
     fwrite(STDERR, "CoinPayments must not auto-enable before credentials are configured.\n");
     exit(1);
 }
-foreach (['coinpayments_client_id', 'coinpayments_client_secret', 'coinpayments_invoice_currency', 'coinpayments_webhook_url'] as $field) {
+foreach (['coinpayments_client_id', 'coinpayments_client_secret', 'coinpayments_invoice_currency_id', 'coinpayments_webhook_url'] as $field) {
     if (!isset($coinPaymentsManifest['config'][$field])) {
         fwrite(STDERR, "CoinPayments admin config is missing {$field}.\n");
         exit(1);
     }
 }
+if (isset($coinPaymentsManifest['config']['coinpayments_invoice_currency'])) {
+    fwrite(STDERR, "CoinPayments still exposes the obsolete symbol-based invoice currency field.\n");
+    exit(1);
+}
 $coinPaymentsForm = (new CoinPaymentsPlugin('coin_payments'))->form();
+if (isset($coinPaymentsForm['coinpayments_invoice_currency'])
+    || !isset($coinPaymentsForm['coinpayments_invoice_currency_id'])) {
+    fwrite(STDERR, "CoinPayments form does not use the canonical invoice currency ID field.\n");
+    exit(1);
+}
 foreach ($coinPaymentsForm as $field => $_meta) {
     if (!isset($coinPaymentsManifest['config'][$field])) {
         fwrite(STDERR, "CoinPayments payment field {$field} cannot be configured from plugin admin.\n");
         exit(1);
     }
+}
+
+$coinPaymentsSource = (string) file_get_contents(dirname(__DIR__) . '/plugins-core/CoinPayments/Plugin.php');
+if (str_contains($coinPaymentsSource, '->retry(')) {
+    fwrite(STDERR, "CoinPayments invoice creation must not automatically retry a non-idempotent POST.\n");
+    exit(1);
 }
 
 echo "CoinPayments signing, surplus guard, account locale and Telegram integration checks passed.\n";

@@ -3,7 +3,7 @@
     "code": "crisp",
     "type": "feature",
     "version": "1.0.0",
-    "description": "Hiển thị Crisp Chat trên dashboard khách hàng theo cấu hình plugin",
+    "description": "Display Crisp Chat on the customer dashboard using the plugin configuration.",
     "author": "XBoard Team",
     "config": {
         "website_id": {
@@ -11,7 +11,7 @@
             "default": "",
             "label": "Crisp Website ID",
             "placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-            "description": "UUID Website ID trong phần cài đặt Crisp. Để trống thì nút chat không được tải."
+            "description": "UUID Website ID from Crisp settings. Leave blank to keep Crisp Chat disabled."
         }
     }
 }

@@ -28,6 +28,30 @@ const replacements = [
   [
     'case"string":return Q.jsx(TYt,{control:e.control,name:s,label:i.label||i.description,placeholder:i.placeholder,description:i.label?i.description:void 0,required:i.required},t);case"number"',
     'case"string":case"password":return Q.jsx(TYt,{control:e.control,name:s,label:i.label||i.description,placeholder:i.placeholder,description:i.label?i.description:void 0,required:i.required,type:"password"===i.type?"password":"text"},t);case"number"'
+  ],
+  [
+    'onClick:()=>s(e.code),disabled:!e.is_enabled||a,className:"h-7 px-2 text-xs"',
+    'onClick:()=>s(e.code),disabled:a,className:"h-7 px-2 text-xs"'
+  ],
+  [
+    'className:"flex items-center justify-end gap-2",children:e.is_installed?',
+    'className:"flex flex-wrap items-center justify-end gap-2",children:e.is_installed?'
+  ],
+  [
+    'Q.jsxs(ptt,{className:"sm:max-w-lg",children:[Q.jsxs(mtt,',
+    'Q.jsxs(ptt,{className:"w-[calc(100vw-2rem)] max-h-[90vh] overflow-hidden sm:max-w-2xl",children:[Q.jsxs(mtt,'
+  ],
+  [
+    'className:"flex flex-col h-full overflow-hidden",children:[Q.jsx(Gqt,{className:"flex-1 max-h-[60vh]"',
+    'className:"flex h-full min-w-0 flex-col overflow-hidden",children:[Q.jsx(Gqt,{className:"max-h-[65vh] min-w-0 flex-1 overflow-auto"'
+  ],
+  [
+    'className:"flex items-center justify-end gap-3 pt-6 mt-6 border-t border-border/40"',
+    'className:"mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-border/40 pt-6"'
+  ],
+  [
+    'Q.jsxs(_tt,{children:[E?.find(e=>e.code===o)?.name," ",e("config.title")]}),',
+    'Q.jsxs(_tt,{children:[e("config.title")," ",E?.find(e=>e.code===o)?.name]}),'
   ]
 ];
 
@@ -40,4 +64,4 @@ for (const [needle, replacement] of replacements) {
 }
 
 fs.writeFileSync(target, source);
-console.log('Admin user language, support settings and secret plugin fields patched.');
+console.log('Admin language, support settings, secret fields and disabled-plugin configuration patched.');

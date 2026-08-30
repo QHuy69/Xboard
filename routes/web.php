@@ -174,32 +174,10 @@ $renderTheme = function (Request $request) {
                         if (str_starts_with($runtimeFile, 'assets/BBbuoBq5')
                             && str_ends_with($runtimeFile, '.js')) {
                             $assetContents = $loadingPatchedContents;
-                            $fixedContents = $assetContents === false ? false : str_replace(
-                                [
-                                    './oPGsis9D-v2.js?v=50',
-                                    './oPGsis9D-v2.js?v=51',
-                                    './oPGsis9D-v2.js?v=53',
-                                    './oPGsis9D-v2.js',
-                                    './oPGsis9D-v2-fresh.js',
-                                ],
-                                [
-                                    './oPGsis9D-v2-access.js',
-                                    './oPGsis9D-v2-access.js',
-                                    './oPGsis9D-v2-access.js',
-                                    './oPGsis9D-v2-access.js',
-                                    './oPGsis9D-v2-access.js',
-                                ],
-                                $assetContents
-                            );
+                            $fixedContents = $assetContents === false
+                                ? false
+                                : LuckThemeAssetPatcher::rewriteNodeAssetImport($assetContents);
                             if ($fixedContents !== false) {
-                                $fixedContents = preg_replace_callback(
-                                    '#(?<prefix>\./|assets/)(?<name>oPGsis9D[^"\'?]*\.js)(?:\?v=\d+)?#',
-                                    static function (array $match): string {
-                                        $accessName = preg_replace('/\.js$/', '-access.js', $match['name']);
-                                        return $match['prefix'] . $accessName;
-                                    },
-                                    $fixedContents
-                                );
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BR9H_Zte', '-localized');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'CK-I2Xx_', '-free');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'DSCv3-VU', '-managed');
@@ -216,10 +194,6 @@ $renderTheme = function (Request $request) {
                                         'assets/DM1yaN1X-v3.js',
                                         'assets/BEq_qS6Y.js',
                                         'assets/BEq_qS6Y-v3.js',
-                                        'assets/oPGsis9D-v2.js',
-                                        'assets/oPGsis9D-v2.js?v=50',
-                                        'assets/oPGsis9D-v2.js?v=53',
-                                        'assets/oPGsis9D-v2-fresh.js',
                                     ],
                                     [
                                         'assets/DM1yaN1X-fresh.js',
@@ -227,10 +201,6 @@ $renderTheme = function (Request $request) {
                                         'assets/DM1yaN1X-fresh.js',
                                         'assets/BEq_qS6Y-fresh.js',
                                         'assets/BEq_qS6Y-fresh.js',
-                                        'assets/oPGsis9D-v2-access.js',
-                                        'assets/oPGsis9D-v2-access.js',
-                                        'assets/oPGsis9D-v2-access.js',
-                                        'assets/oPGsis9D-v2-access.js',
                                     ],
                                     $fixedContents
                                 );
@@ -272,7 +242,8 @@ $renderTheme = function (Request $request) {
                             }
                         }
                         if (str_starts_with($runtimeFile, 'assets/oPGsis9D')
-                            && str_ends_with($runtimeFile, '.js')) {
+                            && str_ends_with($runtimeFile, '.js')
+                            && !preg_match('/(?:-access(?:-v\d+)?)+\.js$/', basename($runtimeFile))) {
                             $assetContents = $loadingPatchedContents;
                             $fixedContents = $assetContents === false ? false : str_replace(
                                 "\n            }\n          }\n        }\n      });\n      return countryMap;",
@@ -291,6 +262,7 @@ $renderTheme = function (Request $request) {
                                         $fixedContents
                                     );
                                 }
+                                $fixedContents = LuckThemeAssetPatcher::patchNodeFlags($fixedContents);
                                 $fixedContents = str_replace(
                                     [
                                         './DM1yaN1X.js?v=50',
@@ -312,7 +284,7 @@ $renderTheme = function (Request $request) {
                                 if (@file_put_contents($target, $fixedContents) === false) {
                                     Log::warning('Theme world-map asset could not be repaired', ['target' => $target]);
                                 }
-                                $accessName = preg_replace('/\.js$/', '-access.js', basename($runtimeFile));
+                                $accessName = LuckThemeAssetPatcher::nodeAccessAssetName($runtimeFile);
                                 $accessTarget = $publicThemePath . '/assets/' . $accessName;
                                 if (@file_put_contents($accessTarget, $fixedContents) === false) {
                                     Log::warning('Theme node access asset could not be published', ['target' => $accessTarget]);

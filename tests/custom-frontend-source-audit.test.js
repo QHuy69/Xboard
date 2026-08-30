@@ -28,6 +28,8 @@ includesAll('luck-dashboard.blade.php', [
 includesAll('app/Services/LuckThemeAssetPatcher.php', [
   "DIRECTORY_SEPARATOR . '*.js'",
   'public static function patchLoadingAnimations',
+  'public static function patchNodeFlags',
+  'class: "luck-node-flag"',
   'formData.email.trim().toLowerCase()',
   'formData.password.length < 8',
   'error.luckAuthStage === "profile"',
@@ -43,6 +45,7 @@ includesAll('app/Services/LuckThemeAssetPatcher.php', [
 includesAll('routes/web.php', [
   'LuckThemeAssetPatcher::discoverJavascriptAssets($themePath)',
   'LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents)',
+  'LuckThemeAssetPatcher::patchNodeFlags($fixedContents)',
   'if ($loadingPatchedContents !== false)',
 ]);
 
@@ -51,6 +54,8 @@ includesAll('luck-overrides.css', [
   '@media (max-height: 760px)',
   '.luck-language-picker',
   '.luck-messenger-support',
+  'container: luck-user-card / inline-size',
+  '.luck-node-flag',
 ]);
 
 includesAll('public/assets/admin/assets/index-CEIYH7i8.js', [

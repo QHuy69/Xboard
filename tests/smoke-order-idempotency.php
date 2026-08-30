@@ -5,6 +5,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\User;
+use App\Http\Controllers\V1\Guest\PaymentController as GuestPaymentController;
 use App\Services\OrderService;
 use App\Utils\Helper;
 use Illuminate\Contracts\Console\Kernel;
@@ -61,6 +62,14 @@ function smokePlan(string $name): Plan
 
 DB::beginTransaction();
 try {
+    $missingOrderHandle = new ReflectionMethod(GuestPaymentController::class, 'handle');
+    $missingOrderResult = $missingOrderHandle->invoke(
+        new GuestPaymentController(),
+        'missing-smoke-order-' . bin2hex(random_bytes(8)),
+        'missing-smoke-callback'
+    );
+    smokeAssert($missingOrderResult === false, 'A missing payment order was incorrectly acknowledged as handled');
+
     $plan = smokePlan('Idempotency smoke plan');
     $user = smokeUser('cancel');
     $order = Order::create([
@@ -94,6 +103,24 @@ try {
     (new OrderService(Order::findOrFail($openOrder->id)))->open();
     smokeAssert((int) Order::findOrFail($openOrder->id)->status === Order::STATUS_COMPLETED, 'Order did not complete');
     smokeAssert((int) User::findOrFail($openUser->id)->reset_count === 1, 'Subscription was applied more than once');
+
+    $paidUser = smokeUser('paid', ['transfer_enable' => 0]);
+    $paidOrder = Order::create([
+        'user_id' => $paidUser->id,
+        'plan_id' => $plan->id,
+        'type' => Order::TYPE_NEW_PURCHASE,
+        'period' => Plan::PERIOD_MONTHLY,
+        'trade_no' => 'smoke_paid_' . bin2hex(random_bytes(6)),
+        'total_amount' => 0,
+        'balance_amount' => 0,
+        'status' => Order::STATUS_PENDING,
+    ]);
+    $firstPayment = new OrderService(Order::findOrFail($paidOrder->id));
+    $replayedPayment = new OrderService(Order::findOrFail($paidOrder->id));
+    smokeAssert($firstPayment->paid('smoke-payment-event'), 'First payment transition failed');
+    smokeAssert($firstPayment->wasPaymentTransitioned(), 'First payment was not marked as the state transition owner');
+    smokeAssert($replayedPayment->paid('smoke-payment-event'), 'Payment replay was not acknowledged');
+    smokeAssert(!$replayedPayment->wasPaymentTransitioned(), 'Payment replay was allowed to repeat success side effects');
 
     admin_setting(['surplus_enable' => 0]);
     $oldPlan = smokePlan('Old plan');

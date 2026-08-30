@@ -46,6 +46,32 @@ final class LuckThemeAssetPatcher
         }, $contents) ?? $contents;
     }
 
+    /**
+     * Rewrite every Luck node-chunk import to one physical cache-busted name.
+     * Persistent theme volumes can already contain an older generated
+     * `-access.js` variant, so normalizing the complete suffix chain first is
+     * required for idempotency (`-access-access.js` must never be produced).
+     */
+    public static function rewriteNodeAssetImport(string $contents): string
+    {
+        $pattern = '#(?<prefix>\./|assets/)(?<name>oPGsis9D[^"\'\?]*\.js)(?:\?v=\d+)?#';
+
+        return preg_replace_callback($pattern, static function (array $match): string {
+            $name = preg_replace('/(?:-access(?:-v\d+)?)+\.js$/', '.js', $match['name']) ?? $match['name'];
+            if (!str_ends_with($name, '-access-v2.js')) {
+                $name = preg_replace('/\.js$/', '-access-v2.js', $name) ?? $name;
+            }
+            return $match['prefix'] . $name;
+        }, $contents) ?? $contents;
+    }
+
+    public static function nodeAccessAssetName(string $assetName): string
+    {
+        $name = preg_replace('/(?:-access(?:-v\d+)?)+\.js$/', '.js', basename($assetName)) ?? basename($assetName);
+
+        return preg_replace('/\.js$/', '-access-v2.js', $name) ?? $name;
+    }
+
     public static function patchLoadingAnimations(string $contents): string
     {
         // Luck renders route-level loading VNodes before the DOM translation
@@ -147,6 +173,83 @@ final class LuckThemeAssetPatcher
                 'fontWeight: "normal",' . "\n" . '              fontFamily: \'' . self::FONT_FAMILY . '\'' . "\n" . '            }',
                 'top: 78,' . "\n" . '            containLabel: true',
             ],
+            $contents
+        );
+
+        return $contents;
+    }
+
+    public static function patchNodeFlags(string $contents): string
+    {
+        if (str_contains($contents, 'class: "luck-node-flag"')) {
+            return $contents;
+        }
+
+        $countryNeedle = <<<'JS'
+          const countryInfo = getCountryInfo(row.name);
+          return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
+JS;
+        $imageNeedle = <<<'JS'
+            h("img", {
+              src: `/flags/${countryInfo.code.toLowerCase()}.svg`,
+              alt: countryInfo.name,
+              style: {
+                width: "32px",
+                height: "22px",
+                borderRadius: "4px",
+                border: "1px solid rgba(0,0,0,0.2)",
+                flexShrink: "0",
+                objectFit: "cover",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+              },
+              onError: (e) => {
+                const target = e.target;
+                target.src = "/flags/un.svg";
+              }
+            }),
+JS;
+        $nameNeedle = 'h("span", { style: { fontWeight: "600" } }, row.name)';
+
+        // Treat the generated fragment as one atomic patch. Partially
+        // replacing only the image would reference undefined flagCode or
+        // displayName variables after a Luck upstream update.
+        if (!str_contains($contents, $countryNeedle)
+            || !str_contains($contents, $imageNeedle)
+            || !str_contains($contents, $nameNeedle)) {
+            return $contents;
+        }
+
+        // The generated node table points at /flags/{code}.svg even though the
+        // Luck distribution does not ship that directory. Every row therefore
+        // renders an empty white image frame before the node name. Render the
+        // ISO country code as a native flag glyph instead: it is local,
+        // cache-independent and has an accessible country label.
+        $contents = str_replace(
+            $countryNeedle,
+            <<<'JS'
+          const countryInfo = getCountryInfo(row.name);
+          const flagCode = /^[A-Z]{2}$/.test(String(countryInfo.code || "").toUpperCase()) ? String(countryInfo.code).toUpperCase() : "UN";
+          const displayName = String(row.name || "").replace(/^\s*[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, "") || String(row.name || "");
+          return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
+JS,
+            $contents
+        );
+
+        $contents = str_replace(
+            $imageNeedle,
+            <<<'JS'
+            h("span", {
+              class: "luck-node-flag",
+              role: "img",
+              "aria-label": countryInfo.name
+            }, String.fromCodePoint(...flagCode.split("").map((character) => 127397 + character.charCodeAt(0)))),
+JS,
+            $contents
+        );
+
+        $contents = str_replace(
+            $nameNeedle,
+            'h("span", { style: { fontWeight: "600" } }, displayName)',
             $contents
         );
 
@@ -259,7 +362,7 @@ JS,
         customMessage.error("请输入邮箱验证码", { title: "验证码为空" });
         return;
       }
-      if (backendConfig.value.is_invite_force && !formData.inviteCode.trim()) {
+      if (backendConfig.value && backendConfig.value.is_invite_force && !formData.inviteCode.trim()) {
         customMessage.registerError("You must use the invitation code to register");
         return;
       }
@@ -303,7 +406,7 @@ JS,
 
         return str_replace(
             'placeholder: "邀请码（可选）",',
-            'placeholder: backendConfig.value.is_invite_force ? "邀请码（必填）" : "邀请码（可选）",',
+            'placeholder: backendConfig.value && backendConfig.value.is_invite_force ? "邀请码（必填）" : "邀请码（可选）",',
             $contents
         );
     }
@@ -330,8 +433,9 @@ JS,
     {
         // A valid login can be followed by a transient /user/info failure.
         // Mark that stage explicitly and keep the token so the UI never lies
-        // that the password was wrong. 401 is the only response that proves
-        // the token itself is invalid.
+        // that the password was wrong. Xboard's User middleware returns 403
+        // for a missing/expired token, while some auth stacks use 401; both
+        // statuses prove that the saved token must be discarded.
         $contents = str_replace(
             <<<'JS'
       } else {
@@ -341,7 +445,7 @@ JS,
 JS,
             <<<'JS'
       } else {
-        if (error.response && error.response.status === 401) {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
           logout();
         }
         error.luckAuthStage = "profile";

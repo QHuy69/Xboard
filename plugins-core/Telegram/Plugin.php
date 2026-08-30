@@ -27,116 +27,25 @@ class Plugin extends AbstractPlugin
     protected array $commands = [];
     protected TelegramService $telegramService;
 
+    private const SUPPORTED_LOCALES = ['vi', 'en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'fa', 'ru'];
+
     protected array $commandConfigs = [
-        '/start' => ['description' => 'Mở menu chính', 'handler' => 'handleStartCommand'],
-        '/menu' => ['description' => 'Mở menu chính', 'handler' => 'handleStartCommand'],
-        '/bind' => ['description' => 'Liên kết tài khoản', 'handler' => 'handleBindCommand'],
-        '/traffic' => ['description' => 'Xem lưu lượng', 'handler' => 'handleTrafficCommand'],
-        '/getlatesturl' => ['description' => 'Lấy liên kết đăng ký', 'handler' => 'handleGetLatestUrlCommand'],
-        '/unbind' => ['description' => 'Hủy liên kết tài khoản', 'handler' => 'handleUnbindCommand'],
-        '/nodes' => ['description' => 'Xem người dùng online theo node', 'handler' => 'handleNodesCommand'],
-        '/setreportgroup' => ['description' => 'Đặt nhóm nhận báo cáo node', 'handler' => 'handleSetReportGroupCommand'],
-        '/setbackupchat' => ['description' => 'Đặt nơi nhận backup database', 'handler' => 'handleSetBackupChatCommand'],
-        '/backupdb' => ['description' => 'Backup database ngay', 'handler' => 'handleBackupDatabaseCommand'],
-        '/reseller' => ['description' => 'Tạo tài khoản khách hàng', 'handler' => 'handleResellerCommand'],
-        '/cancel' => ['description' => 'Hủy thao tác hiện tại', 'handler' => 'handleCancelCommand'],
+        '/start' => ['handler' => 'handleStartCommand'],
+        '/menu' => ['handler' => 'handleStartCommand'],
+        '/bind' => ['handler' => 'handleBindCommand'],
+        '/traffic' => ['handler' => 'handleTrafficCommand'],
+        '/getlatesturl' => ['handler' => 'handleGetLatestUrlCommand'],
+        '/unbind' => ['handler' => 'handleUnbindCommand'],
+        '/nodes' => ['handler' => 'handleNodesCommand'],
+        '/setreportgroup' => ['handler' => 'handleSetReportGroupCommand'],
+        '/setbackupchat' => ['handler' => 'handleSetBackupChatCommand'],
+        '/backupdb' => ['handler' => 'handleBackupDatabaseCommand'],
+        '/reseller' => ['handler' => 'handleResellerCommand'],
+        '/cancel' => ['handler' => 'handleCancelCommand'],
     ];
 
-    private array $messages = [
-        'vi' => [
-            'busy' => 'Hệ thống đang bận, vui lòng thử lại sau.', 'private' => 'Vui lòng dùng tính năng này trong chat riêng với bot.',
-            'bind_first' => 'Vui lòng liên kết tài khoản trước.', 'unknown' => 'Tôi chưa hiểu yêu cầu. Hãy chọn một nút trong menu.',
-            'welcome' => "🎉 Chào mừng đến với bot ZaoGuang!\n\nBot giúp bạn xem lưu lượng, lấy liên kết đăng ký và quản lý liên kết tài khoản.",
-            'bound' => '✅ Tài khoản đang liên kết: :email', 'not_bound' => "🔗 Chưa liên kết tài khoản. Gửi:\n/bind [liên kết đăng ký]",
-            'bad_bind' => 'Hãy gửi /bind kèm liên kết đăng ký.', 'invalid_url' => 'Liên kết đăng ký không hợp lệ.',
-            'user_missing' => 'Không tìm thấy người dùng.', 'already_bound' => 'Tài khoản này đã liên kết với Telegram khác.',
-            'bind_failed' => 'Không thể lưu liên kết tài khoản.', 'bind_ok' => '✅ Liên kết tài khoản thành công.',
-            'unbind_failed' => 'Không thể hủy liên kết.', 'unbind_ok' => '✅ Đã hủy liên kết tài khoản.',
-            'traffic' => "📊 Lưu lượng\n\nĐã dùng: :used GB\nTổng: :total GB\nCòn lại: :remaining GB\nTỷ lệ: :percent%",
-            'url' => "🔗 Liên kết đăng ký của bạn:\n\n:url",
-            'forbidden' => 'Bạn không có quyền dùng tính năng này.', 'cancelled' => 'Đã hủy thao tác hiện tại.',
-            'nodes_title' => '🖥 Người dùng online theo node', 'node_line' => ':state :name (:type): :online người dùng',
-            'report_group_ok' => '✅ Nhóm này sẽ nhận báo cáo node tự động.', 'report_group_only' => 'Lệnh này phải được gửi trong nhóm Telegram.',
-            'backup_chat_ok' => '✅ Chat riêng này sẽ nhận backup database tự động.',
-            'backup_private' => 'Vì an toàn, lệnh backup database chỉ dùng trong chat riêng với bot.',
-            'backup_started' => '⏳ Đang tạo và mã hóa backup database...',
-            'backup_config_invalid' => '⚠️ Chưa cấu hình mật khẩu backup tối thiểu 16 ký tự.',
-            'backup_failed' => '❌ Backup database thất bại. Hãy kiểm tra log hệ thống.',
-            'reseller_intro' => '🤝 Tạo tài khoản khách. Hãy nhập email khách hàng hoặc bấm Hủy.',
-            'reseller_email_invalid' => 'Email không hợp lệ, vui lòng nhập lại.', 'reseller_email_exists' => 'Email này đã tồn tại.',
-            'reseller_choose_plan' => 'Chọn gói cho :email:', 'reseller_no_plan' => 'Không có gói nào đang được phép bán.',
-            'reseller_choose_period' => 'Chọn chu kỳ của gói :plan:', 'reseller_coupon' => 'Nhập mã giảm giá 100%:',
-            'reseller_coupon_invalid' => 'Mã phải là coupon phần trăm 100%, còn hiệu lực và áp dụng được cho gói/chu kỳ đã chọn.',
-            'reseller_done' => "✅ Đã tạo và kích hoạt tài khoản\n\nEmail: :email\nMật khẩu: :password\nGói: :plan\nChu kỳ: :period\nLiên kết: :url\n\nHãy gửi mật khẩu cho khách qua kênh an toàn.",
-            'renewed' => '✅ Gia hạn thành công gói :plan. Hạn mới: :expires',
-            'upgraded' => '✅ Đổi gói thành công sang :plan. Hạn mới: :expires',
-            'purchased' => '✅ Kích hoạt thành công gói :plan. Hạn: :expires',
-            'traffic_reset' => '✅ Lưu lượng của bạn đã được đặt lại.',
-            'url_reset' => "🔐 Liên kết đăng ký đã được đặt lại:\n:url",
-            'ticket_replied' => '✅ Ticket #:id đã được trả lời.',
-            'button_traffic' => '📊 Lưu lượng', 'button_url' => '🔗 Link đăng ký', 'button_nodes' => '🖥 Node online',
-            'button_reseller' => '🤝 CTV', 'button_cancel' => '❌ Hủy', 'button_create' => '➕ Tạo tài khoản',
-        ],
-        'en' => [
-            'busy' => 'The system is busy. Please try again later.', 'private' => 'Please use this feature in a private chat with the bot.',
-            'bind_first' => 'Please link your account first.', 'unknown' => 'I did not understand that. Choose an option from the menu.',
-            'welcome' => "🎉 Welcome to the ZaoGuang bot!\n\nUse it to view traffic, get your subscription link, and manage account linking.",
-            'bound' => '✅ Linked account: :email', 'not_bound' => "🔗 No linked account. Send:\n/bind [subscription link]",
-            'bad_bind' => 'Send /bind followed by your subscription link.', 'invalid_url' => 'Invalid subscription link.',
-            'user_missing' => 'User not found.', 'already_bound' => 'This account is linked to another Telegram account.',
-            'bind_failed' => 'Could not save the account link.', 'bind_ok' => '✅ Account linked.',
-            'unbind_failed' => 'Could not unlink the account.', 'unbind_ok' => '✅ Account unlinked.',
-            'traffic' => "📊 Traffic\n\nUsed: :used GB\nTotal: :total GB\nRemaining: :remaining GB\nUsage: :percent%",
-            'url' => "🔗 Your subscription link:\n\n:url", 'forbidden' => 'You are not allowed to use this feature.',
-            'cancelled' => 'Current operation cancelled.', 'nodes_title' => '🖥 Online users by node',
-            'node_line' => ':state :name (:type): :online users', 'report_group_ok' => '✅ This group will receive automatic node reports.',
-            'report_group_only' => 'Send this command in a Telegram group.', 'reseller_intro' => '🤝 Enter the customer email or tap Cancel.',
-            'backup_chat_ok' => '✅ This private chat will receive automatic database backups.',
-            'backup_private' => 'For safety, database backup commands are only available in a private chat with the bot.',
-            'backup_started' => '⏳ Creating and encrypting the database backup...',
-            'backup_config_invalid' => '⚠️ Configure a database backup password with at least 16 characters first.',
-            'backup_failed' => '❌ Database backup failed. Check the system log.',
-            'reseller_email_invalid' => 'Invalid email. Try again.', 'reseller_email_exists' => 'This email already exists.',
-            'reseller_choose_plan' => 'Choose a plan for :email:', 'reseller_no_plan' => 'No plans are currently for sale.',
-            'reseller_choose_period' => 'Choose a billing period for :plan:', 'reseller_coupon' => 'Enter a 100% discount coupon:',
-            'reseller_coupon_invalid' => 'The coupon must be a valid 100% percentage coupon for this plan and period.',
-            'reseller_done' => "✅ Account created and activated\n\nEmail: :email\nPassword: :password\nPlan: :plan\nPeriod: :period\nLink: :url\n\nSend the password to the customer securely.",
-            'renewed' => '✅ :plan renewed. New expiry: :expires', 'upgraded' => '✅ Plan changed to :plan. New expiry: :expires',
-            'purchased' => '✅ :plan activated. Expiry: :expires', 'traffic_reset' => '✅ Your traffic was reset.',
-            'url_reset' => "🔐 Your subscription link was reset:\n:url",
-            'ticket_replied' => '✅ Ticket #:id was answered.',
-            'button_traffic' => '📊 Traffic', 'button_url' => '🔗 Subscription link', 'button_nodes' => '🖥 Online nodes',
-            'button_reseller' => '🤝 Reseller', 'button_cancel' => '❌ Cancel', 'button_create' => '➕ Create account',
-        ],
-        'zh' => [
-            'busy' => '系统繁忙，请稍后重试。', 'private' => '请在私聊中使用此功能。', 'bind_first' => '请先绑定账号。',
-            'unknown' => '无法识别该请求，请使用菜单按钮。', 'welcome' => "🎉 欢迎使用 ZaoGuang 机器人！\n\n您可以查看流量、获取订阅链接并管理账号绑定。",
-            'bound' => '✅ 已绑定账号：:email', 'not_bound' => "🔗 尚未绑定，请发送：\n/bind [订阅链接]",
-            'bad_bind' => '请发送 /bind 和订阅链接。', 'invalid_url' => '订阅链接无效。', 'user_missing' => '用户不存在。',
-            'already_bound' => '该账号已绑定其他 Telegram。', 'bind_failed' => '绑定保存失败。', 'bind_ok' => '✅ 绑定成功。',
-            'unbind_failed' => '解绑失败。', 'unbind_ok' => '✅ 解绑成功。',
-            'traffic' => "📊 流量\n\n已用：:used GB\n总计：:total GB\n剩余：:remaining GB\n使用率：:percent%",
-            'url' => "🔗 您的订阅链接：\n\n:url", 'forbidden' => '您无权使用此功能。', 'cancelled' => '已取消当前操作。',
-            'nodes_title' => '🖥 各节点在线用户', 'node_line' => ':state :name (:type)：:online 人',
-            'report_group_ok' => '✅ 本群将接收自动节点报告。', 'report_group_only' => '请在 Telegram 群组中发送此命令。',
-            'backup_chat_ok' => '✅ 此私聊将接收自动数据库备份。',
-            'backup_private' => '为确保安全，数据库备份命令只能在机器人私聊中使用。',
-            'backup_started' => '⏳ 正在创建并加密数据库备份…',
-            'backup_config_invalid' => '⚠️ 请先设置至少 16 个字符的数据库备份密码。',
-            'backup_failed' => '❌ 数据库备份失败，请检查系统日志。',
-            'reseller_intro' => '🤝 请输入客户邮箱，或点击取消。', 'reseller_email_invalid' => '邮箱无效，请重试。',
-            'reseller_email_exists' => '该邮箱已存在。', 'reseller_choose_plan' => '为 :email 选择套餐：', 'reseller_no_plan' => '暂无可售套餐。',
-            'reseller_choose_period' => '请选择 :plan 的周期：', 'reseller_coupon' => '请输入 100% 优惠码：',
-            'reseller_coupon_invalid' => '优惠码必须是适用于所选套餐和周期的有效 100% 折扣码。',
-            'reseller_done' => "✅ 账号已创建并开通\n\n邮箱：:email\n密码：:password\n套餐：:plan\n周期：:period\n链接：:url",
-            'renewed' => '✅ :plan 续费成功，新到期时间：:expires', 'upgraded' => '✅ 已更换为 :plan，新到期时间：:expires',
-            'purchased' => '✅ :plan 开通成功，到期时间：:expires', 'traffic_reset' => '✅ 流量已重置。',
-            'url_reset' => "🔐 订阅链接已重置：\n:url",
-            'ticket_replied' => '✅ 工单 #:id 已回复。',
-            'button_traffic' => '📊 流量', 'button_url' => '🔗 订阅链接', 'button_nodes' => '🖥 在线节点',
-            'button_reseller' => '🤝 合作伙伴', 'button_cancel' => '❌ 取消', 'button_create' => '➕ 创建账号',
-        ],
-    ];
+    /** @var array<string, array{messages: array<string, string>, commands: array<string, string>, periods: array<string, string>}> */
+    private array $catalogs = [];
 
     public function boot(): void
     {
@@ -144,7 +53,7 @@ class Plugin extends AbstractPlugin
         foreach ($this->commandConfigs as $command => $config) {
             $this->commands['commands'][$command] = [$this, $config['handler']];
         }
-        $this->commands['replies']['/(?:Ticket|工单|ticket).*?#?\s*(\d+)/iu'] = [$this, 'handleTicketReply'];
+        $this->commands['replies']['/(?:ticket|工单|工單|チケット|티켓|تیکت|тикет).*?#?\s*(\d+)/iu'] = [$this, 'handleTicketReply'];
         $this->filter('telegram.message.handle', [$this, 'handleMessage'], 10);
         $this->listen('telegram.message.unhandled', [$this, 'handleUnknownCommand'], 10);
         $this->listen('telegram.message.error', [$this, 'handleError'], 10);
@@ -166,7 +75,14 @@ class Plugin extends AbstractPlugin
 
         if ($this->getConfig('enable_node_group_report', false)) {
             $interval = (int) $this->getConfig('node_report_interval_minutes', 15);
-            $event = $schedule->call(fn () => $this->sendScheduledNodeReport())->withoutOverlapping();
+            // Laravel requires named callback events before overlap and
+            // one-server guards can be attached. Without the name, enabling
+            // reports throws during schedule registration and silently drops
+            // the Telegram task in PluginManager's isolation boundary.
+            $event = $schedule->call(fn () => $this->sendScheduledNodeReport())
+                ->name('telegram-node-group-report')
+                ->onOneServer()
+                ->withoutOverlapping(10);
             match ($interval) { 5 => $event->everyFiveMinutes(), 60 => $event->hourly(), default => $event->everyFifteenMinutes() };
         }
 
@@ -198,7 +114,7 @@ class Plugin extends AbstractPlugin
     protected function handleCommandMessage(object $msg): bool
     {
         $buttonCommands = [];
-        foreach (['vi-VN', 'en-US', 'zh-CN'] as $locale) {
+        foreach (self::SUPPORTED_LOCALES as $locale) {
             $buttonCommands[$this->text('button_traffic', $locale)] = '/traffic';
             $buttonCommands[$this->text('button_url', $locale)] = '/getlatesturl';
             $buttonCommands[$this->text('button_nodes', $locale)] = '/nodes';
@@ -314,7 +230,10 @@ class Plugin extends AbstractPlugin
         $locale = $this->localeForMessage($msg);
         if (!$this->isOperator($msg)) { $this->sendMessage($msg, $this->text('forbidden', $locale)); return; }
         if ($msg->is_private) { $this->sendMessage($msg, $this->text('report_group_only', $locale)); return; }
-        admin_setting(['telegram_node_report_chat_id' => (string) $msg->chat_id]);
+        admin_setting([
+            'telegram_node_report_chat_id' => (string) $msg->chat_id,
+            'telegram_node_report_locale' => $this->language($locale),
+        ]);
         $this->sendMessage($msg, $this->text('report_group_ok', $locale));
     }
 
@@ -323,7 +242,10 @@ class Plugin extends AbstractPlugin
         $locale = $this->localeForMessage($msg);
         if (!$this->isAdmin($msg)) { $this->sendMessage($msg, $this->text('forbidden', $locale)); return; }
         if (!$msg->is_private) { $this->sendMessage($msg, $this->text('backup_private', $locale)); return; }
-        admin_setting(['telegram_database_backup_chat_id' => (string) $msg->chat_id]);
+        admin_setting([
+            'telegram_database_backup_chat_id' => (string) $msg->chat_id,
+            'telegram_database_backup_locale' => $this->language($locale),
+        ]);
         $this->sendMessage($msg, $this->text('backup_chat_ok', $locale));
     }
 
@@ -334,7 +256,10 @@ class Plugin extends AbstractPlugin
         if (!$msg->is_private) { $this->sendMessage($msg, $this->text('backup_private', $locale)); return; }
         if (!$this->validBackupPassword()) { $this->sendMessage($msg, $this->text('backup_config_invalid', $locale)); return; }
 
-        admin_setting(['telegram_database_backup_chat_id' => (string) $msg->chat_id]);
+        admin_setting([
+            'telegram_database_backup_chat_id' => (string) $msg->chat_id,
+            'telegram_database_backup_locale' => $this->language($locale),
+        ]);
         $this->sendMessage($msg, $this->text('backup_started', $locale));
         $this->sendDatabaseBackup((int) $msg->chat_id, $locale);
     }
@@ -342,11 +267,15 @@ class Plugin extends AbstractPlugin
     public function sendScheduledNodeReport(): void
     {
         $chatId = (int) admin_setting('telegram_node_report_chat_id', 0);
-        if ($chatId) $this->telegramService->sendMessage($chatId, $this->nodeReport('vi-VN'));
+        $locale = (string) admin_setting('telegram_node_report_locale', 'vi');
+        if ($chatId) $this->telegramService->sendMessage($chatId, $this->nodeReport($locale));
     }
 
-    public function sendDatabaseBackup(?int $targetChatId = null, string $locale = 'vi-VN'): void
+    public function sendDatabaseBackup(?int $targetChatId = null, string $locale = ''): void
     {
+        $locale = $locale !== ''
+            ? $locale
+            : (string) admin_setting('telegram_database_backup_locale', 'vi');
         $chatId = $targetChatId ?: (int) ($this->getConfig('database_backup_chat_id', 0)
             ?: admin_setting('telegram_database_backup_chat_id', 0));
         if ($chatId <= 0) {
@@ -371,11 +300,10 @@ class Plugin extends AbstractPlugin
             $maxBytes = max(1, (int) $this->getConfig('database_backup_max_mb', 45)) * 1024 * 1024;
             if ($size === false || $size > $maxBytes) throw new \RuntimeException('Encrypted backup exceeds configured Telegram upload limit.');
 
-            $this->telegramService->sendDocument(
-                $chatId,
-                $backupPath,
-                "🔐 XBoard database backup\n" . now()->format('Y-m-d H:i:s T') . "\nAES-256-GCM"
-            );
+            $this->telegramService->sendDocument($chatId, $backupPath, $this->text('backup_caption', $locale, [
+                'time' => now()->format('Y-m-d H:i:s T'),
+                'cipher' => 'AES-256-GCM',
+            ]));
             Log::notice('Encrypted database backup sent to Telegram', ['chat_id' => $chatId, 'size' => $size]);
         } catch (\Throwable $e) {
             Log::error('Telegram database backup failed', ['chat_id' => $chatId, 'error' => $e->getMessage()]);
@@ -450,7 +378,7 @@ class Plugin extends AbstractPlugin
                 if (User::byEmail($state['email'])->exists()) throw new \RuntimeException('email exists');
                 $password = bin2hex(random_bytes(8)) . 'Aa1!';
                 $user = app(UserService::class)->createUser(['email' => $state['email'], 'password' => $password]);
-                $user->locale = $this->localeForMessage($msg); $user->saveOrFail();
+                $user->locale = $this->canonicalUserLocale($this->localeForMessage($msg)); $user->saveOrFail();
                 $plan = Plan::findOrFail($state['plan_id']);
                 $order = OrderService::createFromRequest($user, $plan, $state['period'], $couponCode);
                 if ((int) $order->total_amount !== 0 || (int) $order->discount_amount <= 0) throw new \RuntimeException('coupon did not fully discount order');
@@ -479,8 +407,11 @@ class Plugin extends AbstractPlugin
         $order->loadMissing(['user', 'plan']); $user = $order->user;
         if (!$user?->telegram_id) return;
         $key = match ((int) $order->type) { Order::TYPE_RENEWAL => 'renewed', Order::TYPE_UPGRADE => 'upgraded', Order::TYPE_RESET_TRAFFIC => 'traffic_reset', default => 'purchased' };
-        $expires = $user->expired_at ? date('Y-m-d H:i:s', $user->expired_at) : '∞';
-        $this->telegramService->sendMessage($user->telegram_id, $this->text($key, $this->localeForUser($user), ['plan' => $order->plan?->name ?? '-', 'expires' => $expires]));
+        $locale = $this->localeForUser($user);
+        $expires = $user->expired_at
+            ? date('Y-m-d H:i:s', $user->expired_at)
+            : $this->text('expires_never', $locale);
+        $this->telegramService->sendMessage($user->telegram_id, $this->text($key, $locale, ['plan' => $order->plan?->name ?? '-', 'expires' => $expires]));
     }
 
     public function sendSubscriptionResetNotify(array $payload): void
@@ -500,12 +431,12 @@ class Plugin extends AbstractPlugin
     {
         if (!$this->getConfig('enable_payment_notify', true) || !$order->payment) return;
         $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($order) {
-            $values = [$order->total_amount / 100, Helper::escapeMarkdown($order->payment->payment), Helper::escapeMarkdown($order->payment->name), $order->trade_no];
-            return match ($this->language((string) ($admin->locale ?? 'vi-VN'))) {
-                'vi' => sprintf("💰 Thanh toán thành công %.2f CNY\nCổng: %s\nKênh: %s\nĐơn: `%s`", ...$values),
-                'zh' => sprintf("💰 支付成功 %.2f CNY\n网关：%s\n通道：%s\n订单：`%s`", ...$values),
-                default => sprintf("💰 Payment received %.2f CNY\nGateway: %s\nChannel: %s\nOrder: `%s`", ...$values),
-            };
+            return $this->text('payment_received', $this->localeForUser($admin), [
+                'amount' => number_format($order->total_amount / 100, 2, '.', ''),
+                'gateway' => Helper::escapeMarkdown($order->payment->payment),
+                'channel' => Helper::escapeMarkdown($order->payment->name),
+                'order' => $order->trade_no,
+            ]);
         }, true);
     }
 
@@ -516,11 +447,12 @@ class Plugin extends AbstractPlugin
         $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($ticket, $user, $message) {
             $subject = Helper::escapeMarkdown($ticket->subject);
             $body = Helper::escapeMarkdown($message->message);
-            return match ($this->language((string) ($admin->locale ?? 'vi-VN'))) {
-                'vi' => "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Chủ đề*: `{$subject}`\n💬 *Nội dung*: `{$body}`",
-                'zh' => "📮 *工单 #{$ticket->id}*\n📧 `{$user->email}`\n📝 *主题*：`{$subject}`\n💬 *内容*：`{$body}`",
-                default => "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Subject*: `{$subject}`\n💬 *Message*: `{$body}`",
-            };
+            return $this->text('ticket_notify', $this->localeForUser($admin), [
+                'id' => $ticket->id,
+                'email' => $user->email,
+                'subject' => $subject,
+                'message' => $body,
+            ]);
         }, true);
     }
 
@@ -545,19 +477,30 @@ class Plugin extends AbstractPlugin
 
     public function addBotCommands(array $commands): array
     {
-        foreach ($this->commandConfigs as $command => $config) $commands[] = ['command' => ltrim($command, '/'), 'description' => $config['description']];
+        $descriptions = $this->catalog('en')['commands'];
+        foreach ($this->commandConfigs as $command => $_config) {
+            $name = ltrim($command, '/');
+            $commands[] = ['command' => $name, 'description' => $descriptions[$name]];
+        }
         return $commands;
     }
 
     public function addLocalizedBotCommands(array $localized): array
     {
-        $descriptions = [
-            'vi' => ['start' => 'Mở menu chính', 'menu' => 'Mở menu chính', 'bind' => 'Liên kết tài khoản', 'traffic' => 'Xem lưu lượng', 'getlatesturl' => 'Lấy liên kết đăng ký', 'unbind' => 'Hủy liên kết tài khoản', 'nodes' => 'Xem người dùng online theo node', 'setreportgroup' => 'Đặt nhóm nhận báo cáo node', 'setbackupchat' => 'Đặt chat nhận backup database', 'backupdb' => 'Backup database ngay', 'reseller' => 'Tạo tài khoản khách hàng', 'cancel' => 'Hủy thao tác hiện tại'],
-            'en' => ['start' => 'Open the main menu', 'menu' => 'Open the main menu', 'bind' => 'Link an account', 'traffic' => 'View traffic', 'getlatesturl' => 'Get subscription link', 'unbind' => 'Unlink the account', 'nodes' => 'View online users by node', 'setreportgroup' => 'Set the node report group', 'setbackupchat' => 'Set the database backup chat', 'backupdb' => 'Back up the database now', 'reseller' => 'Create a customer account', 'cancel' => 'Cancel the current action'],
-            'zh' => ['start' => '打开主菜单', 'menu' => '打开主菜单', 'bind' => '绑定账号', 'traffic' => '查看流量', 'getlatesturl' => '获取订阅链接', 'unbind' => '解绑账号', 'nodes' => '查看各节点在线用户', 'setreportgroup' => '设置节点报告群组', 'setbackupchat' => '设置数据库备份私聊', 'backupdb' => '立即备份数据库', 'reseller' => '创建客户账号', 'cancel' => '取消当前操作'],
+        // Telegram accepts ISO 639-1 codes here, so its command menu has one
+        // generic Chinese slot. Bound users still receive zh-CN or zh-TW body
+        // text and buttons according to their XBoard locale.
+        $telegramLocales = [
+            'vi' => 'vi',
+            'en' => 'en',
+            'zh' => 'zh-CN',
+            'ja' => 'ja',
+            'ko' => 'ko',
+            'fa' => 'fa',
+            'ru' => 'ru',
         ];
-        foreach ($descriptions as $language => $items) {
-            $localized[$language] = collect($items)->map(
+        foreach ($telegramLocales as $languageCode => $locale) {
+            $localized[$languageCode] = collect($this->catalog($locale)['commands'])->map(
                 fn ($description, $command) => ['command' => $command, 'description' => $description]
             )->values()->all();
         }
@@ -614,15 +557,78 @@ class Plugin extends AbstractPlugin
 
     protected function localeForMessage(object $msg): string
     {
-        $user = $this->boundUser($msg, false); return $user ? $this->localeForUser($user) : (string) ($msg->language_code ?? 'vi-VN');
+        $user = $this->boundUser($msg, false);
+        return $user ? $this->localeForUser($user) : (string) ($msg->language_code ?? 'vi');
     }
-    protected function localeForUser(User $user): string { return (string) ($user->locale ?: 'vi-VN'); }
-    protected function language(string $locale): string { $base = strtolower(explode('-', str_replace('_', '-', $locale))[0]); return in_array($base, ['vi', 'zh'], true) ? $base : 'en'; }
+
+    protected function localeForUser(User $user): string { return (string) ($user->locale ?: 'vi'); }
+
+    /** Store only locale identifiers accepted by the user/admin APIs. */
+    protected function canonicalUserLocale(string $locale): string
+    {
+        return match ($this->language($locale)) {
+            'vi' => 'vi-VN',
+            'zh-CN' => 'zh-CN',
+            'zh-TW' => 'zh-TW',
+            'ja' => 'ja-JP',
+            'ko' => 'ko-KR',
+            'fa' => 'fa-IR',
+            'ru' => 'ru-RU',
+            default => 'en-US',
+        };
+    }
+
+    protected function language(string $locale): string
+    {
+        $locale = strtolower(trim(str_replace('_', '-', $locale)));
+        if ($locale === '') return 'en';
+        if (in_array($locale, ['zh-tw', 'zh-hk', 'zh-mo', 'zh-hant', 'zh-cht'], true)) return 'zh-TW';
+        if ($locale === 'zh' || in_array($locale, ['zh-cn', 'zh-sg', 'zh-hans', 'zh-chs'], true)) return 'zh-CN';
+
+        $base = explode('-', $locale)[0];
+        return match ($base) {
+            'vi' => 'vi',
+            'ja', 'jp' => 'ja',
+            'ko', 'kr' => 'ko',
+            'fa', 'per' => 'fa',
+            'ru' => 'ru',
+            default => 'en',
+        };
+    }
+
     protected function text(string $key, string $locale, array $replace = []): string
     {
-        $text = $this->messages[$this->language($locale)][$key] ?? $this->messages['en'][$key] ?? $key;
-        foreach ($replace as $name => $value) $text = str_replace(':' . $name, (string) $value, $text);
-        return $text;
+        $language = $this->language($locale);
+        $text = $this->catalog($language)['messages'][$key] ?? $this->catalog('en')['messages'][$key] ?? $key;
+        $tokens = [];
+        foreach ($replace as $name => $value) {
+            $value = (string) $value;
+            // First-strong isolates keep URLs, emails, amounts and identifiers
+            // readable inside Persian right-to-left sentences without changing
+            // the Markdown delimiters supplied by each translation catalog.
+            if ($language === 'fa') $value = "\u{2068}" . $value . "\u{2069}";
+            $tokens[':' . $name] = $value;
+        }
+        return strtr($text, $tokens);
+    }
+
+    /** @return array{messages: array<string, string>, commands: array<string, string>, periods: array<string, string>} */
+    protected function catalog(string $locale): array
+    {
+        $locale = $this->language($locale);
+        if (isset($this->catalogs[$locale])) return $this->catalogs[$locale];
+
+        $path = __DIR__ . '/locales/' . $locale . '.json';
+        try {
+            $catalog = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $e) {
+            Log::error('Telegram locale catalog could not be loaded', ['locale' => $locale, 'error' => $e->getMessage()]);
+            $catalog = ['messages' => [], 'commands' => [], 'periods' => []];
+        }
+        foreach (['messages', 'commands', 'periods'] as $section) {
+            if (!isset($catalog[$section]) || !is_array($catalog[$section])) $catalog[$section] = [];
+        }
+        return $this->catalogs[$locale] = $catalog;
     }
 
     protected function nodeReport(string $locale): string
@@ -631,6 +637,7 @@ class Plugin extends AbstractPlugin
         foreach (Server::all()->filter(fn ($server) => !$server->parent_id) as $server) {
             $lines[] = $this->text('node_line', $locale, ['state' => $server->is_online ? '🟢' : '🔴', 'name' => $server->name, 'type' => strtoupper($server->type), 'online' => (int) $server->online]);
         }
+        if (count($lines) === 2) $lines[] = $this->text('nodes_empty', $locale);
         return implode("\n", $lines);
     }
 
@@ -645,12 +652,6 @@ class Plugin extends AbstractPlugin
     protected function gb(float|int $bytes): string { return number_format(Helper::transferToGB($bytes), 2, '.', ''); }
     protected function periodName(string $period, string $locale = 'vi-VN'): string
     {
-        $language = $this->language($locale);
-        $names = [
-            'vi' => ['monthly' => 'Hàng tháng', 'quarterly' => '3 tháng', 'half_yearly' => '6 tháng', 'yearly' => 'Hàng năm', 'two_yearly' => '2 năm', 'three_yearly' => '3 năm', 'onetime' => 'Một lần', 'reset_traffic' => 'Đặt lại lưu lượng'],
-            'en' => ['monthly' => 'Monthly', 'quarterly' => '3 months', 'half_yearly' => '6 months', 'yearly' => 'Yearly', 'two_yearly' => '2 years', 'three_yearly' => '3 years', 'onetime' => 'One-time', 'reset_traffic' => 'Traffic reset'],
-            'zh' => ['monthly' => '月付', 'quarterly' => '季付', 'half_yearly' => '半年付', 'yearly' => '年付', 'two_yearly' => '两年付', 'three_yearly' => '三年付', 'onetime' => '一次性', 'reset_traffic' => '重置流量'],
-        ];
-        return $names[$language][$period] ?? $period;
+        return $this->catalog($locale)['periods'][$period] ?? $period;
     }
 }

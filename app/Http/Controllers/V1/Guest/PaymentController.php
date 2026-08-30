@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1\Guest;
 
+use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\OrderService;
@@ -20,7 +21,7 @@ class PaymentController extends Controller
             $verify = $paymentService->notify($request->input());
             if (!$verify) {
                 HookManager::call('payment.notify.failed', [$method, $uuid, $request]);
-                return $this->fail([422, 'verify error']);
+                return $this->fail([422, __('Payment notification verification failed.')]);
             }
             // Signed, non-terminal payment progress callbacks must receive a
             // successful acknowledgement without being treated as an order.
@@ -29,29 +30,58 @@ class PaymentController extends Controller
             }
             HookManager::call('payment.notify.verified', $verify);
             if (!$this->handle($verify['trade_no'], $verify['callback_no'])) {
-                return $this->fail([400, 'handle error']);
+                return $this->fail([400, __('Unable to process payment notification.')]);
             }
             return (isset($verify['custom_result']) ? $verify['custom_result'] : 'success');
-        } catch (\Exception $e) {
+        } catch (ApiException $e) {
+            // Invalid signatures, stale timestamps and malformed payment
+            // references are client errors. Returning 500 asks providers to
+            // retry a callback that can never succeed and hides the true
+            // operational status from monitoring.
+            $status = (int) $e->getCode();
+            if ($status < 400 || $status > 499) {
+                $status = 400;
+            }
+            Log::warning('Payment notification rejected.', [
+                'method' => $method,
+                'uuid' => $uuid,
+                'status' => $status,
+                'reason' => $e->getMessage(),
+            ]);
+            return $this->fail([$status, __('Payment gateway request failed')]);
+        } catch (\JsonException $e) {
+            Log::warning('Payment notification contained invalid JSON.', [
+                'method' => $method,
+                'uuid' => $uuid,
+            ]);
+            return $this->fail([400, __('Payment gateway request failed')]);
+        } catch (\Throwable $e) {
             Log::error($e);
-            return $this->fail([500, 'fail']);
+            return $this->fail([500, __('Payment notification could not be processed.')]);
         }
     }
 
-    private function handle($tradeNo, $callbackNo)
+    private function handle($tradeNo, $callbackNo): bool
     {
         $order = Order::where('trade_no', $tradeNo)->first();
         if (!$order) {
-            return $this->fail([400202, 'order is not found']);
+            return false;
         }
-        if ($order->status !== Order::STATUS_PENDING)
+        if ((int) $order->status !== Order::STATUS_PENDING)
             return true;
         $orderService = new OrderService($order);
         if (!$orderService->paid($callbackNo)) {
             return false;
         }
 
-        HookManager::call('payment.notify.success', $order);
+        // A replay or a concurrent duplicate is a successful no-op. Only the
+        // request that atomically moved Pending -> Processing may emit external
+        // success side effects such as Telegram notifications.
+        if (!$orderService->wasPaymentTransitioned()) {
+            return true;
+        }
+
+        HookManager::call('payment.notify.success', $orderService->order);
         return true;
     }
 }

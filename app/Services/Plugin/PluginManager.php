@@ -19,6 +19,15 @@ class PluginManager
     protected bool $pluginsInitialized = false;
     protected array $configTypesCache = [];
 
+    /**
+     * Re-arm initialization after the previous request's hooks were cleared.
+     * Octane may keep a warmed/scoped manager object alive between requests.
+     */
+    public function prepareForRequest(): void
+    {
+        $this->pluginsInitialized = false;
+    }
+
     public function __construct()
     {
         $this->pluginPath = base_path('plugins');
@@ -84,7 +93,6 @@ class PluginManager
             $pluginFile = $this->getPluginPath($pluginCode) . '/Plugin.php';
             if (!File::exists($pluginFile)) {
                 Log::warning("Plugin class file not found: {$pluginFile}");
-                Plugin::query()->where('code', $pluginCode)->delete();
                 return null;
             }
             require_once $pluginFile;
@@ -349,41 +357,67 @@ class PluginManager
         $plugin = $this->loadPlugin($pluginCode);
 
         if (!$plugin) {
-            Plugin::where('code', $pluginCode)->delete();
             throw new \Exception('Plugin not found: ' . $pluginCode);
         }
 
-        // 获取插件配置
-        $dbPlugin = Plugin::query()
-            ->where('code', $pluginCode)
-            ->first();
+        // Keep configuration validation, registration, the state change and
+        // boot in one database transaction. The row lock prevents a concurrent
+        // config save from invalidating the exact values being activated.
+        DB::transaction(function () use ($pluginCode, $plugin): void {
+            $dbPlugin = Plugin::query()
+                ->where('code', $pluginCode)
+                ->lockForUpdate()
+                ->first();
 
-        if ($dbPlugin && !empty($dbPlugin->config)) {
-            $values = json_decode($dbPlugin->config, true) ?: [];
-            $values = $this->castConfigValuesByType($pluginCode, $values);
-            $plugin->setConfig($values);
-        }
+            if (!$dbPlugin) {
+                throw new \RuntimeException('Plugin is not installed: ' . $pluginCode);
+            }
 
-        // 注册服务提供者
-        $this->registerServiceProvider($pluginCode);
+            if (!empty($dbPlugin->config)) {
+                $values = json_decode($dbPlugin->config, true) ?: [];
+                $values = $this->castConfigValuesByType($pluginCode, $values);
+                $plugin->setConfig($values);
+            }
 
-        // 加载路由
-        $this->loadRoutes($pluginCode);
+            // Fail closed before registering routes/providers or changing the
+            // database status. Payment plugins use this to reject activation
+            // until every mandatory credential has been configured.
+            $plugin->validateActivation();
 
-        // 加载视图
-        $this->loadViews($pluginCode);
+            $this->registerServiceProvider($pluginCode);
+            $this->loadRoutes($pluginCode);
+            $this->loadViews($pluginCode);
 
-        // 更新数据库状态
-        Plugin::query()
-            ->where('code', $pluginCode)
-            ->update([
-                'is_enabled' => true,
-                'updated_at' => now(),
-            ]);
-        // 初始化插件
-        $plugin->boot();
+            // Keep the historical ordering so boot observes is_enabled=true
+            // on this connection. It becomes visible elsewhere only after a
+            // successful boot and commit; any Throwable rolls the row back to
+            // its exact previous state.
+            $dbPlugin->is_enabled = true;
+            $dbPlugin->updated_at = now();
+            if (!$dbPlugin->save()) {
+                throw new \RuntimeException('Failed to enable plugin: ' . $pluginCode);
+            }
+
+            $plugin->boot();
+        });
 
         return true;
+    }
+
+    /**
+     * Validate a candidate configuration without mutating the request-scoped
+     * plugin instance that may already have registered hooks for this request.
+     */
+    public function validateActivationConfig(string $pluginCode, array $config): void
+    {
+        $plugin = $this->loadPlugin($pluginCode);
+        if (!$plugin) {
+            throw new \RuntimeException('Plugin not found: ' . $pluginCode);
+        }
+
+        $candidate = clone $plugin;
+        $candidate->setConfig($this->castConfigValuesByType($pluginCode, $config));
+        $candidate->validateActivation();
     }
 
     /**
@@ -434,12 +468,12 @@ class PluginManager
         }
 
         if ($this->isCorePlugin($pluginCode)) {
-            throw new \Exception('核心插件不允许删除');
+            throw new \Exception(__('Core system plugins cannot be deleted.'));
         }
 
         $pluginPath = $this->getUserPluginPath($pluginCode);
         if (!File::exists($pluginPath)) {
-            throw new \Exception('插件不存在');
+            throw new \Exception(__('Plugin does not exist.'));
         }
 
         File::deleteDirectory($pluginPath);
@@ -543,7 +577,7 @@ class PluginManager
         $zip = new \ZipArchive();
 
         if ($zip->open($file->path()) !== true) {
-            throw new \Exception('无法打开插件包文件');
+            throw new \Exception(__('Unable to open the plugin package.'));
         }
 
         $zip->extractTo($extractPath);
@@ -556,7 +590,7 @@ class PluginManager
 
         if (empty($configFile)) {
             File::deleteDirectory($extractPath);
-            throw new \Exception('插件包格式错误：缺少配置文件');
+            throw new \Exception(__('Plugin package is invalid: configuration file is missing.'));
         }
 
         $pluginPath = dirname(reset($configFile));
@@ -564,24 +598,24 @@ class PluginManager
 
         if (!$this->validateConfig($config)) {
             File::deleteDirectory($extractPath);
-            throw new \Exception('插件配置文件格式错误');
+            throw new \Exception(__('Plugin configuration file is invalid.'));
         }
 
         $targetPath = $this->getUserPluginPath($config['code']);
         if (File::exists($targetPath)) {
             $installedConfigPath = $targetPath . '/config.json';
             if (!File::exists($installedConfigPath)) {
-                throw new \Exception('已安装插件缺少配置文件，无法判断是否可升级');
+                throw new \Exception(__('The installed plugin is missing its configuration file, so its upgrade status cannot be determined.'));
             }
             $installedConfig = json_decode(File::get($installedConfigPath), true);
 
             $oldVersion = $installedConfig['version'] ?? null;
             $newVersion = $config['version'] ?? null;
             if (!$oldVersion || !$newVersion) {
-                throw new \Exception('插件缺少版本号，无法判断是否可升级');
+                throw new \Exception(__('The plugin version is missing, so its upgrade status cannot be determined.'));
             }
             if (version_compare($newVersion, $oldVersion, '<=')) {
-                throw new \Exception('上传插件版本不高于已安装版本，无法升级');
+                throw new \Exception(__('The uploaded plugin version must be newer than the installed version.'));
             }
 
             File::deleteDirectory($targetPath);

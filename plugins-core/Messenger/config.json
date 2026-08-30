@@ -3,15 +3,15 @@
     "code": "messenger",
     "type": "feature",
     "version": "1.0.0",
-    "description": "Hiển thị nút hỗ trợ Messenger trên dashboard khách hàng theo cấu hình plugin",
+    "description": "Display a Messenger support button on the customer dashboard using the plugin configuration.",
     "author": "XBoard Team",
     "config": {
         "page_username": {
             "type": "string",
             "default": "",
-            "label": "Tên người dùng Facebook Page",
-            "placeholder": "ten.trang.facebook",
-            "description": "Phần cuối liên kết m.me của Page, không nhập toàn bộ URL."
+            "label": "Facebook Page username",
+            "placeholder": "facebook.page.name",
+            "description": "Enter the Page username from the end of its m.me link, not the full URL."
         }
     }
 }

@@ -1,6 +1,6 @@
 # Plugin Telegram cho XBoard
 
-Bot Telegram hỗ trợ tiếng Việt, tiếng Anh và tiếng Trung theo ngôn ngữ tài khoản. Người dùng có thể thao tác bằng nút bấm hoặc lệnh.
+Bot Telegram hỗ trợ 8 ngôn ngữ theo ngôn ngữ tài khoản: tiếng Việt, tiếng Anh, tiếng Trung giản thể, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Ba Tư và tiếng Nga. Khi chưa liên kết tài khoản, bot nhận diện ngôn ngữ Telegram và dùng phương án dự phòng an toàn nếu mã ngôn ngữ không được hỗ trợ. Người dùng có thể thao tác bằng nút bấm hoặc lệnh.
 
 ## Chức năng người dùng
 

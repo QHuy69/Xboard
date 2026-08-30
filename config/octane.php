@@ -39,6 +39,13 @@ return [
     'server' => env('OCTANE_SERVER', 'swoole'),
 
     /*
+    | The Docker image runs Laravel's scheduler as a dedicated supervised
+    | process. Keep the old Octane timer available only as an explicit legacy
+    | fallback so HTTP workers never run long database backups themselves.
+    */
+    'scheduler_tick' => filter_var(env('OCTANE_SCHEDULER_TICK', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
     |--------------------------------------------------------------------------
     | Force HTTPS
     |--------------------------------------------------------------------------

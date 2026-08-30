@@ -146,6 +146,16 @@ abstract class AbstractPlugin
     }
 
     /**
+     * Validate configuration immediately before an administrator enables the
+     * plugin. Plugins with external credentials can override this method so an
+     * invalid integration never enters the enabled state.
+     */
+    public function validateActivation(): void
+    {
+        // No activation requirements by default.
+    }
+
+    /**
      * 插件安装时调用
      */
     public function install(): void

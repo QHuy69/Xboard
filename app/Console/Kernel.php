@@ -27,7 +27,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        Cache::put(CacheKey::get('SCHEDULE_LAST_CHECK_AT', null), time());
+        // Record an actual scheduler execution. Keeping this write inside a
+        // due event prevents `artisan schedule:list` from faking a healthy
+        // runtime heartbeat in the admin system status screen and CI.
+        $schedule->call(static function (): void {
+            Cache::put(CacheKey::get('SCHEDULE_LAST_CHECK_AT', null), time());
+        })->name('scheduler-heartbeat')->everyMinute()->onOneServer();
+
         // v2board
         $schedule->command('xboard:statistics')->dailyAt('0:10')->onOneServer();
         // check

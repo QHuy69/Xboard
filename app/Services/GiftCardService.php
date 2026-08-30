@@ -22,7 +22,7 @@ class GiftCardService
     public function __construct(string $code)
     {
         $this->code = GiftCardCode::where('code', $code)->first()
-            ?? throw new ApiException('兑换码不存在');
+            ?? throw new ApiException(__('Gift card code does not exist'));
 
         $this->template = $this->code->template;
     }
@@ -58,11 +58,13 @@ class GiftCardService
     public function validateIsActive(): self
     {
         if (!$this->template->isAvailable()) {
-            throw new ApiException('该礼品卡类型已停用');
+            throw new ApiException(__('This gift card type is disabled'));
         }
 
         if (!$this->code->isAvailable()) {
-            throw new ApiException('兑换码不可用：' . $this->code->status_name);
+            throw new ApiException(__('Gift card code is unavailable: :status', [
+                'status' => $this->code->status_name,
+            ]));
         }
         return $this;
     }
@@ -75,21 +77,21 @@ class GiftCardService
         if (!$this->user) {
             return [
                 'can_redeem' => false,
-                'reason' => '用户信息未提供'
+                'reason' => __('User information is unavailable')
             ];
         }
 
         if (!$this->template->checkUserConditions($this->user)) {
             return [
                 'can_redeem' => false,
-                'reason' => '您不满足此礼品卡的使用条件'
+                'reason' => __('Your account does not meet gift card conditions')
             ];
         }
 
         if (!$this->template->checkUsageLimit($this->user)) {
             return [
                 'can_redeem' => false,
-                'reason' => '您已达到此礼品卡的使用限制'
+                'reason' => __('Your account has reached the gift card usage limit')
             ];
         }
 
@@ -102,24 +104,24 @@ class GiftCardService
     public function redeem(array $options = []): array
     {
         if (!$this->user) {
-            throw new ApiException('未设置使用用户');
+            throw new ApiException(__('Gift card user is unavailable'));
         }
 
         return DB::transaction(function () use ($options) {
             $this->code = GiftCardCode::whereKey($this->code->id)
                 ->lockForUpdate()
                 ->first()
-                ?? throw new ApiException('兑换码不存在');
+                ?? throw new ApiException(__('Gift card code does not exist'));
 
             $this->template = GiftCardTemplate::whereKey($this->code->template_id)
                 ->lockForUpdate()
                 ->first()
-                ?? throw new ApiException('该礼品卡类型不存在');
+                ?? throw new ApiException(__('Gift card type does not exist'));
 
             $this->user = User::whereKey($this->user->id)
                 ->lockForUpdate()
                 ->first()
-                ?? throw new ApiException('用户信息未提供');
+                ?? throw new ApiException(__('User information is unavailable'));
 
             $this->validate();
 
@@ -166,7 +168,7 @@ class GiftCardService
 
         if (isset($rewards['balance']) && $rewards['balance'] > 0) {
             if (!$userService->addBalance($this->user->id, $rewards['balance'])) {
-                throw new ApiException('余额发放失败');
+                throw new ApiException(__('Failed to grant balance reward'));
             }
         }
 
@@ -202,7 +204,7 @@ class GiftCardService
 
         // 保存用户更改
         if (!$this->user->save()) {
-            throw new ApiException('用户信息更新失败');
+            throw new ApiException(__('Failed to update user after gift card redemption'));
         }
     }
 
@@ -230,7 +232,7 @@ class GiftCardService
             $inviteBalance = intval($rewards['balance'] * $rate);
             if ($inviteBalance > 0) {
                 if (!$userService->addBalance($inviteUser->id, $inviteBalance)) {
-                    throw new ApiException('邀请人余额发放失败');
+                    throw new ApiException(__('Failed to grant referrer balance reward'));
                 }
                 $inviteRewards['balance'] = $inviteBalance;
             }
@@ -313,7 +315,7 @@ class GiftCardService
     public function previewRewards(): array
     {
         if (!$this->user) {
-            throw new ApiException('未设置使用用户');
+            throw new ApiException(__('Gift card user is unavailable'));
         }
 
         return $this->template->calculateActualRewards($this->user);

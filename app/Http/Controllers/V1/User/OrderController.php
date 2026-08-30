@@ -143,17 +143,66 @@ class OrderController extends Controller
         if (!$payment || !$payment->enable) {
             return $this->fail([400, __('Payment method is not available')]);
         }
-        $paymentService = new PaymentService($payment->payment, $payment->id);
-        $order->handling_amount = NULL;
-        if ($payment->handling_fee_fixed || $payment->handling_fee_percent) {
-            $order->handling_amount = (int) round(($order->total_amount * ($payment->handling_fee_percent / 100)) + $payment->handling_fee_fixed);
+
+        if ($payment->payment === 'CoinPayments') {
+            $checkout = OrderService::beginCoinPaymentsCheckout(
+                (int) $request->user()->id,
+                (string) $tradeNo,
+                $payment
+            );
+            if ($checkout['cached']) {
+                return response([
+                    'type' => $checkout['type'],
+                    'data' => $checkout['data'],
+                ]);
+            }
+
+            $paymentService = new PaymentService($payment->payment, $payment->id);
+            try {
+                $result = $paymentService->pay([
+                    'trade_no' => $tradeNo,
+                    'total_amount' => $checkout['amount'],
+                    'user_id' => $checkout['order']->user_id,
+                    'stripe_token' => $request->input('token'),
+                ]);
+                OrderService::completeCoinPaymentsCheckout(
+                    (int) $checkout['order']->id,
+                    (int) $payment->id,
+                    (string) $checkout['claim_token'],
+                    $result
+                );
+            } catch (\Throwable $exception) {
+                // 5xx/transport/malformed-success failures may occur after the
+                // provider created an invoice. Keep them blocked as uncertain;
+                // only a known 4xx/local validation failure may be tried again.
+                $ambiguous = !($exception instanceof ApiException)
+                    || (int) $exception->getCode() >= 500;
+                OrderService::failCoinPaymentsCheckout(
+                    (int) $checkout['order']->id,
+                    (int) $payment->id,
+                    (string) $checkout['claim_token'],
+                    $ambiguous
+                );
+                throw $exception;
+            }
+
+            return response([
+                'type' => $result['type'],
+                'data' => $result['data'],
+            ]);
         }
-        $order->payment_id = $method;
-        if (!$order->save())
-            return $this->fail([400, __('Request failed, please try again later')]);
+
+        $checkout = OrderService::beginStandardPaymentCheckout(
+            (int) $request->user()->id,
+            (string) $tradeNo,
+            $payment
+        );
+        $order = $checkout['order'];
+        $payment = $checkout['payment'];
+        $paymentService = new PaymentService($payment->payment, $payment->id);
         $result = $paymentService->pay([
             'trade_no' => $tradeNo,
-            'total_amount' => isset($order->handling_amount) ? ($order->total_amount + $order->handling_amount) : $order->total_amount,
+            'total_amount' => $checkout['amount'],
             'user_id' => $order->user_id,
             'stripe_token' => $request->input('token')
         ]);

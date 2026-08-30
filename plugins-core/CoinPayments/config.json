@@ -2,76 +2,71 @@
     "name": "CoinPayments",
     "code": "coin_payments",
     "type": "payment",
-    "version": "2.1.0",
+    "version": "2.2.0",
     "auto_enable": false,
-    "description": "CoinPayments Invoice API v2 với webhook ký HMAC và cấu hình đầy đủ trong admin",
+    "description": "CoinPayments Invoice API v2 with signed HMAC webhooks and full admin configuration.",
     "author": "XBoard Team",
     "config": {
         "enabled": {
             "type": "boolean",
             "default": true,
-            "label": "Bật CoinPayments",
-            "description": "Chỉ hiển thị sau khi đã nhập đủ thông tin kết nối bắt buộc."
+            "label": "Enable CoinPayments",
+            "description": "Only display CoinPayments after all required connection settings are configured."
         },
         "display_name": {
             "type": "string",
             "default": "CoinPayments",
-            "label": "Tên hiển thị",
-            "description": "Tên khách hàng nhìn thấy khi chọn phương thức thanh toán."
+            "label": "Display name",
+            "description": "The name customers see when choosing this payment method."
         },
         "coinpayments_client_id": {
             "type": "string",
             "default": "",
             "label": "Integration Client ID",
-            "description": "Client ID của API Integration trên CoinPayments."
+            "description": "The Client ID from your CoinPayments API integration."
         },
         "coinpayments_client_secret": {
             "type": "password",
             "default": "",
             "label": "Integration Client Secret",
-            "description": "Secret dùng ký HMAC-SHA256; không chia sẻ giá trị này."
-        },
-        "coinpayments_invoice_currency": {
-            "type": "string",
-            "default": "USD",
-            "label": "Đơn vị tiền hóa đơn",
-            "description": "Mã tiền dùng lập hóa đơn, ví dụ USD."
+            "placeholder": "Leave blank to keep the current saved value.",
+            "description": "Used to sign HMAC-SHA256 requests. Keep it secret; leave blank while editing to preserve the saved value."
         },
         "coinpayments_invoice_currency_id": {
             "type": "string",
             "default": "",
             "label": "Invoice currency ID",
-            "description": "ID loại tiền do CoinPayments trả về, dùng để xác thực webhook."
+            "description": "The CoinPayments NEW currency ID used to create invoices and verify webhooks, for example 5057 for USD on Instance A."
         },
         "coinpayments_payment_currency": {
             "type": "string",
             "default": "",
-            "label": "Loại tiền thanh toán ưu tiên",
-            "description": "Để trống để khách tự chọn loại tiền thanh toán."
+            "label": "Preferred payment currency ID",
+            "description": "Optional CoinPayments NEW currency ID (for example 4:0x... for a token); leave blank to let customers choose."
         },
         "coinpayments_cny_invoice_rate": {
             "type": "number",
             "default": 0,
-            "label": "Tỷ giá CNY sang tiền hóa đơn",
-            "description": "Một CNY bằng bao nhiêu đơn vị tiền hóa đơn."
+            "label": "CNY-to-invoice exchange rate",
+            "description": "How many invoice-currency units equal one CNY."
         },
         "coinpayments_api_base": {
             "type": "string",
             "default": "https://a-api.coinpayments.net",
             "label": "API base URL",
-            "description": "Giữ mặc định trừ khi CoinPayments cấp endpoint khác."
+            "description": "Keep the default unless CoinPayments provides a different endpoint."
         },
         "coinpayments_webhook_url": {
             "type": "string",
             "default": "",
-            "label": "Webhook URL chính xác",
-            "description": "URL callback công khai; nên cấu hình khi dùng Cloudflare hoặc reverse proxy."
+            "label": "Exact webhook URL",
+            "description": "The exact public callback URL; configure it when using Cloudflare or a reverse proxy."
         },
         "coinpayments_webhook_max_age": {
             "type": "number",
             "default": 300,
-            "label": "Thời hạn webhook (giây)",
-            "description": "Khoảng thời gian chống phát lại webhook, khuyến nghị 300 giây."
+            "label": "Webhook validity window (seconds)",
+            "description": "Webhook replay-protection window; 300 seconds is recommended."
         }
     }
 }

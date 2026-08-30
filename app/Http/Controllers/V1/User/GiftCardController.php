@@ -48,7 +48,7 @@ class GiftCardController extends Controller
                 'user_id' => $request->user()->id,
                 'error' => $e->getMessage(),
             ]);
-            return $this->fail([500, '查询失败，请稍后重试']);
+            return $this->fail([500, __('Failed to check gift card, please try again later')]);
         }
     }
 
@@ -75,7 +75,7 @@ class GiftCardController extends Controller
             ]);
 
             return $this->success([
-                'message' => '兑换成功！',
+                'message' => __('Gift card redeemed successfully'),
                 'rewards' => $result['rewards'],
                 'invite_rewards' => $result['invite_rewards'],
                 'template_name' => $result['template_name'],
@@ -90,7 +90,7 @@ class GiftCardController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            return $this->fail([500, '兑换失败，请稍后重试']);
+            return $this->fail([500, __('Failed to redeem gift card, please try again later')]);
         }
     }
 
@@ -152,7 +152,7 @@ class GiftCardController extends Controller
             ->first();
 
         if (!$usage) {
-            return $this->fail([404, '记录不存在']);
+            return $this->fail([404, __('Gift card history record does not exist')]);
         }
 
         return $this->success([

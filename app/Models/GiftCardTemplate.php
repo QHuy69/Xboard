@@ -67,9 +67,9 @@ class GiftCardTemplate extends Model
     public static function getTypeMap(): array
     {
         return [
-            self::TYPE_GENERAL => '通用礼品卡',
-            self::TYPE_PLAN => '套餐礼品卡',
-            self::TYPE_MYSTERY => '盲盒礼品卡',
+            self::TYPE_GENERAL => __('General gift card'),
+            self::TYPE_PLAN => __('Plan gift card'),
+            self::TYPE_MYSTERY => __('Mystery gift card'),
         ];
     }
 
@@ -78,7 +78,7 @@ class GiftCardTemplate extends Model
      */
     public function getTypeNameAttribute(): string
     {
-        return self::getTypeMap()[$this->type] ?? '未知类型';
+        return self::getTypeMap()[$this->type] ?? __('Unknown gift card type');
     }
 
     /**

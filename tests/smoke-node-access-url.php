@@ -3,6 +3,7 @@
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Http\Resources\NodeResource;
+use App\Services\LuckThemeAssetPatcher;
 use Illuminate\Http\Request;
 
 $node = [
@@ -46,23 +47,40 @@ if (($data2022['outline_compatible'] ?? null) !== false) {
 $routeFile = getenv('XBOARD_ROUTES_FILE') ?: dirname(__DIR__) . '/routes/web.php';
 $routeSource = file_get_contents($routeFile);
 if (!str_contains($routeSource, 'return server.access_url;')
-    || !str_contains($routeSource, "preg_replace('/\\.js$/', '-access.js'")
+    || !str_contains($routeSource, 'LuckThemeAssetPatcher::rewriteNodeAssetImport($assetContents)')
+    || !str_contains($routeSource, 'LuckThemeAssetPatcher::nodeAccessAssetName($runtimeFile)')
     || !str_contains($routeSource, "str_starts_with(\$runtimeFile, 'assets/BBbuoBq5')")) {
     fwrite(STDERR, "Luck node chunk patch smoke test failed.\n");
     exit(1);
 }
 
-$entryImport = './oPGsis9D-v8-v3-fresh.js';
-$patchedImport = preg_replace_callback(
-    '#(?<prefix>\./|assets/)(?<name>oPGsis9D[^"\'?]*\.js)(?:\?v=\d+)?#',
-    static function (array $match): string {
-        return $match['prefix'] . preg_replace('/\.js$/', '-access.js', $match['name']);
-    },
-    $entryImport
-);
-if ($patchedImport !== './oPGsis9D-v8-v3-fresh-access.js') {
-    fwrite(STDERR, "Version-independent Luck node chunk rewrite failed.\n");
-    exit(1);
+$nodeImportCases = [
+    './oPGsis9D-v8-v3-fresh.js' => './oPGsis9D-v8-v3-fresh-access-v2.js',
+    './oPGsis9D-v8-v3-fresh.js?v=53' => './oPGsis9D-v8-v3-fresh-access-v2.js',
+    './oPGsis9D-v8-v3-fresh-access.js' => './oPGsis9D-v8-v3-fresh-access-v2.js',
+    './oPGsis9D-v8-v3-fresh-access-access.js' => './oPGsis9D-v8-v3-fresh-access-v2.js',
+    'assets/oPGsis9D-v8-v3-fresh-access-v2.js' => 'assets/oPGsis9D-v8-v3-fresh-access-v2.js',
+];
+foreach ($nodeImportCases as $entryImport => $expectedImport) {
+    $patchedImport = LuckThemeAssetPatcher::rewriteNodeAssetImport($entryImport);
+    $patchedTwice = LuckThemeAssetPatcher::rewriteNodeAssetImport($patchedImport);
+    if ($patchedImport !== $expectedImport
+        || $patchedTwice !== $expectedImport
+        || str_contains($patchedImport, '-access-access')) {
+        fwrite(STDERR, "Idempotent Luck node chunk rewrite failed for {$entryImport}.\n");
+        exit(1);
+    }
+}
+
+foreach ([
+    'oPGsis9D-v8-v3-fresh.js',
+    'oPGsis9D-v8-v3-fresh-access.js',
+    'oPGsis9D-v8-v3-fresh-access-access-v2.js',
+] as $assetName) {
+    if (LuckThemeAssetPatcher::nodeAccessAssetName($assetName) !== 'oPGsis9D-v8-v3-fresh-access-v2.js') {
+        fwrite(STDERR, "Luck node output filename normalization failed for {$assetName}.\n");
+        exit(1);
+    }
 }
 
 echo "Outline-compatible Shadowsocks access URL verified.\n";
