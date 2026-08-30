@@ -8,14 +8,10 @@ require_once dirname(__DIR__) . '/plugins-core/Messenger/Plugin.php';
 use Plugin\CoinPayments\Plugin as CoinPaymentsPlugin;
 use Plugin\Crisp\Plugin as CrispPlugin;
 use Plugin\Messenger\Plugin as MessengerPlugin;
-use App\Models\Plugin as PluginModel;
 use App\Services\EncryptedDatabaseBackupService;
 use App\Services\Plugin\HookManager;
-use App\Services\Plugin\PluginConfigService;
-use App\Services\Plugin\PluginManager;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 function expectSource(string $file, array $needles): void
 {
@@ -262,43 +258,6 @@ foreach ($coinPaymentsForm as $field => $_meta) {
         fwrite(STDERR, "CoinPayments payment field {$field} cannot be configured from plugin admin.\n");
         exit(1);
     }
-}
-
-DB::beginTransaction();
-try {
-    PluginModel::query()->where('code', 'coin_payments')->delete();
-    PluginManager::installDefaultPlugins();
-    $installedCoinPayments = PluginModel::query()->where('code', 'coin_payments')->firstOrFail();
-    if ($installedCoinPayments->is_enabled) {
-        fwrite(STDERR, "CoinPayments default install did not remain disabled.\n");
-        exit(1);
-    }
-
-    app(PluginConfigService::class)->updateConfig('coin_payments', [
-        'enabled' => 'false',
-        'coinpayments_client_secret' => 'preserve-this-secret',
-        'coinpayments_webhook_max_age' => '420',
-    ]);
-    app(PluginConfigService::class)->updateConfig('coin_payments', [
-        'coinpayments_client_id' => 'updated-client',
-    ]);
-    $storedConfig = json_decode((string) $installedCoinPayments->fresh()->config, true, 512, JSON_THROW_ON_ERROR);
-    if (($storedConfig['enabled'] ?? null) !== false
-        || ($storedConfig['coinpayments_webhook_max_age'] ?? null) !== 420
-        || ($storedConfig['coinpayments_client_secret'] ?? null) !== 'preserve-this-secret') {
-        fwrite(STDERR, "Plugin admin config did not preserve or normalize values.\n");
-        exit(1);
-    }
-
-    $installedCoinPayments->update(['version' => '2.0.0', 'is_enabled' => false]);
-    app(PluginManager::class)->update('coin_payments');
-    $updatedCoinPayments = $installedCoinPayments->fresh();
-    if ($updatedCoinPayments->version !== $coinPaymentsManifest['version'] || $updatedCoinPayments->is_enabled) {
-        fwrite(STDERR, "CoinPayments upgrade changed the disabled state.\n");
-        exit(1);
-    }
-} finally {
-    DB::rollBack();
 }
 
 echo "CoinPayments signing, surplus guard, account locale and Telegram integration checks passed.\n";

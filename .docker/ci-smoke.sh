@@ -93,6 +93,9 @@ echo "[smoke] Public HTTP endpoints passed"
 docker exec "$container_name" php /www/tests/smoke-order-idempotency.php
 echo "[smoke] Order idempotency and disabled-surplus checks passed"
 
+docker exec "$container_name" php /www/tests/smoke-plugin-admin-config.php
+echo "[smoke] Plugin admin config and disabled-upgrade checks passed"
+
 docker exec "$container_name" php /www/artisan schedule:list --no-ansi >/dev/null
 echo "[smoke] Scheduler registration passed"
 

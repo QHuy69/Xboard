@@ -113,6 +113,7 @@ RUN php -l routes/web.php \
     && php -l plugins-core/CoinPayments/Plugin.php \
     && php -l plugins-core/Telegram/Plugin.php \
     && php -l tests/smoke-order-idempotency.php \
+    && php -l tests/smoke-plugin-admin-config.php \
     && php -l database/migrations/2026_08_29_000002_add_language_to_mail_templates.php \
     && php -l database/migrations/2026_08_29_000003_enable_email_verification_and_set_admin_path.php \
     && composer install --no-cache --no-dev --no-security-blocking \
