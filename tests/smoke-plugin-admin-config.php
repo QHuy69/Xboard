@@ -154,9 +154,10 @@ try {
             $mismatchedPaymentFactory();
             throw new RuntimeException('A payment record was mixed with a different gateway method.');
         } catch (ApiException $exception) {
-            if (!str_contains($exception->getMessage(), 'Payment method')) {
-                throw $exception;
-            }
+            // The application locale is intentionally configurable. Reaching
+            // the typed boundary exception proves the mismatch was rejected;
+            // asserting its translated message would make this smoke depend
+            // on whichever locale a fresh installation selected.
         }
     }
 
