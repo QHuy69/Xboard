@@ -149,6 +149,12 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         }
         $url = $apiBase . '/api/v2/merchant/invoices';
         $notifyUrl = trim((string) $this->getConfig('coinpayments_webhook_url', '')) ?: (string) $order['notify_url'];
+        $notifyParts = parse_url($notifyUrl);
+        if (!filter_var($notifyUrl, FILTER_VALIDATE_URL)
+            || !is_array($notifyParts)
+            || strtolower((string) ($notifyParts['scheme'] ?? '')) !== 'https') {
+            throw new ApiException(__('CoinPayments webhook URL must be a valid HTTPS URL.'));
+        }
         $paymentCurrency = trim((string) $this->getConfig('coinpayments_payment_currency', ''));
 
         $payload = [

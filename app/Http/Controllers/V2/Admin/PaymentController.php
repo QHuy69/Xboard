@@ -78,7 +78,7 @@ class PaymentController extends Controller
             'icon' => 'nullable|string',
             'payment' => 'required|string',
             'config' => 'required|array',
-            'notify_domain' => 'nullable|url',
+            'notify_domain' => 'nullable|url:https',
             'handling_fee_fixed' => 'nullable|integer',
             'handling_fee_percent' => 'nullable|numeric|between:0,100'
         ], [
@@ -197,20 +197,25 @@ class PaymentController extends Controller
     public function sort(Request $request)
     {
         $request->validate([
-            'ids' => 'required|array'
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|distinct'
         ], [
             'ids.required' => __('Sorting list is required.'),
-            'ids.array' => __('Sorting list is invalid.')
+            'ids.array' => __('Sorting list is invalid.'),
+            'ids.*.required' => __('Sorting list is invalid.'),
+            'ids.*.integer' => __('Sorting list is invalid.'),
+            'ids.*.distinct' => __('Sorting list is invalid.')
         ]);
         try {
             DB::beginTransaction();
             foreach ($request->input('ids') as $k => $v) {
-                if (!Payment::find($v)->update(['sort' => $k + 1])) {
-                    throw new \Exception();
+                $payment = Payment::find($v);
+                if (!$payment || !$payment->update(['sort' => $k + 1])) {
+                    throw new \RuntimeException();
                 }
             }
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
             return $this->fail([500, __('Unable to save payment method order.')]);
         }

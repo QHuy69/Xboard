@@ -9,6 +9,7 @@ const expect = (condition, message) => {
 
 const controller = read('app/Http/Controllers/V1/User/OrderController.php');
 const adminController = read('app/Http/Controllers/V2/Admin/OrderController.php');
+const adminPaymentController = read('app/Http/Controllers/V2/Admin/PaymentController.php');
 const service = read('app/Services/OrderService.php');
 const plugin = read('plugins-core/CoinPayments/Plugin.php');
 const migration = read('database/migrations/2026_08_30_000004_create_order_payment_checkouts_table.php');
@@ -55,6 +56,12 @@ expect(!plugin.includes('->retry('), 'Non-idempotent CoinPayments invoice POST s
 expect(plugin.includes('catch (ConnectionException'), 'Ambiguous transport failure is not classified.');
 expect(plugin.includes('$response->serverError() ? 503 : 400'), 'Ambiguous 5xx and known 4xx responses are not separated.');
 expect(plugin.includes("($checkoutParts['scheme'] ?? '')") && plugin.includes("!== 'https'"), 'CoinPayments accepts a non-HTTPS provider checkout URL.');
+expect(adminPaymentController.includes("'notify_domain' => 'nullable|url:https'"), 'Payment admin still accepts a non-HTTPS custom callback domain.');
+expect(plugin.includes("($notifyParts['scheme'] ?? '')") && plugin.includes("CoinPayments webhook URL must be a valid HTTPS URL."), 'CoinPayments does not defensively reject a non-HTTPS fallback webhook URL.');
+expect(adminPaymentController.includes("'ids.*' => 'required|integer|distinct'")
+  && adminPaymentController.includes('if (!$payment || !$payment->update')
+  && adminPaymentController.includes('catch (\\Throwable $e)'),
+  'Payment sorting can still crash on a missing or invalid payment ID.');
 expect(service.includes('isHttpsCheckoutUrl($data)'), 'A persisted CoinPayments checkout URL is not revalidated as HTTPS.');
 expect(plugin.includes("DB::table('v2_order_payment_checkout')")
   && plugin.includes("->where('payment_id', (int) $paymentId)")
