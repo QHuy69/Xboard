@@ -20,6 +20,8 @@ services:
     environment:
       RESOURCE_PROFILE: balanced
       ENABLE_HORIZON: "true"
+      ENABLE_SCHEDULER: "true"
+      OCTANE_SCHEDULER_TICK: "false"
       docker: "true"
 
 volumes:

@@ -28,13 +28,45 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Verify customized frontend sources
+      - name: Verify custom release source gates
+        shell: bash
         run: |
-          node tests/luck-i18n-source-audit.test.js
-          node tests/luck-i18n-production-bundle-audit.test.js
-          node tests/luck-purchase-modal-layout.test.js
-          node tests/mail-template-localization-source.test.js
-          node tests/custom-frontend-source-audit.test.js
+          set -Eeuo pipefail
+          test_count=0
+          for test_file in tests/*.test.js; do
+            test -f "$test_file"
+            echo "[source-gate] $test_file"
+            node "$test_file"
+            test_count=$((test_count + 1))
+          done
+          test "$test_count" -gt 0
+
+      - name: Set up PHP test runtime
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: bcmath, curl, mbstring, pcntl, pdo_sqlite, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install PHP test dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run PHP unit and feature regression suite
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -m 0600 /dev/null database/testing.sqlite
+          vendor/bin/phpunit --configuration phpunit.xml --do-not-cache-result
+          rm -f database/testing.sqlite
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

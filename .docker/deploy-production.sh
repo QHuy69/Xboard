@@ -42,6 +42,83 @@ rollback() {
   XBOARD_IMAGE="$previous_image" docker compose -f "$compose_file" up -d --wait --wait-timeout 120 xboard
 }
 
+post_deploy_checks() {
+  local container_id="$1"
+  local expected_revision_prefix="$2"
+  local started_at="$3"
+  local health actual migration_status integrity dashboard_html ip_status last_heartbeat
+
+  health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
+  if [ "$health" != "healthy" ]; then
+    echo "Post-deploy container health is $health, expected healthy." >&2
+    return 1
+  fi
+
+  actual="$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$container_id")" || return 1
+  if [ -n "$expected_revision_prefix" ]; then
+    case "$actual" in
+      "$expected_revision_prefix"*) ;;
+      *)
+        echo "Running container revision mismatch: expected $expected_revision_prefix, got $actual" >&2
+        return 1
+        ;;
+    esac
+  fi
+
+  curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
+  dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
+  curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006 >/dev/null || return 1
+  grep -q 'luck-overrides.css?v=18' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck CSS v18." >&2
+    return 1
+  }
+  grep -q 'i18n-v18.js?v=60' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck i18n v60." >&2
+    return 1
+  }
+
+  ip_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7001/api/v1/user/devices/current)" || return 1
+  case "$ip_status" in
+    401|403) ;;
+    *)
+      echo "Authenticated current-IP route returned unexpected HTTP $ip_status." >&2
+      return 1
+      ;;
+  esac
+
+  migration_status="$(docker exec "$container_id" php /www/artisan migrate:status --no-ansi)" || return 1
+  grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status" || return 1
+  grep -q '2026_08_30_000004_create_order_payment_checkouts.*Ran' <<<"$migration_status" || return 1
+  if grep -q 'Pending' <<<"$migration_status"; then
+    echo "Post-deploy migration status still contains Pending entries." >&2
+    printf '%s\n' "$migration_status" >&2
+    return 1
+  fi
+
+  integrity="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')" || return 1
+  if [ "$integrity" != "ok" ]; then
+    echo "Post-deploy SQLite integrity check failed: $integrity" >&2
+    return 1
+  fi
+
+  docker exec "$container_id" php /www/artisan schedule:list --no-ansi >/dev/null || return 1
+  for _ in $(seq 1 30); do
+    last_heartbeat="$(docker exec "$container_id" php -r '
+      require "/www/vendor/autoload.php";
+      $app = require "/www/bootstrap/app.php";
+      $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+      echo (int) \Illuminate\Support\Facades\Cache::get(\App\Utils\CacheKey::get("SCHEDULE_LAST_CHECK_AT", null), 0);
+    ' 2>/dev/null || true)"
+    if [[ "$last_heartbeat" =~ ^[0-9]+$ ]] && [ "$last_heartbeat" -gt "$started_at" ]; then
+      return 0
+    fi
+    sleep 3
+  done
+
+  echo "The dedicated scheduler did not write a post-deploy heartbeat." >&2
+  return 1
+}
+
 XBOARD_IMAGE="$image" docker compose -f "$compose_file" config --quiet
 XBOARD_IMAGE="$image" docker compose -f "$compose_file" pull xboard
 
@@ -63,13 +140,33 @@ if ! XBOARD_IMAGE="$image" docker compose -f "$compose_file" up -d --wait --wait
   exit 1
 fi
 
-new_container="$(XBOARD_IMAGE="$image" docker compose -f "$compose_file" ps -q xboard)"
-actual_revision="$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$new_container")"
+if ! new_container="$(XBOARD_IMAGE="$image" docker compose -f "$compose_file" ps -q xboard)" \
+  || [ -z "$new_container" ]; then
+  echo "Could not resolve the newly started container." >&2
+  rollback
+  exit 1
+fi
 
-if ! curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null \
-  || ! curl --fail --silent --show-error http://127.0.0.1:7001/dashboard >/dev/null \
-  || ! curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006 >/dev/null; then
-  echo "Post-deploy HTTP smoke test failed." >&2
+if ! container_started_at="$(docker inspect --format '{{.State.StartedAt}}' "$new_container")" \
+  || ! new_container_started_epoch="$(date -d "$container_started_at" '+%s')"; then
+  echo "Could not resolve the new container start time." >&2
+  rollback
+  exit 1
+fi
+
+expected_revision_prefix=""
+if [[ "$image" =~ :([0-9a-f]{7,40})$ ]]; then
+  expected_revision_prefix="${BASH_REMATCH[1]}"
+fi
+
+if ! post_deploy_checks "$new_container" "$expected_revision_prefix" "$new_container_started_epoch"; then
+  echo "Post-deploy release gate failed." >&2
+  rollback
+  exit 1
+fi
+
+if ! actual_revision="$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$new_container")"; then
+  echo "Could not read the verified container revision." >&2
   rollback
   exit 1
 fi

@@ -91,17 +91,70 @@ curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006" >/dev/
 echo "[smoke] Public HTTP endpoints passed"
 
 docker exec "$container_name" php /www/tests/smoke-order-idempotency.php
-echo "[smoke] Order idempotency and disabled-surplus checks passed"
+echo "[smoke] Order, payment-replay and disabled-surplus idempotency checks passed"
 
 docker exec "$container_name" php /www/tests/smoke-plugin-admin-config.php
-echo "[smoke] Plugin admin config and disabled-upgrade checks passed"
+echo "[smoke] Plugin config, secret redaction, activation rollback and upgrade checks passed"
+
+docker exec "$container_name" php /www/tests/smoke-custom-backend.php
+echo "[smoke] CoinPayments, support-plugin, locale and Telegram checks passed"
+
+docker exec "$container_name" php /www/tests/smoke-coinpayments-checkout-idempotency.php
+echo "[smoke] CoinPayments durable checkout and uncertain-result checks passed"
+
+docker exec "$container_name" php /www/tests/smoke-user-device-read.php
+echo "[smoke] Authenticated current-IP filtering and privacy checks passed"
+
+docker exec "$container_name" php /www/tests/smoke-scheduler-runtime.php
+echo "[smoke] Telegram schedules and encrypted database backup passed"
+
+docker exec "$container_name" php /www/tests/smoke-node-access-url.php
+echo "[smoke] Node access URL and Outline compatibility checks passed"
+
+docker exec "$container_name" php /www/tests/smoke-luck-theme-patches.php
+echo "[smoke] Luck runtime patch checks passed"
+
+echo "[smoke] Waiting for a real scheduler heartbeat"
+scheduler_runtime_ok=false
+for _ in $(seq 1 30); do
+  heartbeat="$({
+    docker exec "$container_name" php /www/artisan tinker --execute='
+      $last = (int) \Illuminate\Support\Facades\Cache::get(\App\Utils\CacheKey::get("SCHEDULE_LAST_CHECK_AT", null), 0);
+      echo ($last > 0 && (time() - $last) <= 90) ? "fresh" : "stale";
+    '
+  } 2>/dev/null || true)"
+  if grep -q 'fresh' <<<"$heartbeat"; then
+    scheduler_runtime_ok=true
+    break
+  fi
+  sleep 3
+done
+if [ "$scheduler_runtime_ok" != true ]; then
+  echo "Dedicated scheduler did not produce a fresh runtime heartbeat." >&2
+  docker logs "$container_name" >&2
+  exit 1
+fi
+echo "[smoke] Dedicated scheduler runtime passed"
 
 docker exec "$container_name" php /www/artisan schedule:list --no-ansi >/dev/null
 echo "[smoke] Scheduler registration passed"
 
-docker exec "$container_name" php /www/artisan migrate:status --no-ansi \
-  | grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran'
-echo "[smoke] Required migration passed"
+migration_status="$(docker exec "$container_name" php /www/artisan migrate:status --no-ansi)"
+grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status"
+grep -q '2026_08_30_000004_create_order_payment_checkouts.*Ran' <<<"$migration_status"
+if grep -q 'Pending' <<<"$migration_status"; then
+  echo "One or more migrations remain pending." >&2
+  printf '%s\n' "$migration_status" >&2
+  exit 1
+fi
+echo "[smoke] Required migrations passed with no pending migration"
+
+integrity="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')"
+if [ "$integrity" != "ok" ]; then
+  echo "SQLite integrity check failed: $integrity" >&2
+  exit 1
+fi
+echo "[smoke] SQLite integrity passed after runtime tests"
 
 expected_revision="${GITHUB_SHA:-}"
 if [ -n "$expected_revision" ]; then

@@ -24,8 +24,8 @@ COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr
 
 # Add build arguments
 ARG CACHEBUST=1
-ARG REPO_URL=https://github.com/cedar2025/Xboard
-ARG BRANCH_NAME=master
+ARG REPO_URL=https://github.com/QHuy69/Xboard
+ARG BRANCH_NAME=custom-en
 ARG SOURCE_SHA=
 ARG APP_VERSION=1.0.0
 
@@ -63,63 +63,45 @@ RUN cp /tmp/luck-custom/luck-donate-qr.svg /www/public/luck-donate-qr.svg
 # image deliberately clones upstream for normal updates, but these files are
 # part of the maintained custom branch and must be present in every build.
 COPY routes/web.php /www/routes/web.php
+COPY app/Console/Kernel.php /www/app/Console/Kernel.php
+COPY app/Providers/OctaneServiceProvider.php /www/app/Providers/OctaneServiceProvider.php
+COPY config/octane.php /www/config/octane.php
 COPY app/Http/Controllers/ResourcePortalController.php /www/app/Http/Controllers/ResourcePortalController.php
+COPY app/Http/Controllers/V1/Guest/PaymentController.php /www/app/Http/Controllers/V1/Guest/PaymentController.php
+COPY app/Http/Controllers/V1/User/OrderController.php /www/app/Http/Controllers/V1/User/OrderController.php
+COPY app/Http/Controllers/V1/User/UserDeviceController.php /www/app/Http/Controllers/V1/User/UserDeviceController.php
+COPY app/Http/Controllers/V2/Admin/OrderController.php /www/app/Http/Controllers/V2/Admin/OrderController.php
+COPY app/Http/Controllers/V2/Admin/PaymentController.php /www/app/Http/Controllers/V2/Admin/PaymentController.php
+COPY app/Http/Controllers/V2/Admin/PluginController.php /www/app/Http/Controllers/V2/Admin/PluginController.php
+COPY app/Http/Routes/V1/UserRoute.php /www/app/Http/Routes/V1/UserRoute.php
 COPY app/Http/Routes/V2/AdminRoute.php /www/app/Http/Routes/V2/AdminRoute.php
 COPY plugins-core/Sepay/Plugin.php /www/plugins-core/Sepay/Plugin.php
+COPY plugins-core/CoinPayments/ /www/plugins-core/CoinPayments/
 COPY resources/views/payment/banking.blade.php /www/resources/views/payment/banking.blade.php
 COPY resources/views/resources/ /www/resources/views/resources/
 COPY app/Http/Requests/Admin/PlanSave.php /www/app/Http/Requests/Admin/PlanSave.php
 COPY app/Models/Plan.php /www/app/Models/Plan.php
+COPY app/Services/OrderService.php app/Services/PaymentService.php /www/app/Services/
+COPY app/Services/Plugin/AbstractPlugin.php app/Services/Plugin/PluginConfigService.php app/Services/Plugin/PluginManager.php /www/app/Services/Plugin/
 COPY app/Services/PlanService.php /www/app/Services/PlanService.php
 COPY app/Http/Controllers/V1/User/ServerController.php /www/app/Http/Controllers/V1/User/ServerController.php
 COPY app/Http/Resources/NodeResource.php /www/app/Http/Resources/NodeResource.php
+COPY app/Http/Resources/UserDeviceResource.php /www/app/Http/Resources/UserDeviceResource.php
+COPY app/Services/UserDeviceReadService.php /www/app/Services/UserDeviceReadService.php
+COPY database/migrations/2026_08_30_000004_create_order_payment_checkouts_table.php /www/database/migrations/2026_08_30_000004_create_order_payment_checkouts_table.php
+COPY tests/smoke-*.php /www/tests/
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile
 COPY .docker/php/zz-xboard.ini /usr/local/etc/php/conf.d/zz-xboard.ini
 
-RUN php -l routes/web.php \
-    && php -l app/Http/Controllers/ResourcePortalController.php \
-    && php -l app/Console/Commands/XboardInstall.php \
-    && php -l app/Http/Controllers/V1/Guest/CommController.php \
-    && php -l app/Http/Controllers/V1/Passport/CommController.php \
-    && php -l app/Http/Controllers/V2/Admin/ConfigController.php \
-    && php -l app/Http/Controllers/V2/Admin/MailTemplateController.php \
-    && php -l app/Http/Requests/Admin/ConfigSave.php \
-    && php -l app/Http/Routes/V2/AdminRoute.php \
-    && php -l app/Http/Requests/Admin/PlanSave.php \
-    && php -l app/Models/MailTemplate.php \
-    && php -l app/Models/Plan.php \
-    && php -l app/Services/Auth/MailLinkService.php \
-    && php -l app/Services/Auth/RegisterService.php \
-    && php -l app/Services/MailService.php \
-    && php -l app/Services/PlanService.php \
-    && php -l app/Services/TicketService.php \
-    && php -l app/Console/Commands/CheckServer.php \
-    && php -l app/Http/Controllers/V1/Guest/PaymentController.php \
-    && php -l app/Http/Controllers/V1/Guest/TelegramController.php \
-    && php -l app/Http/Controllers/V1/User/UserController.php \
-    && php -l app/Http/Requests/Admin/UserUpdate.php \
-    && php -l app/Http/Controllers/V1/User/ServerController.php \
-    && php -l app/Http/Resources/NodeResource.php \
-    && php -l app/Services/LuckThemeAssetPatcher.php \
-    && php -l plugins-core/Crisp/Plugin.php \
-    && php -l plugins-core/Messenger/Plugin.php \
-    && php -l app/Services/OrderService.php \
-    && php -l app/Services/TelegramService.php \
-    && php -l app/Services/EncryptedDatabaseBackupService.php \
-    && php -l app/Services/TrafficResetService.php \
-    && php -l app/Console/Commands/DecryptTelegramDatabaseBackup.php \
-    && php -l plugins-core/CoinPayments/Plugin.php \
-    && php -l plugins-core/Telegram/Plugin.php \
-    && php -l tests/smoke-order-idempotency.php \
-    && php -l tests/smoke-plugin-admin-config.php \
-    && php -l database/migrations/2026_08_29_000002_add_language_to_mail_templates.php \
-    && php -l database/migrations/2026_08_29_000003_enable_email_verification_and_set_admin_path.php \
+RUN find app config database/migrations plugins-core routes tests -type f -name '*.php' -print0 \
+      | xargs -0 -n1 php -l \
     && composer install --no-cache --no-dev --no-security-blocking \
     && php tests/smoke-node-access-url.php \
     && php tests/smoke-luck-theme-patches.php \
     && php tests/smoke-custom-backend.php \
+    && php tests/smoke-user-device-read.php \
     && php artisan storage:link \
     && chown -R www:www /www \
     && chmod -R 775 /www \
@@ -128,6 +110,7 @@ RUN php -l routes/web.php \
     
 ENV ENABLE_WEB=true \
     ENABLE_HORIZON=true \
+    ENABLE_SCHEDULER=true \
     ENABLE_REDIS=true \
     ENABLE_WS_SERVER=true \
     ENABLE_CADDY=true

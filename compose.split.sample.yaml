@@ -5,8 +5,9 @@
 #
 # Topology:
 #   caddy        ──┬─→ web        (HTTP)        :7001 → octane :7001
-#                  └─→ ws-server  (WebSocket)   /api/v2/server/ws → :8076
+#                  └─→ ws-server  (WebSocket)   /ws → :8076
 #   horizon      (queue worker, no public port)
+#   scheduler    (scheduled commands and plugin jobs, no public port)
 #   redis        (state)
 services:
   caddy:
@@ -40,7 +41,9 @@ services:
       ENABLE_CADDY: "false"
       ENABLE_REDIS: "false"
       ENABLE_HORIZON: "false"
+      ENABLE_SCHEDULER: "false"
       ENABLE_WS_SERVER: "false"
+      OCTANE_SCHEDULER_TICK: "false"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
 
@@ -57,7 +60,28 @@ services:
       ENABLE_CADDY: "false"
       ENABLE_REDIS: "false"
       ENABLE_WEB: "false"
+      ENABLE_SCHEDULER: "false"
       ENABLE_WS_SERVER: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+
+  scheduler:
+    image: ghcr.io/cedar2025/xboard:latest
+    restart: unless-stopped
+    stop_grace_period: 90s
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes: *shared-volumes
+    environment:
+      docker: "true"
+      ENABLE_CADDY: "false"
+      ENABLE_REDIS: "false"
+      ENABLE_WEB: "false"
+      ENABLE_HORIZON: "false"
+      ENABLE_SCHEDULER: "true"
+      ENABLE_WS_SERVER: "false"
+      OCTANE_SCHEDULER_TICK: "false"
       REDIS_HOST: redis
       REDIS_PORT: "6379"
 
@@ -75,6 +99,7 @@ services:
       ENABLE_REDIS: "false"
       ENABLE_WEB: "false"
       ENABLE_HORIZON: "false"
+      ENABLE_SCHEDULER: "false"
       WS_HOST: "0.0.0.0"
       REDIS_HOST: redis
       REDIS_PORT: "6379"

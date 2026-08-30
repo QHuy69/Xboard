@@ -36,6 +36,10 @@ if is_enabled ENABLE_HORIZON; then
     has_process 'artisan horizon'
 fi
 
+if is_enabled ENABLE_SCHEDULER; then
+    has_process 'artisan schedule:work'
+fi
+
 if is_enabled ENABLE_WS_SERVER; then
     php -r '
         $socket = @fsockopen($argv[1], (int) $argv[2], $errorCode, $errorMessage, 2);

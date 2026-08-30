@@ -29,6 +29,8 @@ services:
     environment:
       - RESOURCE_PROFILE=balanced      # minimal | balanced | performance | auto
       - ENABLE_HORIZON=true
+      - ENABLE_SCHEDULER=true
+      - OCTANE_SCHEDULER_TICK=false
       - docker=true
 
 networks:
