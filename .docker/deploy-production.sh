@@ -68,8 +68,8 @@ post_deploy_checks() {
   curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
   dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
   curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006 >/dev/null || return 1
-  grep -q 'luck-overrides.css?v=18' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck CSS v18." >&2
+  grep -q 'luck-overrides.css?v=19' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck CSS v19." >&2
     return 1
   }
   grep -q 'BBbuoBq5-fresh.js?v=59' <<<"$dashboard_html" || {
@@ -81,9 +81,11 @@ post_deploy_checks() {
     return 1
   }
   for asset_url in \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=18' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=19' \
     'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=59' \
-    'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=60'; do
+    'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=60' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-flags.svg?v=1'; do
     curl --fail --silent --show-error --output /dev/null "$asset_url" || {
       echo "The deployed Luck asset is unavailable: $asset_url" >&2
       return 1

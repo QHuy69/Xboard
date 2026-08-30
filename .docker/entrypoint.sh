@@ -151,6 +151,8 @@ for luck_root in /www/public/theme/Luck /www/storage/theme/Luck; do
     cp /tmp/luck-custom/luck-i18n-v18.js "$luck_root/i18n-v18.js"
     cp /tmp/luck-custom/luck-dashboard.blade.php "$luck_root/dashboard.blade.php"
     cp /tmp/luck-custom/luck-overrides.css "$luck_root/assets/luck-overrides.css"
+    cp /tmp/luck-custom/luck-clash.svg "$luck_root/assets/luck-clash.svg"
+    cp /tmp/luck-custom/luck-flags.svg "$luck_root/assets/luck-flags.svg"
 done
 
 # Keep every Luck import on a fresh physical URL. This is intentionally done

@@ -220,15 +220,17 @@ JS;
         }
 
         // The generated node table points at /flags/{code}.svg even though the
-        // Luck distribution does not ship that directory. Every row therefore
-        // renders an empty white image frame before the node name. Render the
-        // ISO country code as a native flag glyph instead: it is local,
-        // cache-independent and has an accessible country label.
+        // Luck distribution does not ship that directory. Regional-indicator
+        // emoji are not a safe fallback either: Windows can render them as two
+        // letters or an empty box. Use our packaged SVG sprite and retain a
+        // visible ISO badge so even an unknown flag can never become blank.
         $contents = str_replace(
             $countryNeedle,
             <<<'JS'
           const countryInfo = getCountryInfo(row.name);
           const flagCode = /^[A-Z]{2}$/.test(String(countryInfo.code || "").toUpperCase()) ? String(countryInfo.code).toUpperCase() : "UN";
+          const packagedFlagCodes = new Set(["AE", "AU", "BR", "CA", "CH", "CN", "DE", "DK", "ES", "FI", "FR", "GB", "HK", "ID", "IN", "IT", "JP", "KR", "MY", "NL", "NO", "PL", "RU", "SE", "SG", "TH", "TW", "US", "VN"]);
+          const flagAssetCode = packagedFlagCodes.has(flagCode) ? flagCode.toLowerCase() : "un";
           const displayName = String(row.name || "").replace(/^\s*[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, "") || String(row.name || "");
           return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
 JS,
@@ -241,8 +243,21 @@ JS,
             h("span", {
               class: "luck-node-flag",
               role: "img",
-              "aria-label": countryInfo.name
-            }, String.fromCodePoint(...flagCode.split("").map((character) => 127397 + character.charCodeAt(0)))),
+              "aria-label": countryInfo.name,
+              title: countryInfo.name
+            }, [
+              h("svg", {
+                viewBox: "0 0 32 22",
+                "aria-hidden": "true",
+                focusable: "false"
+              }, [
+                h("use", { href: `/theme/Luck/assets/luck-flags.svg?v=1#${flagAssetCode}` })
+              ]),
+              h("span", {
+                class: "luck-node-flag-code",
+                "aria-hidden": "true"
+              }, flagCode)
+            ]),
 JS,
             $contents
         );

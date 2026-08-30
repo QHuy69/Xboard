@@ -24,7 +24,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=18">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=19">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -485,6 +485,60 @@
           if (requestId === eligibilityRequest) hideDonation();
         });
       };
+      var ICON_IMAGE_SELECTOR = [
+        '.app-icon-wrapper img.app-icon',
+        '.subscription-icon img.subscription-logo',
+        '.payment-method-icon img',
+        '.method-icon img',
+        'img.import-icon',
+        '.avatar-container img',
+        '.user-avatar img',
+        '.user-avatar-large img'
+      ].join(',');
+      var iconFallbackLabel = function (image, host) {
+        if (host.matches('.subscription-icon.clash')) return 'C';
+        if (host.matches('.subscription-icon.v2ray')) return 'V2';
+        if (host.matches('.subscription-icon.shadowsocks')) return 'SS';
+        if (host.matches('.subscription-icon.singbox')) return 'SB';
+        if (host.matches('.subscription-icon.hiddify')) return 'H';
+        if (host.matches('.payment-method-icon, .method-icon')) return 'PAY';
+        if (host.matches('.avatar-container, .user-avatar, .user-avatar-large')) return 'U';
+        var alt = String(image.getAttribute('alt') || '').trim();
+        var ascii = alt.replace(/[^A-Za-z0-9]+/g, '').slice(0, 2).toUpperCase();
+        return ascii || 'APP';
+      };
+      var iconImageHost = function (image) {
+        return image.closest('.app-icon-wrapper, .subscription-icon, .payment-method-icon, .method-icon, .avatar-container, .user-avatar, .user-avatar-large')
+          || image.parentElement;
+      };
+      var markIconFailed = function (image) {
+        var host = iconImageHost(image);
+        if (!host) return;
+        host.setAttribute('data-luck-icon-fallback', iconFallbackLabel(image, host));
+        image.setAttribute('aria-hidden', 'true');
+      };
+      var markIconLoaded = function (image) {
+        var host = iconImageHost(image);
+        if (!host) return;
+        host.removeAttribute('data-luck-icon-fallback');
+        image.removeAttribute('aria-hidden');
+      };
+      var bindIconImage = function (image) {
+        if (image.dataset.luckIconBound !== '1') {
+          image.dataset.luckIconBound = '1';
+          image.addEventListener('error', function () { markIconFailed(image); });
+          image.addEventListener('load', function () {
+            if (image.naturalWidth > 0 && image.naturalHeight > 0) markIconLoaded(image);
+          });
+        }
+        if (image.complete) {
+          if (image.naturalWidth > 0 && image.naturalHeight > 0) markIconLoaded(image);
+          else markIconFailed(image);
+        }
+      };
+      var syncIconVisibility = function () {
+        document.querySelectorAll(ICON_IMAGE_SELECTOR).forEach(bindIconImage);
+      };
       var syncClashIcons = function () {
         document.querySelectorAll('.subscription-icon.clash img.subscription-logo').forEach(function (image) {
           if (image.getAttribute('src') !== CLASH_ICON) image.setAttribute('src', CLASH_ICON);
@@ -548,6 +602,7 @@
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(function () {
           syncClashIcons();
+          syncIconVisibility();
           syncDownloadPlacement();
           checkEligibility(false);
         }, 120);
@@ -564,6 +619,7 @@
       });
       window.setTimeout(function () {
         syncClashIcons();
+        syncIconVisibility();
         syncDownloadPlacement();
         checkEligibility(true);
       }, 0);

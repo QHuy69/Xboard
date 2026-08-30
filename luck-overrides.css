@@ -1573,10 +1573,216 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
   }
 }
 
+/* Icon visibility contract. Luck mixes inline SVG, Naive UI icons and remote
+   image logos. Keep vector geometry measurable, inherit a deliberate colour
+   and never let a flex/grid parent squeeze an icon to zero. Explicit fills
+   shipped by an icon are preserved; only currentColor geometry is normalized. */
+:where(
+  .menu-icon,
+  .nav-icon,
+  .btn-icon,
+  .input-icon,
+  .email-icon,
+  .choice-icon,
+  .chevron-icon,
+  .giftcard-icon,
+  .breadcrumb-chevron,
+  .dialog-icon,
+  .header-icon,
+  .title-icon,
+  .platform-icon,
+  .app-icon-wrapper,
+  .subscription-icon,
+  .payment-method-icon,
+  .method-icon,
+  .feature-icon-wrapper,
+  .stat-icon,
+  .card-icon-premium,
+  .code-icon,
+  .record-icon,
+  .country-flag-svg,
+  .notice-icon,
+  .alert-icon,
+  .luck-current-ip-icon,
+  .luck-current-ip-refresh-icon
+) {
+  box-sizing: border-box;
+  flex-shrink: 0 !important;
+  isolation: isolate;
+}
+
+:where(
+  .menu-icon,
+  .nav-icon,
+  .btn-icon,
+  .input-icon,
+  .email-icon,
+  .choice-icon,
+  .chevron-icon,
+  .giftcard-icon,
+  .breadcrumb-chevron,
+  .dialog-icon,
+  .header-icon,
+  .title-icon,
+  .platform-icon,
+  .app-icon-wrapper,
+  .subscription-icon,
+  .payment-method-icon,
+  .method-icon,
+  .feature-icon-wrapper,
+  .stat-icon,
+  .card-icon-premium,
+  .code-icon,
+  .record-icon,
+  .country-flag-svg,
+  .notice-icon,
+  .alert-icon
+) :where(svg, .n-icon),
+:where(
+  .menu-icon,
+  .nav-icon,
+  .btn-icon,
+  .input-icon,
+  .email-icon,
+  .choice-icon,
+  .chevron-icon,
+  .giftcard-icon,
+  .breadcrumb-chevron,
+  .dialog-icon,
+  .header-icon,
+  .title-icon,
+  .platform-icon,
+  .subscription-icon,
+  .payment-method-icon,
+  .method-icon,
+  .feature-icon-wrapper,
+  .stat-icon,
+  .card-icon-premium,
+  .code-icon,
+  .record-icon,
+  .country-flag-svg,
+  .notice-icon,
+  .alert-icon
+) > svg {
+  display: block !important;
+  flex: 0 0 auto !important;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: visible;
+  color: inherit;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+:where(.platform-icon, .title-icon) svg[fill="currentColor"],
+:where(.platform-icon, .title-icon) svg[fill="currentColor"] path:not([fill]) {
+  fill: currentColor !important;
+}
+
+.platform-card.windows .platform-icon { color: #0b66b2 !important; }
+.platform-card.android .platform-icon { color: #137a42 !important; }
+.platform-card.ios .platform-icon { color: #334bb4 !important; }
+
+:where(.payment-method-icon, .method-icon) {
+  color: #334155 !important;
+  background-color: #f1f5f9 !important;
+}
+
+:where(.ios-login-container, .ios-register-container) :where(.input-icon, .email-icon, .choice-icon) {
+  color: #64748b;
+}
+
+.app-icon-wrapper {
+  color: #334155;
+  background: linear-gradient(145deg, #fff 0%, #eef2f7 100%) !important;
+  box-shadow: inset 0 0 0 1px rgba(100, 116, 139, .16), 0 4px 12px rgba(15, 23, 42, .12) !important;
+}
+
+.app-icon-wrapper .app-icon,
+.subscription-icon .subscription-logo,
+:where(.payment-method-icon, .method-icon) img {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  padding: 3px;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, .2));
+}
+
+.subscription-icon:is(.clash, .v2ray, .shadowsocks, .singbox, .hiddify) {
+  background: linear-gradient(145deg, #fff 0%, #dbe5f0 100%) !important;
+}
+
+/* When a configured CDN/client logo fails, the shell marks its existing host
+   and exposes a short deterministic badge instead of the browser's blank or
+   broken-image glyph. This applies to app, subscription, payment and avatar
+   icons without replacing content images such as notices or QR codes. */
+[data-luck-icon-fallback] {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  color: #1e3a5f !important;
+  background: linear-gradient(145deg, #f8fafc, #dbeafe) !important;
+}
+
+[data-luck-icon-fallback] > img {
+  display: none !important;
+}
+
+[data-luck-icon-fallback]::after {
+  content: attr(data-luck-icon-fallback);
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: inherit;
+  font-family: "Be Vietnam Pro", "Inter", "Segoe UI", Arial, sans-serif;
+  font-size: clamp(10px, 35%, 15px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+
+html:is(.dark, [data-theme="dark"]),
+body:is(.dark, .dark-mode, [data-theme="dark"]) {
+  --luck-icon-surface: #1e293b;
+  --luck-icon-foreground: #e2e8f0;
+}
+
+html:is(.dark, [data-theme="dark"]) :where(.app-icon-wrapper, .payment-method-icon, .method-icon, [data-luck-icon-fallback]),
+body:is(.dark, .dark-mode, [data-theme="dark"]) :where(.app-icon-wrapper, .payment-method-icon, .method-icon, [data-luck-icon-fallback]) {
+  color: var(--luck-icon-foreground) !important;
+  background: var(--luck-icon-surface) !important;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, .24) !important;
+}
+
+@media (forced-colors: active) {
+  :where(.platform-icon, .title-icon, .menu-icon, .nav-icon, .btn-icon, .input-icon, .dialog-icon, .stat-icon) {
+    color: ButtonText !important;
+    forced-color-adjust: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  /* The former responsive rule removed the unpaid-order icon completely.
+     Keep it compact instead, so icon visibility is consistent on phones. */
+  .unpaid-order-alert .alert-icon {
+    display: inline-grid !important;
+    width: 32px !important;
+    min-width: 32px !important;
+    height: 32px !important;
+    place-items: center;
+    align-self: flex-start;
+  }
+}
+
 /* Node table: the upstream route requests /flags/{code}.svg, but the theme
-   contains no /flags directory. The asset patcher replaces that broken white
-   image frame with this native flag glyph. Keep it aligned with the node name
-   and expose a real horizontal scrollbar for the intentionally wide table. */
+   contains no /flags directory and emoji flags are platform-dependent. The
+   asset patcher uses a packaged SVG sprite plus a visible ISO fallback. Keep
+   it aligned with the node name and expose a real horizontal scrollbar. */
 .servers-page[data-v-85145c70],
 .servers-container[data-v-85145c70],
 .servers-table-container[data-v-85145c70] {
@@ -1645,17 +1851,43 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
 }
 
 .luck-node-flag {
+  position: relative;
   display: inline-grid;
   flex: 0 0 32px;
   width: 32px;
   height: 24px;
   place-items: center;
+  overflow: hidden;
   border: 1px solid rgba(148, 163, 184, .45);
   border-radius: 5px;
   background: #f8fafc;
   box-shadow: 0 1px 3px rgba(15, 23, 42, .12);
-  font-size: 20px;
   line-height: 1;
+}
+
+.luck-node-flag > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.luck-node-flag-code {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  display: grid;
+  min-width: 13px;
+  height: 8px;
+  padding-inline: 1px;
+  place-items: center;
+  border-radius: 2px;
+  color: #fff;
+  background: rgba(15, 23, 42, .76);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 6px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: .04em;
 }
 
 @media (max-width: 768px) {

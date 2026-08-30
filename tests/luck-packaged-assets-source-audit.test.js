@@ -1,0 +1,82 @@
+const assert = require('assert');
+const fs = require('fs');
+
+const dockerfile = fs.readFileSync('Dockerfile', 'utf8');
+const entrypoint = fs.readFileSync('.docker/entrypoint.sh', 'utf8');
+const deploy = fs.readFileSync('.docker/deploy-production.sh', 'utf8');
+const flags = fs.readFileSync('luck-flags.svg', 'utf8');
+
+assert(
+  dockerfile.includes(
+    'COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg luck-clash.svg luck-flags.svg /tmp/luck-custom/'
+  ),
+  'Dockerfile must package the maintained Luck icon assets in /tmp/luck-custom'
+);
+
+assert(
+  dockerfile.includes(
+    'cp /tmp/luck-custom/luck-clash.svg public/theme/Luck/assets/luck-clash.svg'
+  ),
+  'Dockerfile must publish the Luck Clash icon into the image public theme tree'
+);
+
+assert(
+  dockerfile.includes(
+    'cp /tmp/luck-custom/luck-clash.svg storage/theme/Luck/assets/luck-clash.svg'
+  ),
+  'Dockerfile must publish the Luck Clash icon into the image storage theme tree'
+);
+
+assert(
+  entrypoint.includes(
+    'cp /tmp/luck-custom/luck-clash.svg "$luck_root/assets/luck-clash.svg"'
+  ),
+  'Entrypoint must restore the Luck Clash icon after xboard:update refreshes a persistent theme volume'
+);
+
+for (const destination of [
+  'public/theme/Luck/assets/luck-flags.svg',
+  'storage/theme/Luck/assets/luck-flags.svg'
+]) {
+  assert(
+    dockerfile.includes(`cp /tmp/luck-custom/luck-flags.svg ${destination}`),
+    `Dockerfile must publish the local flag sprite to ${destination}`
+  );
+}
+
+assert(
+  entrypoint.includes('cp /tmp/luck-custom/luck-flags.svg "$luck_root/assets/luck-flags.svg"'),
+  'Entrypoint must restore the local flag sprite after xboard:update'
+);
+
+for (const id of ['un', 'jp', 'vn', 'us', 'hk', 'sg', 'kr', 'tw', 'cn']) {
+  assert(flags.includes(`<symbol id="${id}"`), `local flag sprite is missing #${id}`);
+}
+assert(!/(?:href|src)=["']https?:\/\//.test(flags), 'local flag sprite must not depend on a third-party host');
+
+const updatePosition = entrypoint.indexOf('php /www/artisan xboard:update --no-interaction');
+const restorePosition = entrypoint.indexOf(
+  'cp /tmp/luck-custom/luck-clash.svg "$luck_root/assets/luck-clash.svg"'
+);
+const flagRestorePosition = entrypoint.indexOf(
+  'cp /tmp/luck-custom/luck-flags.svg "$luck_root/assets/luck-flags.svg"'
+);
+
+assert(updatePosition >= 0, 'Entrypoint xboard:update call is missing');
+assert(
+  restorePosition > updatePosition,
+  'Luck Clash icon restoration must run after xboard:update can replace the public theme tree'
+);
+assert(
+  flagRestorePosition > updatePosition,
+  'Luck flag sprite restoration must run after xboard:update can replace the public theme tree'
+);
+
+for (const asset of ['luck-clash.svg', 'luck-flags.svg?v=1']) {
+  assert(
+    deploy.includes(`/theme/Luck/assets/${asset}`),
+    `Production deployment must verify the packaged icon asset ${asset}`
+  );
+}
+
+console.log('Luck packaged icons survive image build, persistent theme mounts and xboard:update refreshes.');

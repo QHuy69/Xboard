@@ -41,6 +41,19 @@ jobs:
           done
           test "$test_count" -gt 0
 
+      - name: Verify packaged admin icon assets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 public/assets/admin/scripts/check_admin_icon_visibility.py
+          bundle_count=0
+          for admin_bundle in public/assets/admin/assets/index-*.js; do
+            test -f "$admin_bundle"
+            node --check "$admin_bundle"
+            bundle_count=$((bundle_count + 1))
+          done
+          test "$bundle_count" -gt 0
+
       - name: Set up PHP test runtime
         uses: shivammathur/setup-php@v2
         with:

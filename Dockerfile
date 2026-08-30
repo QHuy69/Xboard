@@ -20,7 +20,7 @@ COPY .docker /
 # upstream application. The clone intentionally replaces /www, so copying
 # these files into a temporary build directory makes them available below.
 RUN mkdir -p /tmp/luck-custom
-COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg luck-clash.svg /tmp/luck-custom/
+COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg luck-clash.svg luck-flags.svg /tmp/luck-custom/
 
 # Add build arguments
 ARG CACHEBUST=1
@@ -52,7 +52,9 @@ RUN mkdir -p public/theme/Luck/assets storage/theme/Luck/assets && \
     cp /tmp/luck-custom/luck-overrides.css public/theme/Luck/assets/luck-overrides.css && \
     cp /tmp/luck-custom/luck-overrides.css storage/theme/Luck/assets/luck-overrides.css && \
     cp /tmp/luck-custom/luck-clash.svg public/theme/Luck/assets/luck-clash.svg && \
-    cp /tmp/luck-custom/luck-clash.svg storage/theme/Luck/assets/luck-clash.svg
+    cp /tmp/luck-custom/luck-clash.svg storage/theme/Luck/assets/luck-clash.svg && \
+    cp /tmp/luck-custom/luck-flags.svg public/theme/Luck/assets/luck-flags.svg && \
+    cp /tmp/luck-custom/luck-flags.svg storage/theme/Luck/assets/luck-flags.svg
 
 # The donation entry point deliberately serves the QR artwork only; keeping it
 # at a stable public path lets the Blade shell reference it without exposing

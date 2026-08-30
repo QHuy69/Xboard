@@ -74,7 +74,7 @@ for (const pattern of [
 ]) {
   assert.match(css, pattern, `current-IP responsive/RTL CSS is missing: ${pattern}`);
 }
-assert(template.includes('luck-overrides.css?v=18'), 'current-IP CSS cache key was not bumped');
+assert(template.includes('luck-overrides.css?v=19'), 'current-IP CSS cache key was not bumped');
 assert(template.includes('i18n-v18.js?v=60'), 'current-IP translations cache key was not bumped');
 
 function translator(locale) {

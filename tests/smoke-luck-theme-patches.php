@@ -133,7 +133,9 @@ $patchedNodeFlagFixture = LuckThemeAssetPatcher::patchNodeFlags($nodeFlagFixture
 if (str_contains($patchedNodeFlagFixture, '/flags/')
     || !str_contains($patchedNodeFlagFixture, 'class: "luck-node-flag"')
     || !str_contains($patchedNodeFlagFixture, '"aria-label": countryInfo.name')
-    || !str_contains($patchedNodeFlagFixture, 'String.fromCodePoint')
+    || !str_contains($patchedNodeFlagFixture, '/theme/Luck/assets/luck-flags.svg?v=1#${flagAssetCode}')
+    || !str_contains($patchedNodeFlagFixture, 'class: "luck-node-flag-code"')
+    || str_contains($patchedNodeFlagFixture, 'String.fromCodePoint')
     || !str_contains($patchedNodeFlagFixture, 'displayName')
     || LuckThemeAssetPatcher::patchNodeFlags($patchedNodeFlagFixture) !== $patchedNodeFlagFixture) {
     fwrite(STDERR, "Luck node flag replacement failed.\n");
@@ -436,7 +438,7 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country,')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
-    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=18')
+    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=19')
     || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=59')
     || !str_contains($dashboardTemplate, 'i18n-v18.js?v=60')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
