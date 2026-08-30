@@ -72,10 +72,23 @@ post_deploy_checks() {
     echo "The deployed dashboard did not publish Luck CSS v18." >&2
     return 1
   }
+  grep -q 'BBbuoBq5-fresh.js?v=59' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck entry JS v59." >&2
+    return 1
+  }
   grep -q 'i18n-v18.js?v=60' <<<"$dashboard_html" || {
     echo "The deployed dashboard did not publish Luck i18n v60." >&2
     return 1
   }
+  for asset_url in \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=18' \
+    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=59' \
+    'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=60'; do
+    curl --fail --silent --show-error --output /dev/null "$asset_url" || {
+      echo "The deployed Luck asset is unavailable: $asset_url" >&2
+      return 1
+    }
+  done
 
   ip_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7001/api/v1/user/devices/current)" || return 1
   case "$ip_status" in

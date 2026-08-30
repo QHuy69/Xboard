@@ -86,8 +86,24 @@ fi
 echo "[smoke] Container healthcheck passed"
 
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/api/v1/guest/comm/config" >/dev/null
-curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard" >/dev/null
+dashboard_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard")"
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006" >/dev/null
+for expected_asset in \
+  'luck-overrides.css?v=18' \
+  'BBbuoBq5-fresh.js?v=59' \
+  'i18n-v18.js?v=60'; do
+  grep -q "$expected_asset" <<<"$dashboard_html" || {
+    echo "[smoke] Dashboard is missing expected asset reference: $expected_asset" >&2
+    exit 1
+  }
+done
+for asset_path in \
+  'assets/luck-overrides.css?v=18' \
+  'assets/BBbuoBq5-fresh.js?v=59' \
+  'i18n-v18.js?v=60'; do
+  curl --fail --silent --show-error --output /dev/null \
+    "http://127.0.0.1:${host_port}/theme/Luck/${asset_path}"
+done
 echo "[smoke] Public HTTP endpoints passed"
 
 docker exec "$container_name" php /www/tests/smoke-order-idempotency.php
