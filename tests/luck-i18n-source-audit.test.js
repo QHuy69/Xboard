@@ -59,6 +59,8 @@ const expected = {
   '套餐对比': 'So sánh gói',
   'Gói对比': 'So sánh gói',
   '使用中': 'Đang sử dụng',
+  '名称': 'Tên',
+  '正在使用': 'Đang sử dụng',
   '即将购买': 'Sắp mua',
   '即将Mua': 'Sắp mua',
   '切换到': 'Chuyển sang',
@@ -202,6 +204,12 @@ for (const [source, vietnamese] of Object.entries(expected)) {
   const actual = translate(source);
   assert.strictEqual(actual, vietnamese, `${source} translated incorrectly`);
   assert(!/[\u3400-\u9fff]/.test(actual), `${source} leaked CJK text`);
+}
+
+for (const source of ['名称', '正在使用']) {
+  const explicitMappings = [...runtimeSource.matchAll(new RegExp(`['"]${source}['"]\\s*:`, 'g'))];
+  assert.strictEqual(explicitMappings.length, 8,
+    `${source} must have one explicit source mapping for every supported locale`);
 }
 
 for (const [source, fallback] of Object.entries({

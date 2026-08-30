@@ -54,6 +54,38 @@ function placeholders(value) {
 assert.strictEqual(audited.length, 280, 'Production Luck locale fixture must cover all 280 discovered strings');
 const translators = Object.fromEntries(localeIds.map((locale) => [locale, createTranslator(locale)]));
 
+const criticalRuntimeLabels = {
+  '名称': {
+    'en-US': 'Name',
+    'vi-VN': 'Tên',
+    'zh-CN': '名称',
+    'zh-TW': '名稱',
+    'ja-JP': '名前',
+    'ko-KR': '이름',
+    'fa-IR': 'نام',
+    'ru-RU': 'Название'
+  },
+  '正在使用': {
+    'en-US': 'In use',
+    'vi-VN': 'Đang sử dụng',
+    'zh-CN': '正在使用',
+    'zh-TW': '使用中',
+    'ja-JP': '使用中',
+    'ko-KR': '사용 중',
+    'fa-IR': 'در حال استفاده',
+    'ru-RU': 'Используется'
+  }
+};
+for (const [source, expectedByLocale] of Object.entries(criticalRuntimeLabels)) {
+  for (const locale of localeIds) {
+    const actual = translators[locale](source);
+    assert.strictEqual(actual, expectedByLocale[locale],
+      `${locale} runtime label is incorrect for ${source}`);
+    assert.notStrictEqual(actual, 'Thông báo hệ thống',
+      `${locale} runtime label fell through to the generic system notice for ${source}`);
+  }
+}
+
 for (const locale of localeIds) {
   const failures = [];
   for (const entry of audited) {

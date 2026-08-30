@@ -5272,6 +5272,23 @@
     var target = { 'en-US': en, 'vi-VN': vi, 'zh-CN': zh, 'zh-TW': tw, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'ru-RU': ru }[language];
     Object.assign(target, userDeviceTranslations[language]);
   });
+  // Short labels emitted by compiled controls must be explicit in every
+  // locale. Without these exact keys, the Vietnamese CJK safety net turns
+  // them into the generic "Thông báo hệ thống" notice.
+  var runtimeControlLabelTranslations = {
+    'en-US': { '名称': 'Name', '正在使用': 'In use' },
+    'vi-VN': { '名称': 'Tên', '正在使用': 'Đang sử dụng' },
+    'zh-CN': { '名称': '名称', '正在使用': '正在使用' },
+    'zh-TW': { '名称': '名稱', '正在使用': '使用中' },
+    'ja-JP': { '名称': '名前', '正在使用': '使用中' },
+    'ko-KR': { '名称': '이름', '正在使用': '사용 중' },
+    'fa-IR': { '名称': 'نام', '正在使用': 'در حال استفاده' },
+    'ru-RU': { '名称': 'Название', '正在使用': 'Используется' }
+  };
+  Object.keys(runtimeControlLabelTranslations).forEach(function (language) {
+    var target = { 'en-US': en, 'vi-VN': vi, 'zh-CN': zh, 'zh-TW': tw, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'ru-RU': ru }[language];
+    Object.assign(target, runtimeControlLabelTranslations[language]);
+  });
   var dictionaries = { 'en-US': en, 'vi-VN': vi, 'ja-JP': ja, 'ko-KR': ko, 'fa-IR': fa, 'zh-TW': tw, 'ru-RU': ru, 'zh-CN': zh };
   // A partially translated locale must never fall back to Chinese.  English is
   // the complete safety net; the locale's own strings take precedence.
