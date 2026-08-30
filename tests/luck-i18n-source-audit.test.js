@@ -34,6 +34,9 @@ vm.runInNewContext(runtimeSource, sandbox);
 const translate = sandbox.window.__LUCK_T__;
 
 const expected = {
+  '简体中文': 'Tiếng Trung giản thể',
+  '繁體中文': 'Tiếng Trung phồn thể',
+  '日本語': 'Tiếng Nhật',
   '注册失败': 'Đăng ký thất bại',
   'Đăng kýthất bại': 'Đăng ký thất bại',
   '请检查输入信息': 'Vui lòng kiểm tra thông tin đã nhập',

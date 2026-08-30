@@ -83,7 +83,7 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=57"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=58"></script>
   <script>
     (function () {
       // The stock login chunk occasionally misses the first SPA navigation
