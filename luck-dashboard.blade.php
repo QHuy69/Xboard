@@ -49,7 +49,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=61"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=62"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -379,12 +379,6 @@
           }
         });
       };
-      var syncSubscriptionDialogPortal = function () {
-        if (!document.body) return;
-        document.querySelectorAll('.subscription-dialog-overlay').forEach(function (overlay) {
-          if (overlay.parentElement !== document.body) document.body.appendChild(overlay);
-        });
-      };
       var syncDownloadPlacement = function () {
         if (!download) return;
         var path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -420,21 +414,16 @@
       var scheduleRefresh = function () {
         window.clearTimeout(refreshTimer);
         refreshTimer = window.setTimeout(function () {
-          syncSubscriptionDialogPortal();
           syncClashIcons();
           syncIconVisibility();
           syncDownloadPlacement();
           checkEligibility(false);
         }, 120);
       };
-      var app = document.getElementById('app');
-      if (app && window.MutationObserver) {
-        new MutationObserver(function () {
-          /* Moving the fixed overlay out of transformed/backdrop-filtered
-             scrollers must happen in the mutation microtask, before paint. */
-          syncSubscriptionDialogPortal();
-          scheduleRefresh();
-        }).observe(app, { childList: true, subtree: true });
+      if (document.body && window.MutationObserver) {
+        /* Vue Teleport mounts subscription dialogs beside #app. Observe body
+           so the dialog icon/fallback pass also runs for teleported content. */
+        new MutationObserver(scheduleRefresh).observe(document.body, { childList: true, subtree: true });
       }
       window.addEventListener('popstate', scheduleRefresh);
       window.addEventListener('pageshow', scheduleRefresh);
@@ -443,7 +432,6 @@
         if (event.key === 'v2board_token') checkEligibility(true);
       });
       window.setTimeout(function () {
-        syncSubscriptionDialogPortal();
         syncClashIcons();
         syncIconVisibility();
         syncDownloadPlacement();

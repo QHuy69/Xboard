@@ -36,7 +36,7 @@ if ($discoveredAnimationAssets !== $expectedAnimationAssets) {
     exit(1);
 }
 
-$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js");';
+$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js");';
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BR9H_Zte', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'CK-I2Xx_', '-free');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'DSCv3-VU', '-managed');
@@ -44,6 +44,7 @@ $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BBIEjj8f', '-auth-v3
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'q_WC3BFv', '-register-v2');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'ByaxWMaA', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'C0KnXkt1', '-payment-v3');
+$entry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry);
 $entry = LuckThemeAssetPatcher::versionPortableIconAssetImports($entry);
 if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
@@ -53,9 +54,22 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'q_WC3BFv-v3-fresh-register-v2.js')
 	|| !str_contains($entry, 'ByaxWMaA-v3-fresh-localized.js')
 	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v3.js')
+	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v4.js')
+	|| LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::versionPortableIconAssetImports($entry) !== $entry) {
     fwrite(STDERR, "Luck asset cache-busting rewrite failed.\n");
     exit(1);
+}
+
+foreach ([
+    'C6e3mGRa-v3-fresh.js',
+    'C6e3mGRa-v3-fresh-payment-v3.js',
+    'C6e3mGRa-v3-fresh-payment-v3-payment-v4.js',
+] as $subscriptionDialogAsset) {
+    if (LuckThemeAssetPatcher::subscriptionDialogAssetName($subscriptionDialogAsset) !== 'C6e3mGRa-v3-fresh-payment-v4.js') {
+        fwrite(STDERR, "Luck subscription-dialog asset normalization failed.\n");
+        exit(1);
+    }
 }
 
 $loadingAnimationSources = [
@@ -271,11 +285,13 @@ if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'q_WC3BFv', '-register-v2');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'ByaxWMaA', '-localized');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'C0KnXkt1', '-payment-v3');
+    $productionEntry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($productionEntry);
     $productionEntry = LuckThemeAssetPatcher::versionPortableIconAssetImports($productionEntry);
     if (!str_contains($productionEntry, 'BBIEjj8f-v3-fresh-auth-v3.js')
         || !str_contains($productionEntry, 'lsrL0SOU-v3-fresh.js?v=2')
         || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
-        || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')) {
+        || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
+        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v4.js')) {
         fwrite(STDERR, "Luck production entry did not select cache-busted login and portable-icon chunks.\n");
         exit(1);
     }
@@ -476,6 +492,36 @@ if (!str_contains($payment, 'const rawPaymentResult =')
     exit(1);
 }
 
+$subscriptionDialog = <<<'JS'
+import { k as defineComponent, W as createVNode, ab as resolveDirective } from "./DM1yaN1X-v3-fresh.js";
+const _sfc_main$2 = { __name: "SubscriptionDialog" };
+const SubscriptionDialog = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-8674f0f0"]]);
+createVNode(SubscriptionDialog, { show: showSubscriptionModal.value, "onUpdate:show": ($event) => showSubscriptionModal.value = $event, onCopy, onImport });
+JS;
+$teleportedDialog = LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($subscriptionDialog);
+if (!str_contains($teleportedDialog, 'T as Teleport')
+    || !str_contains($teleportedDialog, 'const StockSubscriptionDialog =')
+    || !str_contains($teleportedDialog, 'name: "PortalledSubscriptionDialog"')
+    || !str_contains($teleportedDialog, 'inheritAttrs: false')
+    || !str_contains($teleportedDialog, 'createVNode(Teleport, { to: "body" }')
+    || !str_contains($teleportedDialog, 'createVNode(StockSubscriptionDialog, attrs)')
+    || !str_contains($teleportedDialog, 'data-v-8674f0f0')
+    || !str_contains($teleportedDialog, 'createVNode(SubscriptionDialog, { show: showSubscriptionModal.value')
+    || !str_contains($teleportedDialog, 'onCopy, onImport')
+    || substr_count($teleportedDialog, 'T as Teleport') !== 1
+    || substr_count($teleportedDialog, 'const StockSubscriptionDialog =') !== 1
+    || substr_count($teleportedDialog, 'name: "PortalledSubscriptionDialog"') !== 1
+    || substr_count($teleportedDialog, 'createVNode(SubscriptionDialog,') !== 1
+    || LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($teleportedDialog) !== $teleportedDialog) {
+    fwrite(STDERR, "Luck subscription dialog Teleport patch failed or is not idempotent.\n");
+    exit(1);
+}
+$incompleteSubscriptionDialog = str_replace('const SubscriptionDialog =', 'const ChangedDialog =', $subscriptionDialog);
+if (LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($incompleteSubscriptionDialog) !== $incompleteSubscriptionDialog) {
+    fwrite(STDERR, "Luck subscription dialog Teleport patch must be atomic when the compiled signature changes.\n");
+    exit(1);
+}
+
 $loginAsset = getenv('LUCK_LOGIN_ASSET');
 if ($loginAsset && is_file($loginAsset)) {
     $productionLogin = LuckThemeAssetPatcher::patchLoginErrors((string) file_get_contents($loginAsset));
@@ -551,7 +597,7 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
     || !str_contains($dashboardTemplate, 'luck-overrides.css?v=24')
-    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=61')
+    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=62')
     || !str_contains($dashboardTemplate, 'i18n-v18.js?v=61')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);

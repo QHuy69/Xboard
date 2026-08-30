@@ -97,7 +97,7 @@ for luck_dashboard_template in \
   for dashboard_asset_marker in \
     'id="luck-overrides-stylesheet"' \
     'luck-overrides.css?v=24' \
-    'BBbuoBq5-fresh.js?v=61' \
+    'BBbuoBq5-fresh.js?v=62' \
     'i18n-v18.js?v=61' \
     'data-luck-icon="language"'; do
     docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template" || {
@@ -107,6 +107,10 @@ for luck_dashboard_template in \
   done
   if docker exec "$container_name" grep -aFq '🌐' "$luck_dashboard_template"; then
     echo "Packaged Luck dashboard still contains a platform-dependent globe glyph: $luck_dashboard_template" >&2
+    exit 1
+  fi
+  if docker exec "$container_name" grep -aFq 'document.body.appendChild(overlay)' "$luck_dashboard_template"; then
+    echo "Packaged Luck dashboard still manually reparents the Vue subscription overlay: $luck_dashboard_template" >&2
     exit 1
   fi
 done
@@ -146,7 +150,33 @@ if docker exec "$container_name" test -f "$luck_entry_public"; then
   # A reusable image can be started with a pre-populated Luck volume. When the
   # complete distribution is available, keep exercising its published lazy
   # graph exactly as the production deployment gate does.
-  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=61")"
+  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=62")"
+subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+case "$subscription_dialog_asset" in
+  ./C6e3mGRa*-payment-v4.js) ;;
+  *)
+    echo "Published Luck entry has no normalized subscription-dialog module: $subscription_dialog_asset" >&2
+    exit 1
+    ;;
+esac
+subscription_dialog_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${subscription_dialog_asset#./}")"
+for subscription_dialog_marker in \
+  'T as Teleport' \
+  'name: "PortalledSubscriptionDialog"' \
+  'inheritAttrs: false' \
+  'createVNode(Teleport, { to: "body" }'; do
+  grep -aFq "$subscription_dialog_marker" <<<"$subscription_dialog_js" || {
+    echo "Published Luck subscription dialog is missing Vue Teleport marker: $subscription_dialog_marker" >&2
+    exit 1
+  }
+done
+subscription_dialog_tmp="$(mktemp --suffix=.mjs)"
+printf '%s\n' "$subscription_dialog_js" >"$subscription_dialog_tmp"
+node --check "$subscription_dialog_tmp"
+rm -f "$subscription_dialog_tmp"
+echo "[smoke] Vue-owned subscription dialog Teleport passed"
+
 node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$node_route_asset" in
   ./oPGsis9D*-access-v2.js) ;;

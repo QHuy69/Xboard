@@ -47,6 +47,27 @@ final class LuckThemeAssetPatcher
     }
 
     /**
+     * Point every subscription-dialog lazy import at one normalized physical
+     * chunk. Persistent Luck volumes can contain an older generated payment
+     * suffix, so appending blindly would create payment-v3-payment-v4 chains.
+     */
+    public static function rewriteSubscriptionDialogAssetImport(string $contents): string
+    {
+        $pattern = '#(?<prefix>\./|assets/)(?<name>C6e3mGRa[^"\'\?]*\.js)(?:\?v=\d+)?#';
+
+        return preg_replace_callback($pattern, static function (array $match): string {
+            return $match['prefix'] . self::subscriptionDialogAssetName($match['name']);
+        }, $contents) ?? $contents;
+    }
+
+    public static function subscriptionDialogAssetName(string $assetName): string
+    {
+        $name = preg_replace('/(?:-payment(?:-v\d+)?)+\.js$/', '.js', basename($assetName)) ?? basename($assetName);
+
+        return preg_replace('/\.js$/', '-payment-v4.js', $name) ?? $name;
+    }
+
+    /**
      * Rewrite every Luck node-chunk import to one physical cache-busted name.
      * Persistent theme volumes can already contain an older generated
      * `-access.js` variant, so normalizing the complete suffix chain first is
@@ -895,6 +916,69 @@ JS;
         );
 
         return $contents;
+    }
+
+    /**
+     * Let Vue own the subscription dialog's move to document.body. A raw DOM
+     * append escapes Vue's responsive route tree and leaves a dead overlay
+     * behind when the mobile/desktop shell is swapped after device rotation.
+     * Teleport preserves props/listeners while guaranteeing unmount cleanup.
+     */
+    public static function patchSubscriptionDialogTeleport(string $contents): string
+    {
+        if (str_contains($contents, 'name: "PortalledSubscriptionDialog"')) {
+            return $contents;
+        }
+        if (!str_contains($contents, '__name: "SubscriptionDialog"')) {
+            return $contents;
+        }
+
+        $importPattern = '#import \{(?<bindings>[^{}]+)\} from "(?<runtime>\./DM1yaN1X[^"]*\.js)";#';
+        $componentPattern = '#const SubscriptionDialog = /\* @__PURE__ \*/ _export_sfc\([^;]+\);#';
+        if (preg_match_all($importPattern, $contents, $importMatches) !== 1
+            || preg_match_all($componentPattern, $contents, $componentMatches) !== 1) {
+            return $contents;
+        }
+
+        $patched = preg_replace_callback(
+            $importPattern,
+            static fn(array $match): string => 'import {' . rtrim($match['bindings'])
+                . ', T as Teleport } from "' . $match['runtime'] . '";',
+            $contents,
+            1
+        );
+        if ($patched === null) {
+            return $contents;
+        }
+
+        $componentDeclaration = $componentMatches[0][0];
+        $stockDeclaration = preg_replace(
+            '/^const SubscriptionDialog =/',
+            'const StockSubscriptionDialog =',
+            $componentDeclaration,
+            1
+        );
+        if ($stockDeclaration === null || $stockDeclaration === $componentDeclaration) {
+            return $contents;
+        }
+
+        $wrapper = <<<'JS'
+const SubscriptionDialog = /* @__PURE__ */ defineComponent({
+  name: "PortalledSubscriptionDialog",
+  inheritAttrs: false,
+  setup(_props, { attrs }) {
+    return () => createVNode(Teleport, { to: "body" }, [
+      createVNode(StockSubscriptionDialog, attrs)
+    ]);
+  }
+});
+JS;
+
+        return str_replace(
+            $componentDeclaration,
+            $stockDeclaration . "\n" . $wrapper,
+            $patched
+        );
     }
 
     public static function patchInviteManagement(string $contents): string

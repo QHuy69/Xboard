@@ -186,7 +186,7 @@ $renderTheme = function (Request $request) {
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'q_WC3BFv', '-register-v2');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C0KnXkt1', '-payment-v3');
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C6e3mGRa', '-payment-v3');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::versionPortableIconAssetImports($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::patchSharedAuth($fixedContents);
                                 $fixedContents = str_replace(
@@ -374,9 +374,15 @@ $renderTheme = function (Request $request) {
                             $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchPaymentMessages($assetContents);
+                                $isSubscriptionDialogAsset = str_starts_with($runtimeFile, 'assets/C6e3mGRa');
+                                if ($isSubscriptionDialogAsset) {
+                                    $fixedContents = LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($fixedContents);
+                                }
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
                                 @file_put_contents($target, $fixedContents);
-                                $paymentTarget = preg_replace('/\.js$/', '-payment-v3.js', $target);
+                                $paymentTarget = $isSubscriptionDialogAsset
+                                    ? $publicThemePath . '/assets/' . LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)
+                                    : preg_replace('/\.js$/', '-payment-v3.js', $target);
                                 @file_put_contents($paymentTarget, $fixedContents);
                                 continue;
                             }

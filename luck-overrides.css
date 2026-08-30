@@ -1019,9 +1019,9 @@ body.luck-donate-open {
   text-align: right !important;
 }
 
-/* The runtime portals subscription overlays to body before the next paint.
-   Keep the viewport contract explicit so both mobile and desktop-layout
-   dialogs remain independent from every scrolling/filtered route shell. */
+/* Vue Teleport owns subscription overlays under body. Keep the viewport
+   contract explicit so both mobile and desktop-layout dialogs remain
+   independent from every scrolling/filtered route shell. */
 .subscription-dialog-overlay {
   position: fixed !important;
   inset: 0 !important;

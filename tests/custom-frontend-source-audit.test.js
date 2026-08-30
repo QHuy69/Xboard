@@ -29,6 +29,7 @@ includesAll('app/Services/LuckThemeAssetPatcher.php', [
   "DIRECTORY_SEPARATOR . '*.js'",
   'public static function patchLoadingAnimations',
   'public static function patchNodeFlags',
+  'public static function patchSubscriptionDialogTeleport',
   'class: "luck-node-flag"',
   'formData.email.trim().toLowerCase()',
   'formData.password.length < 8',
@@ -46,6 +47,7 @@ includesAll('routes/web.php', [
   'LuckThemeAssetPatcher::discoverJavascriptAssets($themePath)',
   'LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents)',
   'LuckThemeAssetPatcher::patchNodeFlags($fixedContents)',
+  'LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($fixedContents)',
   'if ($loadingPatchedContents !== false)',
 ]);
 

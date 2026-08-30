@@ -78,12 +78,12 @@ post_deploy_checks() {
     echo "The deployed dashboard did not publish Luck CSS v24." >&2
     return 1
   }
-  grep -q 'syncSubscriptionDialogPortal' <<<"$dashboard_html" || {
-    echo "The deployed dashboard is missing the subscription dialog portal." >&2
+  if grep -Fq 'document.body.appendChild(overlay)' <<<"$dashboard_html"; then
+    echo "The deployed dashboard still manually reparents the Vue subscription overlay." >&2
     return 1
-  }
-  grep -q 'BBbuoBq5-fresh.js?v=61' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck entry JS v61." >&2
+  fi
+  grep -q 'BBbuoBq5-fresh.js?v=62' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck entry JS v62." >&2
     return 1
   }
   grep -q 'i18n-v18.js?v=61' <<<"$dashboard_html" || {
@@ -92,7 +92,7 @@ post_deploy_checks() {
   }
   for asset_url in \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=24' \
-    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=61' \
+    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=62' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-flags.svg?v=1'; do
@@ -109,7 +109,31 @@ post_deploy_checks() {
     return 1
   }
 
-  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=61')" || return 1
+  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=62')" || return 1
+  subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+  case "$subscription_dialog_asset" in
+    ./C6e3mGRa*-payment-v4.js) ;;
+    *)
+      echo "The deployed Luck entry has no normalized subscription-dialog module: $subscription_dialog_asset" >&2
+      return 1
+      ;;
+  esac
+  subscription_dialog_js="$(curl --fail --silent --show-error \
+    "http://127.0.0.1:7001/theme/Luck/assets/${subscription_dialog_asset#./}")" || {
+      echo "The deployed subscription-dialog module is unavailable: $subscription_dialog_asset" >&2
+      return 1
+    }
+  for subscription_dialog_marker in \
+    'T as Teleport' \
+    'name: "PortalledSubscriptionDialog"' \
+    'inheritAttrs: false' \
+    'createVNode(Teleport, { to: "body" }'; do
+    grep -aFq "$subscription_dialog_marker" <<<"$subscription_dialog_js" || {
+      echo "The deployed subscription dialog is missing Vue Teleport marker: $subscription_dialog_marker" >&2
+      return 1
+    }
+  done
+
   node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$node_route_asset" in
     ./oPGsis9D*-access-v2.js) ;;
