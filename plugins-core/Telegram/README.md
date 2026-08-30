@@ -1,84 +1,37 @@
-# Telegram 插件
+# Plugin Telegram cho XBoard
 
-XBoard 的 Telegram Bot 插件，提供用户账号绑定、流量查询、订阅链接获取等功能。
+Bot Telegram hỗ trợ tiếng Việt, tiếng Anh và tiếng Trung theo ngôn ngữ tài khoản. Người dùng có thể thao tác bằng nút bấm hoặc lệnh.
 
-## 功能特性
+## Chức năng người dùng
 
--   ✅ 工单通知功能（可配置开关）
--   ✅ 支付通知功能（可配置开关）
--   ✅ 用户账号绑定/解绑
--   ✅ 流量使用情况查询
--   ✅ 订阅链接获取
--   ✅ 工单回复支持
+- Liên kết hoặc hủy liên kết tài khoản XBoard.
+- Xem lưu lượng còn lại và lấy liên kết đăng ký mới nhất.
+- Nhận thông báo khi mua mới, gia hạn, đổi gói, đặt lại liên kết đăng ký hoặc đặt lại lưu lượng.
+- Dùng menu thân thiện thay cho việc phải nhớ lệnh.
 
-## 可用命令
+Các lệnh chính: `/start`, `/menu`, `/bind`, `/traffic`, `/getlatesturl`, `/unbind` và `/cancel`.
 
-### `/start` - 开始使用
+## Chức năng quản trị và nhóm
 
-欢迎新用户并显示帮助信息，支持动态配置。
+- Thông báo ticket và thanh toán cho tài khoản quản trị đã liên kết Telegram.
+- `/nodes`: xem trạng thái node và số người đang trực tuyến trên từng node.
+- `/setreportgroup`: quản trị viên hoặc nhân viên dùng lệnh này trong nhóm để chọn nhóm nhận báo cáo định kỳ.
+- Có thể cấu hình chu kỳ báo cáo node là 5, 15 hoặc 60 phút.
 
-### `/bind` - 绑定账号
+## Quy trình cộng tác viên
 
-绑定用户的 XBoard 账号到 Telegram。
+1. Bật chức năng cộng tác viên trong cấu hình plugin và khai báo Telegram ID được phép.
+2. Cộng tác viên nhấn menu `Cộng tác viên` hoặc dùng `/reseller` trong chat riêng với bot.
+3. Nhập email khách, chọn gói và chu kỳ, sau đó nhập mã giảm giá.
+4. Bot chỉ chấp nhận mã giảm giá phần trăm đúng 100%, còn hiệu lực và áp dụng được cho gói/chu kỳ đã chọn.
+5. Bot tạo tài khoản, đơn hàng 0đ và kích hoạt gói trong một giao dịch; mật khẩu chỉ được gửi trong chat riêng và không ghi vào log.
 
-```
-/bind [订阅链接]
-```
+Quy trình được giới hạn cho quản trị viên, nhân viên hoặc Telegram ID đã được cấu hình. Không dùng trong nhóm.
 
-### `/traffic` - 查看流量
+## Cấu hình
 
-查看当前绑定账号的流量使用情况。
+- Bật/tắt thông báo ticket và thanh toán.
+- Bật/tắt báo cáo node theo nhóm và chọn chu kỳ báo cáo.
+- Bật/tắt quy trình cộng tác viên và danh sách Telegram ID được phép.
 
-### `/getlatesturl` - 获取订阅链接
-
-获取最新的订阅链接。
-
-### `/unbind` - 解绑账号
-
-解绑当前 Telegram 账号与 XBoard 账号的关联。
-
-## 配置选项
-
-### 基础配置
-
-| 配置项       | 类型    | 默认值                                                                                     | 说明                 |
-| ------------ | ------- | ------------------------------------------------------------------------------------------ | -------------------- |
-| `auto_reply` | boolean | true                                                                                       | 是否自动回复未知命令 |
-| `help_text`  | text    | '请使用以下命令：\\n/bind - 绑定账号\\n/traffic - 查看流量\\n/getlatesturl - 获取最新链接' | 未知命令的回复文本   |
-
-### `/start` 命令动态配置
-
-| 配置项                  | 类型 | 说明                     |
-| ----------------------- | ---- | ------------------------ |
-| `start_welcome_title`   | text | 欢迎标题                 |
-| `start_bot_description` | text | 机器人功能介绍           |
-| `start_bind_guide`      | text | 未绑定用户的绑定指导     |
-| `start_unbind_guide`    | text | 已绑定用户显示的命令列表 |
-| `start_bind_commands`   | text | 未绑定用户显示的命令列表 |
-| `start_footer`          | text | 底部提示信息             |
-
-### 工单通知配置
-
-| 配置项                 | 类型    | 默认值 | 说明                 |
-| ---------------------- | ------- | ------ | -------------------- |
-| `enable_ticket_notify` | boolean | true   | 是否开启工单通知功能 |
-
-### 支付通知配置
-
-| 配置项                  | 类型    | 默认值 | 说明                 |
-| ----------------------- | ------- | ------ | -------------------- |
-| `enable_payment_notify` | boolean | true   | 是否开启支付通知功能 |
-
-## 使用流程
-
-### 新用户使用流程
-
-1. 用户首次使用 Bot，发送 `/start`
-2. 根据提示绑定账号：`/bind [订阅链接]`
-3. 绑定成功后即可使用其他功能
-
-### 日常使用流程
-
-1. 查看流量：`/traffic`
-2. 获取订阅链接：`/getlatesturl`
-3. 管理绑定：`/unbind`
+Bot sử dụng dữ liệu `online` hiện có của XBoard. Số này được tổng hợp từ báo cáo thiết bị/IP theo từng node và tự hết hạn khi thiết bị ngừng báo cáo.

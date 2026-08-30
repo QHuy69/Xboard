@@ -22,6 +22,11 @@ class PaymentController extends Controller
                 HookManager::call('payment.notify.failed', [$method, $uuid, $request]);
                 return $this->fail([422, 'verify error']);
             }
+            // Signed, non-terminal payment progress callbacks must receive a
+            // successful acknowledgement without being treated as an order.
+            if (is_string($verify)) {
+                return $verify;
+            }
             HookManager::call('payment.notify.verified', $verify);
             if (!$this->handle($verify['trade_no'], $verify['callback_no'])) {
                 return $this->fail([400, 'handle error']);

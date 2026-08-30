@@ -133,7 +133,7 @@ $renderTheme = function (Request $request) {
                     $runtimeFiles[] = $relative;
                 }
             }
-            foreach (['BR9H_Zte', 'CK-I2Xx_', 'DSCv3-VU', 'BBIEjj8f'] as $assetStem) {
+            foreach (['BR9H_Zte', 'CK-I2Xx_', 'DSCv3-VU', 'BBIEjj8f', 'q_WC3BFv', 'ByaxWMaA', 'C0KnXkt1', 'C6e3mGRa'] as $assetStem) {
                 foreach (File::glob($themePath . '/assets/' . $assetStem . '*.js') ?: [] as $generatedAsset) {
                     $relative = 'assets/' . basename($generatedAsset);
                     if (!in_array($relative, $runtimeFiles, true)) {
@@ -192,7 +192,12 @@ $renderTheme = function (Request $request) {
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BR9H_Zte', '-localized');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'CK-I2Xx_', '-free');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'DSCv3-VU', '-managed');
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBIEjj8f', '-errors-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBIEjj8f', '-auth-v3');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'q_WC3BFv', '-register-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C0KnXkt1', '-payment-v3');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C6e3mGRa', '-payment-v3');
+                                $fixedContents = LuckThemeAssetPatcher::patchSharedAuth($fixedContents);
                                 $fixedContents = str_replace(
                                     [
                                         'assets/DM1yaN1X.js',
@@ -346,9 +351,47 @@ $renderTheme = function (Request $request) {
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchLoginErrors($assetContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
                                 @file_put_contents($target, $fixedContents);
-                                $errorsTarget = preg_replace('/\.js$/', '-errors-v2.js', $target);
+                                $errorsTarget = preg_replace('/\.js$/', '-auth-v3.js', $target);
                                 @file_put_contents($errorsTarget, $fixedContents);
+                                continue;
+                            }
+                        }
+                        if (str_starts_with($runtimeFile, 'assets/q_WC3BFv')
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchRegisterFlow($assetContents);
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
+                                @file_put_contents($target, $fixedContents);
+                                $registerTarget = preg_replace('/\.js$/', '-register-v2.js', $target);
+                                @file_put_contents($registerTarget, $fixedContents);
+                                continue;
+                            }
+                        }
+                        if (str_starts_with($runtimeFile, 'assets/ByaxWMaA')
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchMessageLocalization($assetContents);
+                                @file_put_contents($target, $fixedContents);
+                                $localizedTarget = preg_replace('/\.js$/', '-localized.js', $target);
+                                @file_put_contents($localizedTarget, $fixedContents);
+                                continue;
+                            }
+                        }
+                        if ((str_starts_with($runtimeFile, 'assets/C0KnXkt1')
+                                || str_starts_with($runtimeFile, 'assets/C6e3mGRa'))
+                            && str_ends_with($runtimeFile, '.js')) {
+                            $assetContents = @file_get_contents($source);
+                            if ($assetContents !== false) {
+                                $fixedContents = LuckThemeAssetPatcher::patchPaymentMessages($assetContents);
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                @file_put_contents($target, $fixedContents);
+                                $paymentTarget = preg_replace('/\.js$/', '-payment-v3.js', $target);
+                                @file_put_contents($paymentTarget, $fixedContents);
                                 continue;
                             }
                         }
@@ -379,7 +422,7 @@ $renderTheme = function (Request $request) {
             'theme' => $theme,
             'error' => $e->getMessage()
         ]);
-        abort(500, '主题加载失败');
+        abort(500, 'Không thể tải giao diện. Vui lòng thử lại.');
     }
 };
 

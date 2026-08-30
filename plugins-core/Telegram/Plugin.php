@@ -2,436 +2,539 @@
 
 namespace Plugin\Telegram;
 
+use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\Plan;
+use App\Models\Server;
 use App\Models\Ticket;
+use App\Models\TrafficResetLog;
 use App\Models\User;
+use App\Services\OrderService;
 use App\Services\Plugin\AbstractPlugin;
 use App\Services\Plugin\HookManager;
 use App\Services\TelegramService;
 use App\Services\TicketService;
+use App\Services\UserService;
 use App\Utils\Helper;
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class Plugin extends AbstractPlugin
 {
-  protected array $commands = [];
-  protected TelegramService $telegramService;
+    protected array $commands = [];
+    protected TelegramService $telegramService;
 
-  protected array $commandConfigs = [
-    '/start' => ['description' => '开始使用', 'handler' => 'handleStartCommand'],
-    '/bind' => ['description' => '绑定账号', 'handler' => 'handleBindCommand'],
-    '/traffic' => ['description' => '查看流量', 'handler' => 'handleTrafficCommand'],
-    '/getlatesturl' => ['description' => '获取订阅链接', 'handler' => 'handleGetLatestUrlCommand'],
-    '/unbind' => ['description' => '解绑账号', 'handler' => 'handleUnbindCommand'],
-  ];
+    protected array $commandConfigs = [
+        '/start' => ['description' => 'Mở menu chính', 'handler' => 'handleStartCommand'],
+        '/menu' => ['description' => 'Mở menu chính', 'handler' => 'handleStartCommand'],
+        '/bind' => ['description' => 'Liên kết tài khoản', 'handler' => 'handleBindCommand'],
+        '/traffic' => ['description' => 'Xem lưu lượng', 'handler' => 'handleTrafficCommand'],
+        '/getlatesturl' => ['description' => 'Lấy liên kết đăng ký', 'handler' => 'handleGetLatestUrlCommand'],
+        '/unbind' => ['description' => 'Hủy liên kết tài khoản', 'handler' => 'handleUnbindCommand'],
+        '/nodes' => ['description' => 'Xem người dùng online theo node', 'handler' => 'handleNodesCommand'],
+        '/setreportgroup' => ['description' => 'Đặt nhóm nhận báo cáo node', 'handler' => 'handleSetReportGroupCommand'],
+        '/reseller' => ['description' => 'Tạo tài khoản khách hàng', 'handler' => 'handleResellerCommand'],
+        '/cancel' => ['description' => 'Hủy thao tác hiện tại', 'handler' => 'handleCancelCommand'],
+    ];
 
-  public function boot(): void
-  {
-    $this->telegramService = new TelegramService();
-    $this->registerDefaultCommands();
+    private array $messages = [
+        'vi' => [
+            'busy' => 'Hệ thống đang bận, vui lòng thử lại sau.', 'private' => 'Vui lòng dùng tính năng này trong chat riêng với bot.',
+            'bind_first' => 'Vui lòng liên kết tài khoản trước.', 'unknown' => 'Tôi chưa hiểu yêu cầu. Hãy chọn một nút trong menu.',
+            'welcome' => "🎉 Chào mừng đến với bot ZaoGuang!\n\nBot giúp bạn xem lưu lượng, lấy liên kết đăng ký và quản lý liên kết tài khoản.",
+            'bound' => '✅ Tài khoản đang liên kết: :email', 'not_bound' => "🔗 Chưa liên kết tài khoản. Gửi:\n/bind [liên kết đăng ký]",
+            'bad_bind' => 'Hãy gửi /bind kèm liên kết đăng ký.', 'invalid_url' => 'Liên kết đăng ký không hợp lệ.',
+            'user_missing' => 'Không tìm thấy người dùng.', 'already_bound' => 'Tài khoản này đã liên kết với Telegram khác.',
+            'bind_failed' => 'Không thể lưu liên kết tài khoản.', 'bind_ok' => '✅ Liên kết tài khoản thành công.',
+            'unbind_failed' => 'Không thể hủy liên kết.', 'unbind_ok' => '✅ Đã hủy liên kết tài khoản.',
+            'traffic' => "📊 Lưu lượng\n\nĐã dùng: :used GB\nTổng: :total GB\nCòn lại: :remaining GB\nTỷ lệ: :percent%",
+            'url' => "🔗 Liên kết đăng ký của bạn:\n\n:url",
+            'forbidden' => 'Bạn không có quyền dùng tính năng này.', 'cancelled' => 'Đã hủy thao tác hiện tại.',
+            'nodes_title' => '🖥 Người dùng online theo node', 'node_line' => ':state :name (:type): :online người dùng',
+            'report_group_ok' => '✅ Nhóm này sẽ nhận báo cáo node tự động.', 'report_group_only' => 'Lệnh này phải được gửi trong nhóm Telegram.',
+            'reseller_intro' => '🤝 Tạo tài khoản khách. Hãy nhập email khách hàng hoặc bấm Hủy.',
+            'reseller_email_invalid' => 'Email không hợp lệ, vui lòng nhập lại.', 'reseller_email_exists' => 'Email này đã tồn tại.',
+            'reseller_choose_plan' => 'Chọn gói cho :email:', 'reseller_no_plan' => 'Không có gói nào đang được phép bán.',
+            'reseller_choose_period' => 'Chọn chu kỳ của gói :plan:', 'reseller_coupon' => 'Nhập mã giảm giá 100%:',
+            'reseller_coupon_invalid' => 'Mã phải là coupon phần trăm 100%, còn hiệu lực và áp dụng được cho gói/chu kỳ đã chọn.',
+            'reseller_done' => "✅ Đã tạo và kích hoạt tài khoản\n\nEmail: :email\nMật khẩu: :password\nGói: :plan\nChu kỳ: :period\nLiên kết: :url\n\nHãy gửi mật khẩu cho khách qua kênh an toàn.",
+            'renewed' => '✅ Gia hạn thành công gói :plan. Hạn mới: :expires',
+            'upgraded' => '✅ Đổi gói thành công sang :plan. Hạn mới: :expires',
+            'purchased' => '✅ Kích hoạt thành công gói :plan. Hạn: :expires',
+            'traffic_reset' => '✅ Lưu lượng của bạn đã được đặt lại.',
+            'url_reset' => "🔐 Liên kết đăng ký đã được đặt lại:\n:url",
+            'button_traffic' => '📊 Lưu lượng', 'button_url' => '🔗 Link đăng ký', 'button_nodes' => '🖥 Node online',
+            'button_reseller' => '🤝 CTV', 'button_cancel' => '❌ Hủy', 'button_create' => '➕ Tạo tài khoản',
+        ],
+        'en' => [
+            'busy' => 'The system is busy. Please try again later.', 'private' => 'Please use this feature in a private chat with the bot.',
+            'bind_first' => 'Please link your account first.', 'unknown' => 'I did not understand that. Choose an option from the menu.',
+            'welcome' => "🎉 Welcome to the ZaoGuang bot!\n\nUse it to view traffic, get your subscription link, and manage account linking.",
+            'bound' => '✅ Linked account: :email', 'not_bound' => "🔗 No linked account. Send:\n/bind [subscription link]",
+            'bad_bind' => 'Send /bind followed by your subscription link.', 'invalid_url' => 'Invalid subscription link.',
+            'user_missing' => 'User not found.', 'already_bound' => 'This account is linked to another Telegram account.',
+            'bind_failed' => 'Could not save the account link.', 'bind_ok' => '✅ Account linked.',
+            'unbind_failed' => 'Could not unlink the account.', 'unbind_ok' => '✅ Account unlinked.',
+            'traffic' => "📊 Traffic\n\nUsed: :used GB\nTotal: :total GB\nRemaining: :remaining GB\nUsage: :percent%",
+            'url' => "🔗 Your subscription link:\n\n:url", 'forbidden' => 'You are not allowed to use this feature.',
+            'cancelled' => 'Current operation cancelled.', 'nodes_title' => '🖥 Online users by node',
+            'node_line' => ':state :name (:type): :online users', 'report_group_ok' => '✅ This group will receive automatic node reports.',
+            'report_group_only' => 'Send this command in a Telegram group.', 'reseller_intro' => '🤝 Enter the customer email or tap Cancel.',
+            'reseller_email_invalid' => 'Invalid email. Try again.', 'reseller_email_exists' => 'This email already exists.',
+            'reseller_choose_plan' => 'Choose a plan for :email:', 'reseller_no_plan' => 'No plans are currently for sale.',
+            'reseller_choose_period' => 'Choose a billing period for :plan:', 'reseller_coupon' => 'Enter a 100% discount coupon:',
+            'reseller_coupon_invalid' => 'The coupon must be a valid 100% percentage coupon for this plan and period.',
+            'reseller_done' => "✅ Account created and activated\n\nEmail: :email\nPassword: :password\nPlan: :plan\nPeriod: :period\nLink: :url\n\nSend the password to the customer securely.",
+            'renewed' => '✅ :plan renewed. New expiry: :expires', 'upgraded' => '✅ Plan changed to :plan. New expiry: :expires',
+            'purchased' => '✅ :plan activated. Expiry: :expires', 'traffic_reset' => '✅ Your traffic was reset.',
+            'url_reset' => "🔐 Your subscription link was reset:\n:url",
+            'button_traffic' => '📊 Traffic', 'button_url' => '🔗 Subscription link', 'button_nodes' => '🖥 Online nodes',
+            'button_reseller' => '🤝 Reseller', 'button_cancel' => '❌ Cancel', 'button_create' => '➕ Create account',
+        ],
+        'zh' => [
+            'busy' => '系统繁忙，请稍后重试。', 'private' => '请在私聊中使用此功能。', 'bind_first' => '请先绑定账号。',
+            'unknown' => '无法识别该请求，请使用菜单按钮。', 'welcome' => "🎉 欢迎使用 ZaoGuang 机器人！\n\n您可以查看流量、获取订阅链接并管理账号绑定。",
+            'bound' => '✅ 已绑定账号：:email', 'not_bound' => "🔗 尚未绑定，请发送：\n/bind [订阅链接]",
+            'bad_bind' => '请发送 /bind 和订阅链接。', 'invalid_url' => '订阅链接无效。', 'user_missing' => '用户不存在。',
+            'already_bound' => '该账号已绑定其他 Telegram。', 'bind_failed' => '绑定保存失败。', 'bind_ok' => '✅ 绑定成功。',
+            'unbind_failed' => '解绑失败。', 'unbind_ok' => '✅ 解绑成功。',
+            'traffic' => "📊 流量\n\n已用：:used GB\n总计：:total GB\n剩余：:remaining GB\n使用率：:percent%",
+            'url' => "🔗 您的订阅链接：\n\n:url", 'forbidden' => '您无权使用此功能。', 'cancelled' => '已取消当前操作。',
+            'nodes_title' => '🖥 各节点在线用户', 'node_line' => ':state :name (:type)：:online 人',
+            'report_group_ok' => '✅ 本群将接收自动节点报告。', 'report_group_only' => '请在 Telegram 群组中发送此命令。',
+            'reseller_intro' => '🤝 请输入客户邮箱，或点击取消。', 'reseller_email_invalid' => '邮箱无效，请重试。',
+            'reseller_email_exists' => '该邮箱已存在。', 'reseller_choose_plan' => '为 :email 选择套餐：', 'reseller_no_plan' => '暂无可售套餐。',
+            'reseller_choose_period' => '请选择 :plan 的周期：', 'reseller_coupon' => '请输入 100% 优惠码：',
+            'reseller_coupon_invalid' => '优惠码必须是适用于所选套餐和周期的有效 100% 折扣码。',
+            'reseller_done' => "✅ 账号已创建并开通\n\n邮箱：:email\n密码：:password\n套餐：:plan\n周期：:period\n链接：:url",
+            'renewed' => '✅ :plan 续费成功，新到期时间：:expires', 'upgraded' => '✅ 已更换为 :plan，新到期时间：:expires',
+            'purchased' => '✅ :plan 开通成功，到期时间：:expires', 'traffic_reset' => '✅ 流量已重置。',
+            'url_reset' => "🔐 订阅链接已重置：\n:url",
+            'button_traffic' => '📊 流量', 'button_url' => '🔗 订阅链接', 'button_nodes' => '🖥 在线节点',
+            'button_reseller' => '🤝 合作伙伴', 'button_cancel' => '❌ 取消', 'button_create' => '➕ 创建账号',
+        ],
+    ];
 
-    $this->filter('telegram.message.handle', [$this, 'handleMessage'], 10);
-    $this->listen('telegram.message.unhandled', [$this, 'handleUnknownCommand'], 10);
-    $this->listen('telegram.message.error', [$this, 'handleError'], 10);
-    $this->filter('telegram.bot.commands', [$this, 'addBotCommands'], 10);
-    $this->listen('ticket.create.after', [$this, 'sendTicketNotify'], 10);
-    $this->listen('ticket.reply.user.after', [$this, 'sendTicketNotify'], 10);
-    $this->listen('payment.notify.success', [$this, 'sendPaymentNotify'], 10);
-  }
-
-  public function sendPaymentNotify(Order $order): void
-  {
-    if (!$this->getConfig('enable_payment_notify', true)) {
-      return;
+    public function boot(): void
+    {
+        $this->telegramService = new TelegramService();
+        foreach ($this->commandConfigs as $command => $config) {
+            $this->commands['commands'][$command] = [$this, $config['handler']];
+        }
+        $this->commands['replies']['/(?:Ticket|工单|ticket).*?#?\s*(\d+)/iu'] = [$this, 'handleTicketReply'];
+        $this->filter('telegram.message.handle', [$this, 'handleMessage'], 10);
+        $this->listen('telegram.message.unhandled', [$this, 'handleUnknownCommand'], 10);
+        $this->listen('telegram.message.error', [$this, 'handleError'], 10);
+        $this->filter('telegram.bot.commands', [$this, 'addBotCommands'], 10);
+        $this->filter('telegram.bot.commands.localized', [$this, 'addLocalizedBotCommands'], 10);
+        $this->listen('ticket.create.after', [$this, 'sendTicketNotify'], 10);
+        $this->listen('ticket.reply.user.after', [$this, 'sendTicketNotify'], 10);
+        $this->listen('payment.notify.success', [$this, 'sendPaymentNotify'], 10);
+        $this->listen('order.open.after', [$this, 'sendOrderLifecycleNotify'], 10);
+        $this->listen('user.subscribe.reset.after', [$this, 'sendSubscriptionResetNotify'], 10);
+        $this->listen('traffic.reset.telegram.after', [$this, 'sendTrafficResetNotify'], 10);
     }
 
-    $payment = $order->payment;
-    if (!$payment) {
-      Log::warning('支付通知失败：订单关联的支付方式不存在', ['order_id' => $order->id]);
-      return;
+    public function schedule(Schedule $schedule): void
+    {
+        if (!$this->getConfig('enable_node_group_report', false)) return;
+        $interval = (int) $this->getConfig('node_report_interval_minutes', 15);
+        $event = $schedule->call(fn () => $this->sendScheduledNodeReport())->withoutOverlapping();
+        match ($interval) { 5 => $event->everyFiveMinutes(), 60 => $event->hourly(), default => $event->everyFifteenMinutes() };
     }
 
-    $message = sprintf(
-      "💰成功收款%s元\n" .
-      "———————————————\n" .
-      "支付接口：%s\n" .
-      "支付渠道：%s\n" .
-      "本站订单：`%s`",
-      $order->total_amount / 100,
-      Helper::escapeMarkdown($payment->payment),
-      Helper::escapeMarkdown($payment->name),
-      $order->trade_no
-    );
-    $this->telegramService->sendMessageWithAdmin($message, true);
-  }
-
-  public function sendTicketNotify(Ticket $ticket): void
-  {
-    if (!$this->getConfig('enable_ticket_notify', true)) {
-      return;
+    public function handleMessage(bool $handled, array $data): bool
+    {
+        [$msg] = $data;
+        if ($handled) return true;
+        try {
+            if ($msg->message_type === 'callback_query') return $this->handleCallback($msg);
+            if ($msg->message_type === 'reply_message') return $this->handleReplyMessage($msg);
+            return $this->handleCommandMessage($msg);
+        } catch (\Throwable $e) {
+            Log::error('Telegram command failed', ['chat_id' => $msg->chat_id ?? null, 'error' => $e->getMessage()]);
+            $this->sendMessage($msg, $this->text('busy', $this->localeForMessage($msg)));
+            return true;
+        }
     }
 
-    $message = $ticket->messages()->latest()->first();
-    $user = User::find($ticket->user_id);
-    if (!$user)
-      return;
-    $user->load('plan');
-    $transfer_enable = $this->transferToGBString($user->transfer_enable);
-    $remaining_traffic = $this->transferToGBString($user->transfer_enable - $user->u - $user->d);
-    $u = $this->transferToGBString($user->u);
-    $d = $this->transferToGBString($user->d);
-    $expired_at = $user->expired_at ? date('Y-m-d H:i:s', $user->expired_at) : '长期有效';
-    $money = $user->balance / 100;
-    $affmoney = $user->commission_balance / 100;
-    $plan = $user->plan;
-    $ip = request()?->ip() ?? '';
-    $region = $ip ? (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? (new \Ip2Region())->simple($ip) : 'NULL') : '';
-    $TGmessage = "📮 *工单提醒* #{$ticket->id}\n";
-    $TGmessage .= "━━━━━━━━━━━━━━━━━━━━\n";
-    $TGmessage .= "📧 邮箱: `{$user->email}`\n";
-    $TGmessage .= "📍 位置: `{$region}`\n";
-
-    if ($plan) {
-      $TGmessage .= "📦 套餐: `" . Helper::escapeMarkdown($plan->name) . "`\n";
-      $TGmessage .= "📊 流量: `{$remaining_traffic}G / {$transfer_enable}G` (剩余/总计)\n";
-      $TGmessage .= "⬆️⬇️ 已用: `{$u}G / {$d}G`\n";
-      $TGmessage .= "⏰ 到期: `{$expired_at}`\n";
-    } else {
-      $TGmessage .= "📦 套餐: `未订购任何套餐`\n";
+    protected function handleCommandMessage(object $msg): bool
+    {
+        $buttonCommands = [];
+        foreach (['vi-VN', 'en-US', 'zh-CN'] as $locale) {
+            $buttonCommands[$this->text('button_traffic', $locale)] = '/traffic';
+            $buttonCommands[$this->text('button_url', $locale)] = '/getlatesturl';
+            $buttonCommands[$this->text('button_nodes', $locale)] = '/nodes';
+            $buttonCommands[$this->text('button_reseller', $locale)] = '/reseller';
+            $buttonCommands[$this->text('button_cancel', $locale)] = '/cancel';
+        }
+        if (isset($buttonCommands[$msg->text])) $msg->command = $buttonCommands[$msg->text];
+        if (isset($this->commands['commands'][$msg->command])) {
+            call_user_func($this->commands['commands'][$msg->command], $msg);
+            return true;
+        }
+        if ($this->resellerState($msg)) {
+            $this->handleResellerInput($msg);
+            return true;
+        }
+        return false;
     }
 
-    $TGmessage .= "💰 余额: `{$money}元`\n";
-    $TGmessage .= "💸 佣金: `{$affmoney}元`\n";
-    $TGmessage .= "━━━━━━━━━━━━━━━━━━━━\n";
-    $TGmessage .= "📝 *主题*: `" . Helper::escapeMarkdown($ticket->subject) . "`\n";
-    $TGmessage .= "💬 *内容*: `" . Helper::escapeMarkdown($message->message) . "`";
-    $this->telegramService->sendMessageWithAdmin($TGmessage, true);
-  }
-
-  protected function registerDefaultCommands(): void
-  {
-    foreach ($this->commandConfigs as $command => $config) {
-      $this->registerTelegramCommand($command, [$this, $config['handler']]);
+    protected function handleReplyMessage(object $msg): bool
+    {
+        foreach ($this->commands['replies'] ?? [] as $regex => $handler) {
+            if (preg_match($regex, $msg->reply_text, $matches)) {
+                call_user_func($handler, $msg, $matches);
+                return true;
+            }
+        }
+        return false;
     }
 
-    $this->registerReplyHandler('/(📮.*?工单提醒.*?#?|工单ID: ?)(\\d+)/', [$this, 'handleTicketReply']);
-  }
-
-  public function registerTelegramCommand(string $command, callable $handler): void
-  {
-    $this->commands['commands'][$command] = $handler;
-  }
-
-  public function registerReplyHandler(string $regex, callable $handler): void
-  {
-    $this->commands['replies'][$regex] = $handler;
-  }
-
-  /**
-   * 发送消息给用户
-   */
-  protected function sendMessage(object $msg, string $message): void
-  {
-    $this->telegramService->sendMessage($msg->chat_id, $message, 'markdown');
-  }
-
-  /**
-   * 检查是否为私聊
-   */
-  protected function checkPrivateChat(object $msg): bool
-  {
-    if (!$msg->is_private) {
-      $this->sendMessage($msg, '请在私聊中使用此命令');
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * 获取绑定的用户
-   */
-  protected function getBoundUser(object $msg): ?User
-  {
-    $user = User::where('telegram_id', $msg->chat_id)->first();
-    if (!$user) {
-      $this->sendMessage($msg, '请先绑定账号');
-      return null;
-    }
-    return $user;
-  }
-
-  public function handleStartCommand(object $msg): void
-  {
-    $welcomeTitle = $this->getConfig('start_welcome_title', '🎉 欢迎使用 XBoard Telegram Bot！');
-    $botDescription = $this->getConfig('start_bot_description', '🤖 我是您的专属助手，可以帮助您：\\n• 绑定您的 XBoard 账号\\n• 查看流量使用情况\\n• 获取最新订阅链接\\n• 管理账号绑定状态');
-    $footer = $this->getConfig('start_footer', '💡 提示：所有命令都需要在私聊中使用');
-
-    $welcomeText = $welcomeTitle . "\n\n" . $botDescription . "\n\n";
-
-    $user = User::where('telegram_id', $msg->chat_id)->first();
-    if ($user) {
-      $welcomeText .= "✅ 您已绑定账号：{$user->email}\n\n";
-      $welcomeText .= $this->getConfig('start_unbind_guide', '📋 可用命令：\\n/traffic - 查看流量使用情况\\n/getlatesturl - 获取订阅链接\\n/unbind - 解绑账号');
-    } else {
-      $welcomeText .= $this->getConfig('start_bind_guide', '🔗 请先绑定您的 XBoard 账号：\\n1. 登录您的 XBoard 账户\\n2. 复制您的订阅链接\\n3. 发送 /bind + 订阅链接') . "\n\n";
-      $welcomeText .= $this->getConfig('start_bind_commands', '📋 可用命令：\\n/bind [订阅链接] - 绑定账号');
+    protected function handleCallback(object $msg): bool
+    {
+        $this->telegramService->answerCallbackQuery($msg->callback_query_id);
+        if ($msg->command === 'reseller:new') return $this->startReseller($msg);
+        if (str_starts_with($msg->command, 'reseller:plan:')) return $this->selectResellerPlan($msg, (int) substr($msg->command, 16));
+        if (str_starts_with($msg->command, 'reseller:period:')) return $this->selectResellerPeriod($msg, substr($msg->command, 18));
+        if ($msg->command === 'action:traffic') { $this->handleTrafficCommand($msg); return true; }
+        if ($msg->command === 'action:url') { $this->handleGetLatestUrlCommand($msg); return true; }
+        if ($msg->command === 'action:nodes') { $this->handleNodesCommand($msg); return true; }
+        if ($msg->command === 'action:cancel') { $this->handleCancelCommand($msg); return true; }
+        return false;
     }
 
-    $welcomeText .= "\n\n" . $footer;
-    $welcomeText = str_replace('\\n', "\n", $welcomeText);
-
-    $this->sendMessage($msg, $welcomeText);
-  }
-
-  public function handleMessage(bool $handled, array $data): bool
-  {
-    list($msg) = $data;
-    if ($handled)
-      return $handled;
-
-    try {
-      return match ($msg->message_type) {
-        'message' => $this->handleCommandMessage($msg),
-        'reply_message' => $this->handleReplyMessage($msg),
-        default => false
-      };
-    } catch (\Exception $e) {
-      Log::error('Telegram 命令处理意外错误', [
-        'command' => $msg->command ?? 'unknown',
-        'chat_id' => $msg->chat_id ?? 'unknown',
-        'error' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
-      ]);
-
-      if (isset($msg->chat_id)) {
-        $this->telegramService->sendMessage($msg->chat_id, '系统繁忙，请稍后重试');
-      }
-
-      return true;
-    }
-  }
-
-  protected function handleCommandMessage(object $msg): bool
-  {
-    if (!isset($this->commands['commands'][$msg->command])) {
-      return false;
+    public function handleStartCommand(object $msg): void
+    {
+        $locale = $this->localeForMessage($msg);
+        $user = $this->boundUser($msg, false);
+        $body = $this->text('welcome', $locale) . "\n\n" . ($user
+            ? $this->text('bound', $locale, ['email' => $user->email])
+            : $this->text('not_bound', $locale));
+        $buttons = [[$this->text('button_traffic', $locale), $this->text('button_url', $locale)]];
+        if ($this->isOperator($msg)) {
+            $buttons[] = [$this->text('button_nodes', $locale), $this->text('button_reseller', $locale)];
+        } elseif ($this->isReseller($msg)) {
+            $buttons[] = [$this->text('button_reseller', $locale)];
+        }
+        $this->sendMessage($msg, $body, ['keyboard' => $buttons, 'resize_keyboard' => true]);
     }
 
-    call_user_func($this->commands['commands'][$msg->command], $msg);
-    return true;
-  }
-
-  protected function handleReplyMessage(object $msg): bool
-  {
-    if (!isset($this->commands['replies'])) {
-      return false;
+    public function handleBindCommand(object $msg): void
+    {
+        if (!$this->privateChat($msg)) return;
+        $locale = $this->localeForMessage($msg);
+        $url = $msg->args[0] ?? '';
+        if ($url === '') { $this->sendMessage($msg, $this->text('bad_bind', $locale)); return; }
+        $token = $this->extractTokenFromUrl($url);
+        if (!$token) { $this->sendMessage($msg, $this->text('invalid_url', $locale)); return; }
+        $user = User::where('token', $token)->first();
+        if (!$user) { $this->sendMessage($msg, $this->text('user_missing', $locale)); return; }
+        if ($user->telegram_id && (string) $user->telegram_id !== (string) $this->actorId($msg)) {
+            $this->sendMessage($msg, $this->text('already_bound', $locale)); return;
+        }
+        $user->telegram_id = $this->actorId($msg);
+        if (!$user->save()) { $this->sendMessage($msg, $this->text('bind_failed', $locale)); return; }
+        HookManager::call('user.telegram.bind.after', [$user]);
+        $this->sendMessage($msg, $this->text('bind_ok', $locale));
     }
 
-    foreach ($this->commands['replies'] as $regex => $handler) {
-      if (preg_match($regex, $msg->reply_text, $matches)) {
-        call_user_func($handler, $msg, $matches);
-        return true;
-      }
+    public function handleTrafficCommand(object $msg): void
+    {
+        if (!$this->privateChat($msg)) return;
+        $user = $this->boundUser($msg);
+        if (!$user) return;
+        $used = ($user->u ?? 0) + ($user->d ?? 0); $total = $user->transfer_enable ?? 0;
+        $this->sendMessage($msg, $this->text('traffic', $this->localeForUser($user), [
+            'used' => $this->gb($used), 'total' => $this->gb($total), 'remaining' => $this->gb(max(0, $total - $used)),
+            'percent' => number_format($total > 0 ? $used / $total * 100 : 0, 2),
+        ]));
     }
 
-    return false;
-  }
-
-  public function handleUnknownCommand(array $data): void
-  {
-    list($msg) = $data;
-    if (!$msg->is_private || $msg->message_type !== 'message')
-      return;
-
-    $helpText = $this->getConfig('help_text', '未知命令，请查看帮助');
-    $this->telegramService->sendMessage($msg->chat_id, $helpText);
-  }
-
-  public function handleError(array $data): void
-  {
-    list($msg, $e) = $data;
-    Log::error('Telegram 消息处理错误', [
-      'chat_id' => $msg->chat_id ?? 'unknown',
-      'command' => $msg->command ?? 'unknown',
-      'message_type' => $msg->message_type ?? 'unknown',
-      'error' => $e->getMessage(),
-      'file' => $e->getFile(),
-      'line' => $e->getLine()
-    ]);
-  }
-
-  public function handleBindCommand(object $msg): void
-  {
-    if (!$this->checkPrivateChat($msg)) {
-      return;
+    public function handleGetLatestUrlCommand(object $msg): void
+    {
+        if (!$this->privateChat($msg)) return;
+        $user = $this->boundUser($msg); if (!$user) return;
+        $this->sendMessage($msg, $this->text('url', $this->localeForUser($user), ['url' => Helper::getSubscribeUrl($user->token)]));
     }
 
-    $subscribeUrl = $msg->args[0] ?? null;
-    if (!$subscribeUrl) {
-      $this->sendMessage($msg, '参数有误，请携带订阅地址发送');
-      return;
+    public function handleUnbindCommand(object $msg): void
+    {
+        if (!$this->privateChat($msg)) return;
+        $user = $this->boundUser($msg); if (!$user) return;
+        $locale = $this->localeForUser($user); $user->telegram_id = null;
+        $this->sendMessage($msg, $this->text($user->save() ? 'unbind_ok' : 'unbind_failed', $locale));
     }
 
-    $token = $this->extractTokenFromUrl($subscribeUrl);
-    if (!$token) {
-      $this->sendMessage($msg, '订阅地址无效');
-      return;
+    public function handleNodesCommand(object $msg): void
+    {
+        if (!$this->isOperator($msg)) { $this->sendMessage($msg, $this->text('forbidden', $this->localeForMessage($msg))); return; }
+        $this->sendMessage($msg, $this->nodeReport($this->localeForMessage($msg)));
     }
 
-    $user = User::where('token', $token)->first();
-    if (!$user) {
-      $this->sendMessage($msg, '用户不存在');
-      return;
+    public function handleSetReportGroupCommand(object $msg): void
+    {
+        $locale = $this->localeForMessage($msg);
+        if (!$this->isOperator($msg)) { $this->sendMessage($msg, $this->text('forbidden', $locale)); return; }
+        if ($msg->is_private) { $this->sendMessage($msg, $this->text('report_group_only', $locale)); return; }
+        admin_setting(['telegram_node_report_chat_id' => (string) $msg->chat_id]);
+        $this->sendMessage($msg, $this->text('report_group_ok', $locale));
     }
 
-    if ($user->telegram_id) {
-      $this->sendMessage($msg, '该账号已经绑定了Telegram账号');
-      return;
+    public function sendScheduledNodeReport(): void
+    {
+        $chatId = (int) admin_setting('telegram_node_report_chat_id', 0);
+        if ($chatId) $this->telegramService->sendMessage($chatId, $this->nodeReport('vi-VN'));
     }
 
-    $user->telegram_id = $msg->chat_id;
-    if (!$user->save()) {
-      $this->sendMessage($msg, '设置失败');
-      return;
+    public function handleResellerCommand(object $msg): void
+    {
+        if (!$this->privateChat($msg)) return;
+        if (!$this->isReseller($msg)) { $this->sendMessage($msg, $this->text('forbidden', $this->localeForMessage($msg))); return; }
+        $this->sendMessage($msg, $this->text('reseller_intro', $this->localeForMessage($msg)), [
+            'inline_keyboard' => [[['text' => $this->text('button_create', $this->localeForMessage($msg)), 'callback_data' => 'reseller:new']], [['text' => $this->text('button_cancel', $this->localeForMessage($msg)), 'callback_data' => 'action:cancel']]],
+        ]);
     }
 
-    HookManager::call('user.telegram.bind.after', [$user]);
-    $this->sendMessage($msg, '绑定成功');
-  }
-
-  protected function extractTokenFromUrl(string $url): ?string
-  {
-    $parsedUrl = parse_url($url);
-
-    if (isset($parsedUrl['query'])) {
-      parse_str($parsedUrl['query'], $query);
-      if (isset($query['token'])) {
-        return $query['token'];
-      }
+    protected function startReseller(object $msg): bool
+    {
+        if (!$this->isReseller($msg) || !$this->privateChat($msg)) return true;
+        $this->setResellerState($msg, ['step' => 'email']);
+        $this->sendMessage($msg, $this->text('reseller_intro', $this->localeForMessage($msg))); return true;
     }
 
-    if (isset($parsedUrl['path'])) {
-      $pathParts = explode('/', trim($parsedUrl['path'], '/'));
-      $lastPart = end($pathParts);
-      return $lastPart ?: null;
+    protected function handleResellerInput(object $msg): void
+    {
+        if (!$this->isReseller($msg)) { $this->clearResellerState($msg); return; }
+        $state = $this->resellerState($msg); $locale = $this->localeForMessage($msg); $value = trim((string) $msg->text);
+        if (($state['step'] ?? '') === 'email') {
+            $email = strtolower($value);
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { $this->sendMessage($msg, $this->text('reseller_email_invalid', $locale)); return; }
+            if (User::byEmail($email)->exists()) { $this->sendMessage($msg, $this->text('reseller_email_exists', $locale)); return; }
+            $state = ['step' => 'plan', 'email' => $email]; $this->setResellerState($msg, $state);
+            $plans = Plan::query()->where('show', true)->where('sell', true)->orderBy('sort')->get();
+            if ($plans->isEmpty()) { $this->clearResellerState($msg); $this->sendMessage($msg, $this->text('reseller_no_plan', $locale)); return; }
+            $keyboard = $plans->map(fn ($p) => [[ 'text' => $p->name, 'callback_data' => 'reseller:plan:' . $p->id ]])->all();
+            $this->sendMessage($msg, $this->text('reseller_choose_plan', $locale, ['email' => $email]), ['inline_keyboard' => $keyboard]); return;
+        }
+        if (($state['step'] ?? '') === 'coupon') $this->completeResellerPurchase($msg, $state, $value);
     }
 
-    return null;
-  }
-
-  public function handleTrafficCommand(object $msg): void
-  {
-    if (!$this->checkPrivateChat($msg)) {
-      return;
+    protected function selectResellerPlan(object $msg, int $planId): bool
+    {
+        $state = $this->resellerState($msg); $plan = Plan::whereKey($planId)->where('show', true)->where('sell', true)->first();
+        if (!$this->isReseller($msg) || !$plan || empty($state['email'])) return true;
+        $periods = collect($plan->prices)->filter(fn ($price) => $price !== null)->keys();
+        $state = array_merge($state, ['step' => 'period', 'plan_id' => $plan->id]); $this->setResellerState($msg, $state);
+        $locale = $this->localeForMessage($msg);
+        $keyboard = $periods->map(fn ($period) => [[ 'text' => $this->periodName($period, $locale), 'callback_data' => 'reseller:period:' . $period ]])->all();
+        $this->sendMessage($msg, $this->text('reseller_choose_period', $this->localeForMessage($msg), ['plan' => $plan->name]), ['inline_keyboard' => $keyboard]); return true;
     }
 
-    $user = $this->getBoundUser($msg);
-    if (!$user) {
-      return;
+    protected function selectResellerPeriod(object $msg, string $period): bool
+    {
+        $state = $this->resellerState($msg); $plan = Plan::find($state['plan_id'] ?? 0);
+        if (!$this->isReseller($msg) || !$plan || !array_key_exists($period, $plan->prices ?? []) || $plan->prices[$period] === null) return true;
+        $state = array_merge($state, ['step' => 'coupon', 'period' => $period]); $this->setResellerState($msg, $state);
+        $this->sendMessage($msg, $this->text('reseller_coupon', $this->localeForMessage($msg))); return true;
     }
 
-    $transferUsed = $user->u + $user->d;
-    $transferTotal = $user->transfer_enable;
-    $transferRemaining = $transferTotal - $transferUsed;
-    $usagePercentage = $transferTotal > 0 ? ($transferUsed / $transferTotal) * 100 : 0;
-
-    $text = sprintf(
-      "📊 流量使用情况\n\n已用流量：%sG\n总流量：%sG\n剩余流量：%sG\n使用率：%.2f%%",
-      $this->transferToGBString($transferUsed),
-      $this->transferToGBString($transferTotal),
-      $this->transferToGBString($transferRemaining),
-      $usagePercentage
-    );
-
-    $this->sendMessage($msg, $text);
-  }
-
-  public function handleGetLatestUrlCommand(object $msg): void
-  {
-    if (!$this->checkPrivateChat($msg)) {
-      return;
+    protected function completeResellerPurchase(object $msg, array $state, string $couponCode): void
+    {
+        $locale = $this->localeForMessage($msg);
+        $coupon = Coupon::where('code', $couponCode)->first();
+        if (!$coupon || (int) $coupon->type !== 2 || (int) $coupon->value !== 100) {
+            $this->sendMessage($msg, $this->text('reseller_coupon_invalid', $locale)); return;
+        }
+        try {
+            $result = DB::transaction(function () use ($state, $couponCode, $msg) {
+                if (User::byEmail($state['email'])->exists()) throw new \RuntimeException('email exists');
+                $password = bin2hex(random_bytes(8)) . 'Aa1!';
+                $user = app(UserService::class)->createUser(['email' => $state['email'], 'password' => $password]);
+                $user->locale = $this->localeForMessage($msg); $user->saveOrFail();
+                $plan = Plan::findOrFail($state['plan_id']);
+                $order = OrderService::createFromRequest($user, $plan, $state['period'], $couponCode);
+                if ((int) $order->total_amount !== 0 || (int) $order->discount_amount <= 0) throw new \RuntimeException('coupon did not fully discount order');
+                if (!(new OrderService($order))->paid('telegram-reseller-' . $this->actorId($msg))) throw new \RuntimeException('order activation failed');
+                Log::notice('Telegram reseller created customer', ['operator_telegram_id' => $this->actorId($msg), 'user_id' => $user->id, 'order_id' => $order->id, 'coupon_id' => $order->coupon_id]);
+                return compact('user', 'plan', 'order', 'password');
+            });
+        } catch (\Throwable $e) {
+            Log::warning('Telegram reseller purchase rejected', ['operator_telegram_id' => $this->actorId($msg), 'error' => $e->getMessage()]);
+            $this->sendMessage($msg, $this->text('reseller_coupon_invalid', $locale)); return;
+        }
+        $this->clearResellerState($msg);
+        $this->sendMessage($msg, $this->text('reseller_done', $locale, [
+            'email' => $result['user']->email, 'password' => $result['password'], 'plan' => $result['plan']->name,
+            'period' => $this->periodName($result['order']->period, $locale), 'url' => Helper::getSubscribeUrl($result['user']->token),
+        ]));
     }
 
-    $user = $this->getBoundUser($msg);
-    if (!$user) {
-      return;
+    public function handleCancelCommand(object $msg): void
+    {
+        $this->clearResellerState($msg); $this->sendMessage($msg, $this->text('cancelled', $this->localeForMessage($msg)));
     }
 
-    $subscribeUrl = Helper::getSubscribeUrl($user->token);
-    $text = sprintf("🔗 您的订阅链接：\n\n%s", $subscribeUrl);
-
-    $this->sendMessage($msg, $text);
-  }
-
-  public function handleUnbindCommand(object $msg): void
-  {
-    if (!$this->checkPrivateChat($msg)) {
-      return;
+    public function sendOrderLifecycleNotify(Order $order): void
+    {
+        $order->loadMissing(['user', 'plan']); $user = $order->user;
+        if (!$user?->telegram_id) return;
+        $key = match ((int) $order->type) { Order::TYPE_RENEWAL => 'renewed', Order::TYPE_UPGRADE => 'upgraded', Order::TYPE_RESET_TRAFFIC => 'traffic_reset', default => 'purchased' };
+        $expires = $user->expired_at ? date('Y-m-d H:i:s', $user->expired_at) : '∞';
+        $this->telegramService->sendMessage($user->telegram_id, $this->text($key, $this->localeForUser($user), ['plan' => $order->plan?->name ?? '-', 'expires' => $expires]));
     }
 
-    $user = $this->getBoundUser($msg);
-    if (!$user) {
-      return;
+    public function sendSubscriptionResetNotify(array $payload): void
+    {
+        [$user, $url] = $payload;
+        if ($user->telegram_id) $this->telegramService->sendMessage($user->telegram_id, $this->text('url_reset', $this->localeForUser($user), ['url' => $url]));
     }
 
-    $user->telegram_id = null;
-    if (!$user->save()) {
-      $this->sendMessage($msg, '解绑失败');
-      return;
+    public function sendTrafficResetNotify(array $payload): void
+    {
+        [$user, $source] = $payload;
+        if ($source === TrafficResetLog::SOURCE_ORDER || !$user->telegram_id) return;
+        $this->telegramService->sendMessage($user->telegram_id, $this->text('traffic_reset', $this->localeForUser($user)));
     }
 
-    $this->sendMessage($msg, '解绑成功');
-  }
-
-  public function handleTicketReply(object $msg, array $matches): void
-  {
-    $user = $this->getBoundUser($msg);
-    if (!$user) {
-      return;
+    public function sendPaymentNotify(Order $order): void
+    {
+        if (!$this->getConfig('enable_payment_notify', true) || !$order->payment) return;
+        $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($order) {
+            $vi = str_starts_with(strtolower($admin->locale ?? 'vi-VN'), 'vi');
+            return $vi
+                ? sprintf("💰 Thanh toán thành công %.2f CNY\nCổng: %s\nKênh: %s\nĐơn: `%s`", $order->total_amount / 100, Helper::escapeMarkdown($order->payment->payment), Helper::escapeMarkdown($order->payment->name), $order->trade_no)
+                : sprintf("💰 Payment received %.2f CNY\nGateway: %s\nChannel: %s\nOrder: `%s`", $order->total_amount / 100, Helper::escapeMarkdown($order->payment->payment), Helper::escapeMarkdown($order->payment->name), $order->trade_no);
+        }, true);
     }
 
-    if (!isset($matches[2]) || !is_numeric($matches[2])) {
-      Log::warning('Telegram 工单回复正则未匹配到工单ID', ['matches' => $matches, 'msg' => $msg]);
-      $this->sendMessage($msg, '未能识别工单ID，请直接回复工单提醒消息。');
-      return;
+    public function sendTicketNotify(Ticket $ticket): void
+    {
+        if (!$this->getConfig('enable_ticket_notify', true)) return;
+        $message = $ticket->messages()->latest()->first(); $user = User::find($ticket->user_id); if (!$user || !$message) return;
+        $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($ticket, $user, $message) {
+            $vi = str_starts_with(strtolower($admin->locale ?? 'vi-VN'), 'vi');
+            return $vi
+                ? "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Chủ đề*: `" . Helper::escapeMarkdown($ticket->subject) . "`\n💬 *Nội dung*: `" . Helper::escapeMarkdown($message->message) . '`'
+                : "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Subject*: `" . Helper::escapeMarkdown($ticket->subject) . "`\n💬 *Message*: `" . Helper::escapeMarkdown($message->message) . '`';
+        }, true);
     }
 
-    $ticketId = (int) $matches[2];
-    $ticket = Ticket::where('id', $ticketId)->first();
-    if (!$ticket) {
-      $this->sendMessage($msg, '工单不存在');
-      return;
+    public function handleTicketReply(object $msg, array $matches): void
+    {
+        $actor = $this->operatorUser($msg);
+        if (!$actor || (!$actor->is_admin && !$actor->is_staff)) { $this->sendMessage($msg, $this->text('forbidden', $this->localeForMessage($msg))); return; }
+        $ticketId = (int) ($matches[1] ?? 0); if (!$ticketId || !Ticket::find($ticketId)) return;
+        (new TicketService())->replyByAdmin($ticketId, $msg->text, $actor->id);
+        $this->sendMessage($msg, "✅ Ticket #{$ticketId} đã được trả lời.");
     }
 
-    $ticketService = new TicketService();
-    $ticketService->replyByAdmin(
-      $ticketId,
-      $msg->text,
-      $user->id
-    );
-
-    $this->sendMessage($msg, "工单 #{$ticketId} 回复成功");
-  }
-
-  /**
-   * 添加 Bot 命令到命令列表
-   */
-  public function addBotCommands(array $commands): array
-  {
-    foreach ($this->commandConfigs as $command => $config) {
-      $commands[] = [
-        'command' => $command,
-        'description' => $config['description']
-      ];
+    public function handleUnknownCommand(array $data): void
+    {
+        [$msg] = $data; if ($msg->message_type === 'message') $this->sendMessage($msg, $this->text('unknown', $this->localeForMessage($msg)));
     }
 
-    return $commands;
-  }
+    public function handleError(array $data): void
+    {
+        [$msg, $e] = $data; Log::error('Telegram message handler error', ['chat_id' => $msg->chat_id ?? null, 'error' => $e->getMessage()]);
+    }
 
-  private function transferToGBString(float $transfer_enable, int $decimals = 2): string
-  {
-    return number_format(Helper::transferToGB($transfer_enable), $decimals, '.', '');
-  }
+    public function addBotCommands(array $commands): array
+    {
+        foreach ($this->commandConfigs as $command => $config) $commands[] = ['command' => ltrim($command, '/'), 'description' => $config['description']];
+        return $commands;
+    }
 
+    public function addLocalizedBotCommands(array $localized): array
+    {
+        $descriptions = [
+            'vi' => ['start' => 'Mở menu chính', 'menu' => 'Mở menu chính', 'bind' => 'Liên kết tài khoản', 'traffic' => 'Xem lưu lượng', 'getlatesturl' => 'Lấy liên kết đăng ký', 'unbind' => 'Hủy liên kết tài khoản', 'nodes' => 'Xem người dùng online theo node', 'setreportgroup' => 'Đặt nhóm nhận báo cáo node', 'reseller' => 'Tạo tài khoản khách hàng', 'cancel' => 'Hủy thao tác hiện tại'],
+            'en' => ['start' => 'Open the main menu', 'menu' => 'Open the main menu', 'bind' => 'Link an account', 'traffic' => 'View traffic', 'getlatesturl' => 'Get subscription link', 'unbind' => 'Unlink the account', 'nodes' => 'View online users by node', 'setreportgroup' => 'Set the node report group', 'reseller' => 'Create a customer account', 'cancel' => 'Cancel the current action'],
+            'zh' => ['start' => '打开主菜单', 'menu' => '打开主菜单', 'bind' => '绑定账号', 'traffic' => '查看流量', 'getlatesturl' => '获取订阅链接', 'unbind' => '解绑账号', 'nodes' => '查看各节点在线用户', 'setreportgroup' => '设置节点报告群组', 'reseller' => '创建客户账号', 'cancel' => '取消当前操作'],
+        ];
+        foreach ($descriptions as $language => $items) {
+            $localized[$language] = collect($items)->map(
+                fn ($description, $command) => ['command' => $command, 'description' => $description]
+            )->values()->all();
+        }
+        return $localized;
+    }
+
+    protected function sendMessage(object $msg, string $message, array $replyMarkup = []): void
+    {
+        $this->telegramService->sendMessage($msg->chat_id, $message, 'markdown', $replyMarkup);
+    }
+
+    protected function privateChat(object $msg): bool
+    {
+        if ($msg->is_private) return true;
+        $this->sendMessage($msg, $this->text('private', $this->localeForMessage($msg))); return false;
+    }
+
+    protected function boundUser(object $msg, bool $notify = true): ?User
+    {
+        $user = User::where('telegram_id', $this->actorId($msg))->first();
+        if (!$user && $notify) $this->sendMessage($msg, $this->text('bind_first', $this->localeForMessage($msg)));
+        return $user;
+    }
+
+    protected function operatorUser(object $msg): ?User { return $this->boundUser($msg, false); }
+    protected function isOperator(object $msg): bool { $u = $this->operatorUser($msg); return (bool) ($u && ($u->is_admin || $u->is_staff)); }
+    protected function isReseller(object $msg): bool
+    {
+        if (!$this->getConfig('enable_reseller_bot', false)) return false;
+        if ($this->isOperator($msg)) return true;
+        $ids = array_filter(array_map('trim', explode(',', (string) $this->getConfig('reseller_telegram_ids', ''))));
+        return in_array((string) $this->actorId($msg), $ids, true);
+    }
+
+    protected function actorId(object $msg): int { return (int) ($msg->from_id ?? $msg->chat_id); }
+    protected function resellerKey(object $msg): string { return 'telegram_reseller_state:' . $this->actorId($msg); }
+    protected function resellerState(object $msg): ?array { $state = Cache::get($this->resellerKey($msg)); return is_array($state) ? $state : null; }
+    protected function setResellerState(object $msg, array $state): void { Cache::put($this->resellerKey($msg), $state, now()->addMinutes(15)); }
+    protected function clearResellerState(object $msg): void { Cache::forget($this->resellerKey($msg)); }
+
+    protected function localeForMessage(object $msg): string
+    {
+        $user = $this->boundUser($msg, false); return $user ? $this->localeForUser($user) : (string) ($msg->language_code ?? 'vi-VN');
+    }
+    protected function localeForUser(User $user): string { return (string) ($user->locale ?: 'vi-VN'); }
+    protected function language(string $locale): string { $base = strtolower(explode('-', str_replace('_', '-', $locale))[0]); return in_array($base, ['vi', 'zh'], true) ? $base : 'en'; }
+    protected function text(string $key, string $locale, array $replace = []): string
+    {
+        $text = $this->messages[$this->language($locale)][$key] ?? $this->messages['en'][$key] ?? $key;
+        foreach ($replace as $name => $value) $text = str_replace(':' . $name, (string) $value, $text);
+        return $text;
+    }
+
+    protected function nodeReport(string $locale): string
+    {
+        $lines = [$this->text('nodes_title', $locale), ''];
+        foreach (Server::all()->filter(fn ($server) => !$server->parent_id) as $server) {
+            $lines[] = $this->text('node_line', $locale, ['state' => $server->is_online ? '🟢' : '🔴', 'name' => $server->name, 'type' => strtoupper($server->type), 'online' => (int) $server->online]);
+        }
+        return implode("\n", $lines);
+    }
+
+    protected function extractTokenFromUrl(string $url): ?string
+    {
+        $parts = parse_url($url); if (!$parts) return null;
+        if (isset($parts['query'])) { parse_str($parts['query'], $query); if (!empty($query['token'])) return (string) $query['token']; }
+        $segments = explode('/', trim((string) ($parts['path'] ?? ''), '/')); $token = end($segments);
+        return is_string($token) && $token !== '' ? $token : null;
+    }
+
+    protected function gb(float|int $bytes): string { return number_format(Helper::transferToGB($bytes), 2, '.', ''); }
+    protected function periodName(string $period, string $locale = 'vi-VN'): string
+    {
+        $language = $this->language($locale);
+        $names = [
+            'vi' => ['monthly' => 'Hàng tháng', 'quarterly' => '3 tháng', 'half_yearly' => '6 tháng', 'yearly' => 'Hàng năm', 'two_yearly' => '2 năm', 'three_yearly' => '3 năm', 'onetime' => 'Một lần', 'reset_traffic' => 'Đặt lại lưu lượng'],
+            'en' => ['monthly' => 'Monthly', 'quarterly' => '3 months', 'half_yearly' => '6 months', 'yearly' => 'Yearly', 'two_yearly' => '2 years', 'three_yearly' => '3 years', 'onetime' => 'One-time', 'reset_traffic' => 'Traffic reset'],
+            'zh' => ['monthly' => '月付', 'quarterly' => '季付', 'half_yearly' => '半年付', 'yearly' => '年付', 'two_yearly' => '两年付', 'three_yearly' => '三年付', 'onetime' => '一次性', 'reset_traffic' => '重置流量'],
+        ];
+        return $names[$language][$period] ?? $period;
+    }
 }

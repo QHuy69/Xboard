@@ -95,12 +95,25 @@ RUN php -l routes/web.php \
     && php -l app/Services/MailService.php \
     && php -l app/Services/PlanService.php \
     && php -l app/Services/TicketService.php \
+    && php -l app/Console/Commands/CheckServer.php \
+    && php -l app/Http/Controllers/V1/Guest/PaymentController.php \
+    && php -l app/Http/Controllers/V1/Guest/TelegramController.php \
+    && php -l app/Http/Controllers/V1/User/UserController.php \
+    && php -l app/Http/Requests/Admin/UserUpdate.php \
     && php -l app/Http/Controllers/V1/User/ServerController.php \
     && php -l app/Http/Resources/NodeResource.php \
+    && php -l app/Services/LuckThemeAssetPatcher.php \
+    && php -l app/Services/OrderService.php \
+    && php -l app/Services/TelegramService.php \
+    && php -l app/Services/TrafficResetService.php \
+    && php -l plugins-core/CoinPayments/Plugin.php \
+    && php -l plugins-core/Telegram/Plugin.php \
     && php -l database/migrations/2026_08_29_000002_add_language_to_mail_templates.php \
     && php -l database/migrations/2026_08_29_000003_enable_email_verification_and_set_admin_path.php \
     && composer install --no-cache --no-dev --no-security-blocking \
     && php tests/smoke-node-access-url.php \
+    && php tests/smoke-luck-theme-patches.php \
+    && php tests/smoke-custom-backend.php \
     && php artisan storage:link \
     && chown -R www:www /www \
     && chmod -R 775 /www \

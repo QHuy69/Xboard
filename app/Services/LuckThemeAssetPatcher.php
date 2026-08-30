@@ -80,20 +80,218 @@ final class LuckThemeAssetPatcher
 
     public static function patchLoginErrors(string $contents): string
     {
-        return str_replace(
+        $contents = str_replace(
             <<<'JS'
         if (((_a2 = error.response) == null ? void 0 : _a2.status) === 500) {
           customMessage.loginError(((_b2 = error.response.data) == null ? void 0 : _b2.message) || "邮箱或密码错误");
         } else if (((_c2 = error.response) == null ? void 0 : _c2.status) === 422) {
 JS,
             <<<'JS'
-        if (error.response && error.response.status !== 422) {
+        if (error && error.luckAuthStage === "profile") {
+          customMessage.loginError("登录成功，但暂时无法加载账户信息，请重试");
+        } else if (error.response && error.response.status !== 422) {
           const serverMessage = error.response.data && error.response.data.message;
           customMessage.loginError(serverMessage || "登录失败，请检查邮箱和密码");
         } else if (((_c2 = error.response) == null ? void 0 : _c2.status) === 422) {
 JS,
             $contents
         );
+
+        // Keep client-side validation aligned with AuthLogin::rules(). A six-
+        // or seven-character password must never be sent only to come back as
+        // a misleading request/network failure.
+        $contents = str_replace(
+            [
+                'if (formData.password.length < 6) {',
+                'const loginData = { ...formData };',
+                'const goToRegister = () => {' . "\n" . '      router.push("/register");' . "\n" . '    };',
+            ],
+            [
+                'if (formData.password.length < 8) {',
+                'const loginData = { ...formData, email: formData.email.trim().toLowerCase() };',
+                'const goToRegister = () => {' . "\n" . '      void router.push("/register");' . "\n" . '    };',
+            ],
+            $contents
+        );
+
+        return $contents;
+    }
+
+    public static function patchRegisterFlow(string $contents): string
+    {
+        // Invitation links must pre-fill the code regardless of whether the
+        // current Luck bundle exposes Vue Router's useRoute helper.
+        if (!str_contains($contents, 'const invitationCodeFromUrl =')) {
+            $contents = str_replace(
+                <<<'JS'
+    const formData = reactive({
+      email: "",
+      emailPrefix: "",
+      emailSuffix: "",
+      password: "",
+      confirmPassword: "",
+      inviteCode: "",
+      emailCode: ""
+    });
+JS,
+                <<<'JS'
+    const formData = reactive({
+      email: "",
+      emailPrefix: "",
+      emailSuffix: "",
+      password: "",
+      confirmPassword: "",
+      inviteCode: "",
+      emailCode: ""
+    });
+    const invitationCodeFromUrl = new URLSearchParams(window.location.search).get("code");
+    if (invitationCodeFromUrl) {
+      formData.inviteCode = invitationCodeFromUrl.trim();
+    }
+JS,
+                $contents
+            );
+        }
+
+        // Validate a mandatory invitation code before the request. More
+        // importantly, treat every HTTP response as an application response;
+        // only a request with no response at all is a network error.
+        if (!str_contains($contents, 'backendConfig.value.is_invite_force && !formData.inviteCode.trim()')) {
+            $contents = str_replace(
+                <<<'JS'
+      if (((_b2 = backendConfig.value) == null ? void 0 : _b2.is_email_verify) && !formData.emailCode.trim()) {
+        customMessage.error("请输入邮箱验证码", { title: "验证码为空" });
+        return;
+      }
+JS,
+                <<<'JS'
+      if (((_b2 = backendConfig.value) == null ? void 0 : _b2.is_email_verify) && !formData.emailCode.trim()) {
+        customMessage.error("请输入邮箱验证码", { title: "验证码为空" });
+        return;
+      }
+      if (backendConfig.value.is_invite_force && !formData.inviteCode.trim()) {
+        customMessage.registerError("You must use the invitation code to register");
+        return;
+      }
+JS,
+                $contents
+            );
+        }
+
+        $contents = str_replace(
+            <<<'JS'
+        if (((_d2 = error.response) == null ? void 0 : _d2.status) === 500) {
+          customMessage.registerError(((_e2 = error.response.data) == null ? void 0 : _e2.message) || "注册失败，请稍后重试");
+        } else if (((_f2 = error.response) == null ? void 0 : _f2.status) === 422) {
+          const errors = (_g2 = error.response.data) == null ? void 0 : _g2.errors;
+          if (errors) {
+            const errorMessages = Object.values(errors).flat();
+            customMessage.registerError(errorMessages.join(", "));
+          } else {
+            customMessage.registerError("请检查输入信息");
+          }
+        } else {
+          customMessage.networkError();
+        }
+JS,
+            <<<'JS'
+        if (error.response) {
+          const responseData = error.response.data || {};
+          const errors = responseData.errors || responseData.error;
+          if (errors && typeof errors === "object") {
+            const errorMessages = Object.values(errors).flat().filter(Boolean);
+            customMessage.registerError(errorMessages.join(", ") || responseData.message || "请检查输入信息");
+          } else {
+            customMessage.registerError(responseData.message || "注册失败，请检查输入信息");
+          }
+        } else {
+          customMessage.networkError();
+        }
+JS,
+            $contents
+        );
+
+        return str_replace(
+            'placeholder: "邀请码（可选）",',
+            'placeholder: backendConfig.value.is_invite_force ? "邀请码（必填）" : "邀请码（可选）",',
+            $contents
+        );
+    }
+
+    public static function patchMessageLocalization(string $contents): string
+    {
+        // Toasts are Vue subtrees. Translating only the final DOM can split a
+        // sentence into mixed Chinese/Vietnamese fragments, so translate the
+        // content and title before the toast component renders them.
+        foreach (['success', 'error', 'warning', 'info'] as $method) {
+            $contents = str_replace(
+                "    return this.instance.{$method}(content, options);",
+                "    const translate = typeof window.__LUCK_T__ === \"function\" ? window.__LUCK_T__ : (value) => value;\n"
+                    . "    const translatedOptions = options ? { ...options, title: options.title ? translate(options.title) : options.title } : options;\n"
+                    . "    return this.instance.{$method}(translate(content), translatedOptions);",
+                $contents
+            );
+        }
+
+        return $contents;
+    }
+
+    public static function patchSharedAuth(string $contents): string
+    {
+        // A valid login can be followed by a transient /user/info failure.
+        // Mark that stage explicitly and keep the token so the UI never lies
+        // that the password was wrong. 401 is the only response that proves
+        // the token itself is invalid.
+        $contents = str_replace(
+            <<<'JS'
+      } else {
+        logout();
+        throw error;
+      }
+JS,
+            <<<'JS'
+      } else {
+        if (error.response && error.response.status === 401) {
+          logout();
+        }
+        error.luckAuthStage = "profile";
+        throw error;
+      }
+JS,
+            $contents
+        );
+
+        return $contents;
+    }
+
+    public static function patchPaymentMessages(string $contents): string
+    {
+        $contents = str_replace(
+            'const paymentResult = await apiClient.checkoutOrder(tradeNo, method.id);',
+            'const rawPaymentResult = await apiClient.checkoutOrder(tradeNo, method.id);' . "\n"
+                . '        const paymentResult = rawPaymentResult && rawPaymentResult.data && typeof rawPaymentResult.type === "undefined" ? rawPaymentResult.data : rawPaymentResult;',
+            $contents
+        );
+
+        // Laravel returns an integer today, but older cached API wrappers can
+        // expose the same value as a string or under `data`. Normalise both
+        // shapes so the first checkout attempt cannot fall into "unknown".
+        $contents = str_replace('paymentResult.type ===', 'Number(paymentResult.type) ===', $contents);
+        $contents = str_replace(
+            [
+                'window.open(paymentResult.data, "_blank");',
+                'window.location.href = paymentResult.data;',
+                'message.error("未知的支付类型，请重试");',
+            ],
+            [
+                'window.location.assign(paymentResult.data);',
+                'window.location.assign(paymentResult.data);',
+                'message.error(typeof window.__LUCK_T__ === "function" ? window.__LUCK_T__("未知的支付类型，请重试") : "Unknown payment method. Please try again.");',
+            ],
+            $contents
+        );
+
+        return $contents;
     }
 
     public static function patchInviteManagement(string $contents): string

@@ -60,7 +60,10 @@ class ServerController extends Controller
                 }
             }
         }
-        if ($locale !== '' && $user->locale !== $locale) {
+        $manualChoice = (string) $request->cookie('luck_locale_manual', '') === '1';
+        // Browser detection initializes an empty locale. Once an admin has
+        // selected a locale, only an explicit customer choice may override it.
+        if ($locale !== '' && ($manualChoice || blank($user->locale)) && $user->locale !== $locale) {
             $user->forceFill(['locale' => $locale])->saveQuietly();
         }
     }

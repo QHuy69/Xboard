@@ -139,6 +139,7 @@ class UserController extends Controller
                 'd',
                 'transfer_enable',
                 'email',
+                'locale',
                 'uuid',
                 'device_limit',
                 'speed_limit',
@@ -169,7 +170,9 @@ class UserController extends Controller
         if (!$user->save()) {
             return $this->fail([400, __('Reset failed')]);
         }
-        return $this->success(Helper::getSubscribeUrl($user->token));
+        $subscribeUrl = Helper::getSubscribeUrl($user->token);
+        HookManager::call('user.subscribe.reset.after', [$user, $subscribeUrl]);
+        return $this->success($subscribeUrl);
     }
 
     public function update(UserUpdate $request)

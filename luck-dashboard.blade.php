@@ -24,7 +24,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=12">
+  <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=13">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -34,6 +34,13 @@
       try {
         sessionStorage.removeItem('luck_chunk_retry_at');
         sessionStorage.removeItem('luck_boot_retry_at');
+        // Older invitation links used hash routing (/#/register?code=...).
+        // Luck now uses history routing, so normalize the URL before Vue
+        // mounts and preserve the invitation code in the real query string.
+        if (/^#\/register(?:\?|$)/.test(window.location.hash)) {
+          var legacyRoute = window.location.hash.slice(1);
+          window.history.replaceState(window.history.state, '', legacyRoute);
+        }
         var url = new URL(window.location.href);
         var changed = url.searchParams.has('luck_reload') || url.searchParams.has('luck_boot');
         url.searchParams.delete('luck_reload');
@@ -76,7 +83,23 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
-  <script src="/theme/{{$theme}}/i18n-v18.js?v=55"></script>
+  <script src="/theme/{{$theme}}/i18n-v18.js?v=56"></script>
+  <script>
+    (function () {
+      // The stock login chunk occasionally misses the first SPA navigation
+      // while it is mounting. Let Vue handle the click normally, then repair
+      // only a missed transition without reloading the document.
+      document.addEventListener('click', function (event) {
+        var target = event.target && event.target.closest ? event.target.closest('.register-link') : null;
+        if (!target) return;
+        window.setTimeout(function () {
+          if (window.location.pathname === '/register') return;
+          window.history.pushState(window.history.state, '', '/register');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }, 0);
+      }, true);
+    }());
+  </script>
   <script>
     (function () {
       var banner = document.getElementById('luck-donate-banner');
@@ -222,6 +245,19 @@
         }).then(function (payload) {
           if (requestId !== eligibilityRequest) return;
           var subscription = payload && payload.data;
+          try {
+            var accountLocale = subscription && subscription.locale;
+            var manualLocale = localStorage.getItem('luck_locale_manual') === '1';
+            var currentLocale = window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE;
+            if (!manualLocale && accountLocale && accountLocale !== currentLocale
+                && sessionStorage.getItem('luck_account_locale_applied') !== accountLocale) {
+              sessionStorage.setItem('luck_account_locale_applied', accountLocale);
+              document.cookie = 'luck_locale=' + encodeURIComponent(accountLocale) + '; path=/; max-age=31536000; SameSite=Lax';
+              localStorage.setItem('luck_locale', accountLocale);
+              window.location.reload();
+              return;
+            }
+          } catch (ignoreAccountLocale) {}
           var expiresAt = subscription && Number(subscription.expired_at || 0);
           var active = !expiresAt || expiresAt > Math.floor(Date.now() / 1000);
           var eligible = subscription && TARGET_PLAN_IDS.indexOf(Number(subscription.plan_id)) !== -1 && active;
@@ -322,12 +358,38 @@
       }, 0);
     }());
   </script>
+  <div class="luck-language-picker" aria-label="Language selector">
+    <label for="luck-language-select">🌐</label>
+    <select id="luck-language-select" aria-label="Language">
+      <option value="vi-VN">Tiếng Việt</option>
+      <option value="en-US">English</option>
+      <option value="zh-CN">简体中文</option>
+      <option value="zh-TW">繁體中文</option>
+      <option value="ja-JP">日本語</option>
+      <option value="ko-KR">한국어</option>
+      <option value="fa-IR">فارسی</option>
+      <option value="ru-RU">Русский</option>
+    </select>
+  </div>
+  <script>
+    (function () {
+      var select = document.getElementById('luck-language-select');
+      if (!select) return;
+      var current = (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || 'vi-VN';
+      select.value = current;
+      select.addEventListener('change', function () {
+        if (window.__LUCK_SET_LOCALE__) window.__LUCK_SET_LOCALE__(select.value);
+      });
+    }());
+  </script>
   <script>
     (function () {
       var websiteId = @json((string) (admin_setting('crisp_website_id', env('CRISP_WEBSITE_ID', ''))));
       if (!websiteId || !/^[0-9a-f-]{36}$/i.test(websiteId) || window.__luckCrispLoaded) return;
       window.__luckCrispLoaded = true;
       window.$crisp = window.$crisp || [];
+      window.CRISP_RUNTIME_CONFIG = window.CRISP_RUNTIME_CONFIG || {};
+      window.CRISP_RUNTIME_CONFIG.locale = String((window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || 'vi-VN').split('-')[0];
       window.CRISP_WEBSITE_ID = websiteId;
       var script = document.createElement('script');
       script.src = 'https://client.crisp.chat/l.js';
@@ -336,6 +398,10 @@
       document.head.appendChild(script);
     }());
   </script>
+  @php($messengerUsername = trim((string) admin_setting('messenger_page_username', env('MESSENGER_PAGE_USERNAME', ''))))
+  @if($messengerUsername !== '' && preg_match('/^[A-Za-z0-9._-]{3,100}$/', $messengerUsername))
+    <a class="luck-messenger-support" href="https://m.me/{{ rawurlencode($messengerUsername) }}" target="_blank" rel="noopener noreferrer" aria-label="Messenger support" title="Messenger support">f</a>
+  @endif
   <script>
     window.V2BOARD_CONFIG = window.V2BOARD_CONFIG || {};
     window.V2BOARD_CONFIG.DEFAULT_API_URL = window.location.origin;

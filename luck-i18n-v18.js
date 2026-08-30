@@ -8,10 +8,16 @@
   var browserLanguages = (navigator.languages || [navigator.language || '']).map(function (value) {
     return String(value || '').replace('_', '-');
   });
+  var storedLocale = '';
+  try {
+    var cookieMatch = document.cookie.match(/(?:^|;\s*)luck_locale=([^;]+)/);
+    storedLocale = cookieMatch ? decodeURIComponent(cookieMatch[1]) : (window.localStorage.getItem('luck_locale') || '');
+  } catch (ignoreStoredLocale) {}
+  storedLocale = String(storedLocale || '').replace('_', '-');
   var raw = browserLanguages.concat(serverLanguages).map(function (value) {
     return String(value || '').replace('_', '-');
   }).filter(Boolean);
-  var locale = raw.find(function (value) { return supported.indexOf(value) !== -1; }) ||
+  var locale = (supported.indexOf(storedLocale) !== -1 ? storedLocale : '') || raw.find(function (value) { return supported.indexOf(value) !== -1; }) ||
     supported.find(function (value) {
       var base = value.toLowerCase().split('-')[0];
       return raw.some(function (preferred) { return preferred.toLowerCase().split('-')[0] === base; });
@@ -31,7 +37,19 @@
   // localized subscription-info nodes, regardless of the client language.
   try {
     document.cookie = 'luck_locale=' + encodeURIComponent(locale) + '; path=/; max-age=31536000; SameSite=Lax';
+    window.localStorage.setItem('luck_locale', locale);
   } catch (ignoreCookie) {}
+  window.__LUCK_SET_LOCALE__ = function (nextLocale) {
+    if (supported.indexOf(nextLocale) === -1) return false;
+    try {
+      document.cookie = 'luck_locale=' + encodeURIComponent(nextLocale) + '; path=/; max-age=31536000; SameSite=Lax';
+      document.cookie = 'luck_locale_manual=1; path=/; max-age=31536000; SameSite=Lax';
+      window.localStorage.setItem('luck_locale', nextLocale);
+      window.localStorage.setItem('luck_locale_manual', '1');
+    } catch (ignoreLocaleStorage) {}
+    window.location.reload();
+    return true;
+  };
   function enforceBrandTitle() {
     if (document.title !== brandTitle) document.title = brandTitle;
   }
@@ -121,7 +139,7 @@
     '解锁': 'Unlock', '延迟RTT': 'RTT latency', 'HTTP延迟': 'HTTP latency',
     '创建新账户': 'Create a new account', 'Email地址': 'Email address',
     '还没有账号？': 'No account yet?', '已经有账户？': 'Already have an account?',
-    '邀请码': 'Invitation code', '邀请码（可选）': 'Invitation code (optional)',
+    '邀请码': 'Invitation code', '邀请码（可选）': 'Invitation code (optional)', '邀请码（必填）': 'Invitation code (required)',
     '邀请码 (可选)': 'Invitation code (optional)', '至少8位': 'at least 8 characters',
     '（至少8位）': '(at least 8 characters)', '(至少8位)': '(at least 8 characters)',
     '注册即代表同意': 'By registering, you agree to', '同意': 'agree',
@@ -131,14 +149,23 @@
     '请输入Email地址': 'Enter email address', '流量使用趋势（最近30天）': 'Traffic usage trend (last 30 days)',
     '流量使用趋势(最近30天)': 'Traffic usage trend (last 30 days)', '流量使用趋势 (最近30天)': 'Traffic usage trend (last 30 days)',
     '流量 (GB)': 'Traffic (GB)', '流量（GB）': 'Traffic (GB)', '上传流量': 'Upload traffic', '下载流量': 'Download traffic',
-    '获取节点列表失败': 'Failed to load the node list', '时间': 'Time'
+    '获取节点列表失败': 'Failed to load the node list', '时间': 'Time',
+    '发送成功': 'Sent successfully', '验证码已发送，请查收邮箱': 'The verification code was sent. Check your email.',
+    '验证码已发送到您的邮箱': 'The verification code was sent to your email.', '欢迎加入': 'Welcome',
+    '注册成功，正在为您登录...': 'Registration successful. Signing you in...',
+    '邮箱格式错误': 'Invalid email', '请输入有效的邮箱地址': 'Enter a valid email address',
+    '请输入邮箱用户名': 'Enter your email username', '信息不完整': 'Incomplete information',
+    'You must use the invitation code to register': 'An invitation code is required to register',
+    '必须使用邀请码才可以注册': 'An invitation code is required to register',
+    '未知的支付类型，请重试': 'Unknown payment method. Please try again.',
+    '新套餐': 'New plan', '新Gói': 'New plan'
   });
   Object.assign(vi, {
     '节点名称': 'Tên node', '地址': 'Địa chỉ', '倍率': 'Tỷ lệ', '标签': 'Nhãn',
     '解锁': 'Mở khóa', '延迟RTT': 'Độ trễ RTT', 'HTTP延迟': 'Độ trễ HTTP',
     '创建新账户': 'Tạo tài khoản mới', 'Email地址': 'Địa chỉ email',
     '还没有账号？': 'Chưa có tài khoản?', '已经有账户？': 'Đã có tài khoản?',
-    '邀请码': 'Mã mời', '邀请码（可选）': 'Mã mời (tùy chọn)',
+    '邀请码': 'Mã mời', '邀请码（可选）': 'Mã mời (tùy chọn)', '邀请码（必填）': 'Mã mời (bắt buộc)',
     '邀请码 (可选)': 'Mã mời (tùy chọn)', '至少8位': 'ít nhất 8 ký tự',
     '（至少8位）': '(ít nhất 8 ký tự)', '(至少8位)': '(ít nhất 8 ký tự)',
     '注册即代表同意': 'Đăng ký đồng nghĩa với việc bạn đồng ý với', '同意': 'đồng ý',
@@ -148,7 +175,18 @@
     '请输入Email地址': 'Nhập địa chỉ email', '流量使用趋势（最近30天）': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)',
     '流量使用趋势(最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)', '流量使用趋势 (最近30天)': 'Xu hướng sử dụng lưu lượng (30 ngày gần đây)',
     '流量 (GB)': 'Lưu lượng (GB)', '流量（GB）': 'Lưu lượng (GB)', '上传流量': 'Lưu lượng tải lên', '下载流量': 'Lưu lượng tải xuống',
-    '获取节点列表失败': 'Không tải được danh sách node', '时间': 'Thời gian'
+    '获取节点列表失败': 'Không tải được danh sách node', '时间': 'Thời gian',
+    '发送成功': 'Gửi thành công', '验证码已发送，请查收邮箱': 'Mã xác minh đã được gửi, vui lòng kiểm tra email',
+    '验证码已发送到您的邮箱': 'Mã xác minh đã được gửi, vui lòng kiểm tra email', '欢迎加入': 'Chào mừng bạn',
+    '注册成功，正在为您登录...': 'Đăng ký thành công, đang đăng nhập...',
+    '邮箱格式错误': 'Email không hợp lệ', '请输入有效的邮箱地址': 'Vui lòng nhập địa chỉ email hợp lệ',
+    '请输入邮箱用户名': 'Vui lòng nhập email', '信息不完整': 'Thông tin chưa đầy đủ',
+    'You must use the invitation code to register': 'Bạn phải nhập mã mời để đăng ký',
+    '必须使用邀请码才可以注册': 'Bạn phải nhập mã mời để đăng ký',
+    'Invalid invitation code': 'Mã mời không hợp lệ',
+    '未知的支付类型，请重试': 'Không xác định được phương thức thanh toán, vui lòng thử lại',
+    '登录成功，但暂时无法加载账户信息，请重试': 'Đăng nhập thành công nhưng chưa tải được thông tin tài khoản. Vui lòng thử lại.',
+    '新套餐': 'Gói mới', '新Gói': 'Gói mới'
   });
   Object.assign(en, {
     '邀请链接二维码': 'Invitation link QR code', '分享给好友，获得推广佣金': 'Share with friends to earn referral commission',

@@ -31,7 +31,7 @@ class UserController extends Controller
     {
         $user = User::find($request->input('id'));
         if (!$user)
-            return $this->fail([400202, '用户不存在']);
+            return $this->fail([400202, 'Người dùng không tồn tại']);
         $user->token = Helper::guid();
         $user->uuid = Helper::guid(true);
         $result = $user->save();
@@ -218,7 +218,7 @@ class UserController extends Controller
         $request->validate([
             'id' => 'required|numeric'
         ], [
-            'id.required' => '用户ID不能为空'
+            'id.required' => 'ID người dùng không được để trống'
         ]);
         $user = User::find($request->input('id'))->load('invite_user');
         $user = HookManager::filter('admin.user.detail', $user, $request);
@@ -231,11 +231,11 @@ class UserController extends Controller
 
         $user = User::find($request->input('id'));
         if (!$user) {
-            return $this->fail([400202, '用户不存在']);
+            return $this->fail([400202, 'Người dùng không tồn tại']);
         }
         if (isset($params['email'])) {
             if (User::byEmail($params['email'])->first() && $user->email !== $params['email']) {
-                return $this->fail([400201, '邮箱已被使用']);
+                return $this->fail([400201, 'Email này đã được sử dụng']);
             }
         }
         // 处理密码
@@ -249,7 +249,7 @@ class UserController extends Controller
         if (isset($params['plan_id'])) {
             $plan = Plan::find($params['plan_id']);
             if (!$plan) {
-                return $this->fail([400202, '订阅计划不存在']);
+                return $this->fail([400202, 'Gói đăng ký không tồn tại']);
             }
             $params['group_id'] = $plan->group_id;
         }
@@ -283,7 +283,7 @@ class UserController extends Controller
             $user->update($params);
         } catch (\Exception $e) {
             Log::error($e);
-            return $this->fail([500, '保存失败']);
+            return $this->fail([500, 'Lưu thay đổi thất bại']);
         }
 
         HookManager::call('admin.user.update.after', [

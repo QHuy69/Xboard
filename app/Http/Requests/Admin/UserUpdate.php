@@ -33,7 +33,8 @@ class UserUpdate extends FormRequest
             'commission_balance' => 'numeric',
             'remarks' => 'nullable',
             'speed_limit' => 'nullable|integer',
-            'device_limit' => 'nullable|integer'
+            'device_limit' => 'nullable|integer',
+            'locale' => 'nullable|string|in:zh-CN,zh-TW,en-US,vi-VN,ja-JP,ko-KR,fa-IR,ru-RU'
         ];
 
         return HookManager::filter('admin.user.update.rules', $rules, $this);
@@ -42,31 +43,32 @@ class UserUpdate extends FormRequest
     public function messages()
     {
         $messages = [
-            'email.required' => '邮箱不能为空',
-            'email.email' => '邮箱格式不正确',
-            'transfer_enable.numeric' => '流量格式不正确',
-            'expired_at.integer' => '到期时间格式不正确',
-            'banned.in' => '是否封禁格式不正确',
-            'is_admin.required' => '是否管理员不能为空',
-            'is_admin.in' => '是否管理员格式不正确',
-            'is_staff.required' => '是否员工不能为空',
-            'is_staff.in' => '是否员工格式不正确',
-            'plan_id.integer' => '订阅计划格式不正确',
-            'commission_rate.integer' => '推荐返利比例格式不正确',
-            'commission_rate.nullable' => '推荐返利比例格式不正确',
-            'commission_rate.min' => '推荐返利比例最小为0',
-            'commission_rate.max' => '推荐返利比例最大为100',
-            'discount.integer' => '专属折扣比例格式不正确',
-            'discount.nullable' => '专属折扣比例格式不正确',
-            'discount.min' => '专属折扣比例最小为0',
-            'discount.max' => '专属折扣比例最大为100',
-            'u.integer' => '上行流量格式不正确',
-            'd.integer' => '下行流量格式不正确',
-            'balance.integer' => '余额格式不正确',
-            'commission_balance.integer' => '佣金格式不正确',
-            'password.min' => '密码长度最小8位',
-            'speed_limit.integer' => '限速格式不正确',
-            'device_limit.integer' => '设备数量格式不正确'
+            'email.required' => 'Email không được để trống',
+            'email.email' => 'Định dạng email không hợp lệ',
+            'transfer_enable.numeric' => 'Lưu lượng phải là một số',
+            'expired_at.integer' => 'Thời gian hết hạn không hợp lệ',
+            'banned.in' => 'Trạng thái khóa tài khoản không hợp lệ',
+            'is_admin.required' => 'Phải chọn quyền quản trị viên',
+            'is_admin.in' => 'Quyền quản trị viên không hợp lệ',
+            'is_staff.required' => 'Phải chọn quyền nhân viên',
+            'is_staff.in' => 'Quyền nhân viên không hợp lệ',
+            'plan_id.integer' => 'Gói đăng ký không hợp lệ',
+            'commission_rate.integer' => 'Tỷ lệ hoa hồng phải là số nguyên',
+            'commission_rate.nullable' => 'Tỷ lệ hoa hồng không hợp lệ',
+            'commission_rate.min' => 'Tỷ lệ hoa hồng tối thiểu là 0',
+            'commission_rate.max' => 'Tỷ lệ hoa hồng tối đa là 100',
+            'discount.integer' => 'Giảm giá độc quyền phải là số nguyên',
+            'discount.nullable' => 'Giảm giá độc quyền không hợp lệ',
+            'discount.min' => 'Giảm giá độc quyền tối thiểu là 0',
+            'discount.max' => 'Giảm giá độc quyền tối đa là 100',
+            'u.integer' => 'Lưu lượng tải lên không hợp lệ',
+            'd.integer' => 'Lưu lượng tải xuống không hợp lệ',
+            'balance.integer' => 'Số dư không hợp lệ',
+            'commission_balance.integer' => 'Số dư hoa hồng không hợp lệ',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
+            'speed_limit.integer' => 'Giới hạn tốc độ không hợp lệ',
+            'device_limit.integer' => 'Giới hạn thiết bị không hợp lệ',
+            'locale.in' => 'Ngôn ngữ tài khoản không được hỗ trợ'
         ];
 
         return HookManager::filter('admin.user.update.messages', $messages, $this);

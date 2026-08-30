@@ -27,15 +27,27 @@ class TelegramService
             ]);
     }
 
-    public function sendMessage(int $chatId, string $text, string $parseMode = ''): void
+    public function sendMessage(int $chatId, string $text, string $parseMode = '', array $replyMarkup = []): void
     {
         $text = $parseMode === 'markdown' ? str_replace('_', '\_', $text) : $text;
 
-        $this->request('sendMessage', [
+        $params = [
             'chat_id' => $chatId,
             'text' => $text,
             'parse_mode' => $parseMode ?: null,
-        ]);
+        ];
+        if ($replyMarkup !== []) {
+            $params['reply_markup'] = json_encode($replyMarkup, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        $this->request('sendMessage', $params);
+    }
+
+    public function answerCallbackQuery(string $callbackQueryId, string $text = ''): void
+    {
+        $this->request('answerCallbackQuery', array_filter([
+            'callback_query_id' => $callbackQueryId,
+            'text' => $text,
+        ], static fn ($value) => $value !== ''));
     }
 
     public function approveChatJoinRequest(int $chatId, int $userId): void
@@ -65,16 +77,14 @@ class TelegramService
         return $result;
     }
 
-    /**
-     * 注册 Bot 命令列表
-     */
+    /** Register the Bot command list. */
     public function registerBotCommands(): void
     {
         try {
             $commands = HookManager::filter('telegram.bot.commands', []);
 
             if (empty($commands)) {
-                Log::warning('没有找到任何 Telegram Bot 命令');
+                Log::warning('No Telegram Bot commands were registered');
                 return;
             }
 
@@ -83,36 +93,53 @@ class TelegramService
                 'scope' => json_encode(['type' => 'default'])
             ]);
 
-            Log::info('Telegram Bot 命令注册成功', [
+            $localizedCommands = HookManager::filter('telegram.bot.commands.localized', []);
+            foreach ($localizedCommands as $languageCode => $languageCommands) {
+                if (!is_array($languageCommands) || $languageCommands === []) {
+                    continue;
+                }
+                $this->request('setMyCommands', [
+                    'commands' => json_encode($languageCommands, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'scope' => json_encode(['type' => 'default']),
+                    'language_code' => (string) $languageCode,
+                ]);
+            }
+
+            Log::info('Telegram Bot commands registered', [
                 'commands_count' => count($commands),
                 'commands' => $commands
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Telegram Bot 命令注册失败', [
+            Log::error('Telegram Bot command registration failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
         }
     }
 
-    /**
-     * 获取当前注册的命令列表
-     */
+    /** Get the currently registered command list. */
     public function getMyCommands(): object
     {
         return $this->request('getMyCommands');
     }
 
-    /**
-     * 删除所有命令
-     */
+    /** Delete all registered commands. */
     public function deleteMyCommands(): object
     {
         return $this->request('deleteMyCommands');
     }
 
     public function sendMessageWithAdmin(string $message, bool $isStaff = false): void
+    {
+        $this->sendMessageWithAdminLocalized(fn () => $message, $isStaff);
+    }
+
+    /**
+     * Send a locale-aware message to every bound administrator (and optionally
+     * staff member). The callback receives the recipient User model.
+     */
+    public function sendMessageWithAdminLocalized(callable $messageFactory, bool $isStaff = false): void
     {
         $query = User::where('telegram_id', '!=', null);
         $query->where(
@@ -121,7 +148,10 @@ class TelegramService
         );
         $users = $query->get();
         foreach ($users as $user) {
-            SendTelegramJob::dispatch($user->telegram_id, $message);
+            $message = (string) $messageFactory($user);
+            if ($message !== '') {
+                SendTelegramJob::dispatch($user->telegram_id, $message);
+            }
         }
     }
 
@@ -131,30 +161,30 @@ class TelegramService
             $response = $this->http->get($this->apiUrl . $method, $params);
 
             if (!$response->successful()) {
-                throw new ApiException("HTTP 请求失败: {$response->status()}");
+                throw new ApiException("Telegram HTTP request failed: {$response->status()}");
             }
 
             $data = $response->object();
 
             if (!isset($data->ok)) {
-                throw new ApiException('无效的 Telegram API 响应');
+                throw new ApiException('Invalid Telegram API response');
             }
 
             if (!$data->ok) {
-                $description = $data->description ?? '未知错误';
-                throw new ApiException("Telegram API 错误: {$description}");
+                $description = $data->description ?? 'unknown error';
+                throw new ApiException("Telegram API error: {$description}");
             }
 
             return $data;
 
         } catch (\Exception $e) {
-            Log::error('Telegram API 请求失败', [
+            Log::error('Telegram API request failed', [
                 'method' => $method,
                 'params' => $params,
                 'error' => $e->getMessage(),
             ]);
 
-            throw new ApiException("Telegram 服务错误: {$e->getMessage()}");
+            throw new ApiException("Telegram service error: {$e->getMessage()}");
         }
     }
 }

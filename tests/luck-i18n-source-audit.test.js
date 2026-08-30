@@ -5,7 +5,13 @@ const vm = require('vm');
 const sandbox = {
   window: {
     LUCK_SERVER_LANGUAGES: ['vi-VN'],
-    LUCK_DEFAULT_LANGUAGE: 'vi-VN'
+    LUCK_DEFAULT_LANGUAGE: 'vi-VN',
+    localStorage: {
+      values: {},
+      getItem(key) { return this.values[key] || null; },
+      setItem(key, value) { this.values[key] = String(value); }
+    },
+    location: { reloadCount: 0, reload() { this.reloadCount += 1; } }
   },
   navigator: { languages: ['vi-VN'], language: 'vi-VN' },
   document: {
@@ -148,6 +154,12 @@ const expected = {
   ,'邮箱或密码错误': 'Email hoặc mật khẩu không đúng'
   ,'邮箱或密码错误，请检查后重试': 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'
   ,'登录失败，请检查邮箱和密码': 'Đăng nhập thất bại. Hãy kiểm tra email và mật khẩu.'
+  ,'You must use the invitation code to register': 'Bạn phải nhập mã mời để đăng ký'
+  ,'必须使用邀请码才可以注册': 'Bạn phải nhập mã mời để đăng ký'
+  ,'未知的支付类型，请重试': 'Không xác định được phương thức thanh toán, vui lòng thử lại'
+  ,'登录成功，但暂时无法加载账户信息，请重试': 'Đăng nhập thành công nhưng chưa tải được thông tin tài khoản. Vui lòng thử lại.'
+  ,'新套餐': 'Gói mới'
+  ,'新Gói': 'Gói mới'
 };
 
 for (const [source, vietnamese] of Object.entries(expected)) {
@@ -182,5 +194,11 @@ for (const source of vietnameseKeys) {
   assert(!/[\u3400-\u9fff]/.test(actual), `${source} leaked CJK text from the Vietnamese dictionary`);
   assert(!joinedVietnamese.test(actual), `${source} produced joined words from the Vietnamese dictionary`);
 }
+
+assert.strictEqual(sandbox.window.__LUCK_SET_LOCALE__('en-US'), true, 'manual locale selection was rejected');
+assert.strictEqual(sandbox.window.localStorage.getItem('luck_locale'), 'en-US');
+assert.strictEqual(sandbox.window.localStorage.getItem('luck_locale_manual'), '1');
+assert.match(sandbox.document.cookie, /luck_locale_manual=1/);
+assert.strictEqual(sandbox.window.location.reloadCount, 1);
 
 console.log(`Verified ${Object.keys(expected).length} source cases and ${vietnameseKeys.size} Vietnamese dictionary entries.`);

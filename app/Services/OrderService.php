@@ -124,12 +124,12 @@ class OrderService
             $this->setDeviceLimit($plan->device_limit);
 
             if (!$this->user->save()) {
-                throw new \RuntimeException('用户信息保存失败');
+                throw new \RuntimeException(__('Failed to save user information'));
             }
 
             $order->status = Order::STATUS_COMPLETED;
             if (!$order->save()) {
-                throw new \RuntimeException('订单信息保存失败');
+                throw new \RuntimeException(__('Failed to save order information'));
             }
         });
 
@@ -155,15 +155,16 @@ class OrderService
             $order->type = Order::TYPE_RESET_TRAFFIC;
         } else if ($user->plan_id !== NULL && $order->plan_id !== $user->plan_id && ($user->expired_at > time() || $user->expired_at === NULL)) {
             if (!(int) admin_setting('plan_change_enable', 1))
-                throw new ApiException('目前不允许更改订阅，请联系客服或提交工单操作');
+                throw new ApiException(__('Changing subscription plans is currently disabled. Please contact support.'));
             $order->type = Order::TYPE_UPGRADE;
-            if ((int) admin_setting('surplus_enable', 1))
+            if ((int) admin_setting('surplus_enable', 0)) {
                 $this->getSurplusValue($user, $order);
-            if ($order->surplus_amount >= $order->total_amount) {
-                $order->surplus_credit = (int) ($order->surplus_amount - $order->total_amount);
-                $order->total_amount = 0;
-            } else {
-                $order->total_amount = (int) ($order->total_amount - $order->surplus_amount);
+                if ($order->surplus_amount >= $order->total_amount) {
+                    $order->surplus_credit = (int) ($order->surplus_amount - $order->total_amount);
+                    $order->total_amount = 0;
+                } else {
+                    $order->total_amount = (int) ($order->total_amount - $order->surplus_amount);
+                }
             }
         } else if (($user->expired_at === null || $user->expired_at > time()) && $order->plan_id == $user->plan_id) { // 用户订阅未过期或按流量订阅 且购买订阅与当前订阅相同 === 续费
             $order->type = Order::TYPE_RENEWAL;
@@ -381,7 +382,7 @@ class OrderService
             return Carbon::createFromTimestamp($timestamp)->addMonths($months)->timestamp;
         }
 
-        throw new ApiException('无效的套餐周期');
+        throw new ApiException(__('Invalid subscription period'));
     }
 
     private function openEvent($eventId)

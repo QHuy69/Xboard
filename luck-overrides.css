@@ -47,6 +47,43 @@ button {
   max-width: 100%;
 }
 
+/* Give the authentication forms enough horizontal room for translated copy.
+   The compiled Luck theme caps both cards at 420px, which makes the email
+   suffix, verification action and Vietnamese placeholders collide. */
+:where(.login-card, .register-card) {
+  width: min(520px, calc(100vw - 40px)) !important;
+  max-width: 520px !important;
+}
+
+:where(.login-card, .register-card) .card-content {
+  padding-inline: clamp(30px, 5vw, 52px) !important;
+}
+
+:where(.ios-login-container, .ios-register-container) {
+  min-height: 100dvh !important;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+@media (max-width: 600px) {
+  :where(.login-card, .register-card) {
+    width: calc(100vw - 24px) !important;
+    max-width: none !important;
+  }
+
+  :where(.login-card, .register-card) .card-content {
+    padding-inline: clamp(20px, 6vw, 32px) !important;
+  }
+}
+
+@media (max-height: 760px) {
+  :where(.ios-login-container, .ios-register-container) {
+    align-items: flex-start !important;
+    padding-block: 12px !important;
+  }
+}
+
 .plan-card .plan-features {
   padding: 0 24px 22px !important;
 }
@@ -680,4 +717,49 @@ body.luck-donate-open {
     grid-column: 1 / -1 !important;
   }
 
+}
+/* Language and support controls remain reachable at every viewport ratio. */
+.luck-language-picker {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 2147482000;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid rgba(148, 163, 184, .3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, .14);
+  backdrop-filter: blur(10px);
+}
+.luck-language-picker select {
+  max-width: 132px;
+  border: 0;
+  outline: 0;
+  color: #1f2937;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.luck-messenger-support {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: calc(max(24px, env(safe-area-inset-bottom)) + 76px);
+  z-index: 2147481999;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff !important;
+  background: #0866ff;
+  box-shadow: 0 8px 26px rgba(8, 102, 255, .35);
+  font: 800 30px/1 Arial, sans-serif;
+  text-decoration: none !important;
+}
+@media (max-width: 520px) {
+  .luck-language-picker { top: 8px; right: 8px; padding: 6px 8px; }
+  .luck-language-picker select { max-width: 108px; font-size: 13px; }
 }

@@ -62,6 +62,7 @@ class TrafficResetService
 
         $this->clearUserCache($user);
         HookManager::call('traffic.reset.after', $user);
+        HookManager::call('traffic.reset.telegram.after', [$user, $triggerSource]);
         return true;
       });
     } catch (\Exception $e) {

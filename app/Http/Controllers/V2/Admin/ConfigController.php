@@ -56,7 +56,7 @@ class ConfigController extends Controller
     {
         $hookUrl = $this->resolveTelegramWebhookUrl();
         if (blank($hookUrl)) {
-            return $this->fail([422, 'Telegram Webhook地址未配置']);
+            return $this->fail([422, 'Chưa cấu hình địa chỉ Telegram Webhook']);
         }
         $hookUrl .= '?' . http_build_query([
             'access_token' => md5(admin_setting('telegram_bot_token', $request->input('telegram_bot_token')))
@@ -124,7 +124,7 @@ class ConfigController extends Controller
             'subscribe' => [
                 'plan_change_enable' => (bool) admin_setting('plan_change_enable', 1),
                 'reset_traffic_method' => (int) admin_setting('reset_traffic_method', 0),
-                'surplus_enable' => (bool) admin_setting('surplus_enable', 1),
+                'surplus_enable' => (bool) admin_setting('surplus_enable', 0),
                 'new_order_event_id' => (int) admin_setting('new_order_event_id', 0),
                 'renew_order_event_id' => (int) admin_setting('renew_order_event_id', 0),
                 'change_order_event_id' => (int) admin_setting('change_order_event_id', 0),
@@ -140,6 +140,8 @@ class ConfigController extends Controller
                 'frontend_theme_header' => admin_setting('frontend_theme_header', 'dark'),
                 'frontend_theme_color' => admin_setting('frontend_theme_color', 'default'),
                 'frontend_background_url' => admin_setting('frontend_background_url'),
+                'crisp_website_id' => admin_setting('crisp_website_id', ''),
+                'messenger_page_username' => admin_setting('messenger_page_username', ''),
             ],
             'server' => [
                 'server_token' => admin_setting('server_token'),

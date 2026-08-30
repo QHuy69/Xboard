@@ -27,6 +27,12 @@ jobs:
         with:
           fetch-depth: 1 
 
+      - name: Verify customized frontend sources
+        run: |
+          node tests/luck-i18n-source-audit.test.js
+          node tests/mail-template-localization-source.test.js
+          node tests/custom-frontend-source-audit.test.js
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:

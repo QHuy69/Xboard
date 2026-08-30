@@ -32,6 +32,7 @@ class TelegramController extends Controller
         $data = $request->json()->all();
 
         $this->formatMessage($data);
+        $this->formatCallbackQuery($data);
         $this->formatChatJoinRequest($data);
         $this->handle();
     }
@@ -51,7 +52,11 @@ class TelegramController extends Controller
             HookManager::call('telegram.message.after', [$msg]);
         } catch (\Exception $e) {
             HookManager::call('telegram.message.error', [$msg, $e]);
-            $this->telegramService->sendMessage($msg->chat_id, $e->getMessage());
+            $language = strtolower((string) ($msg->language_code ?? ''));
+            $error = str_starts_with($language, 'vi')
+                ? 'Hệ thống đang bận, vui lòng thử lại sau.'
+                : (str_starts_with($language, 'zh') ? '系统繁忙，请稍后重试。' : 'The system is busy. Please try again later.');
+            $this->telegramService->sendMessage($msg->chat_id, $error);
         }
     }
 
@@ -85,16 +90,40 @@ class TelegramController extends Controller
             'command' => $text[0],
             'args' => array_slice($text, 1),
             'chat_id' => $message['chat']['id'],
+            'from_id' => $message['from']['id'] ?? $message['chat']['id'],
             'message_id' => $message['message_id'],
             'message_type' => 'message',
             'text' => $message['text'],
             'is_private' => $message['chat']['type'] === 'private',
+            'language_code' => $message['from']['language_code'] ?? null,
         ];
 
         if (isset($message['reply_to_message']['text'])) {
             $this->msg->message_type = 'reply_message';
             $this->msg->reply_text = $message['reply_to_message']['text'];
         }
+    }
+
+    private function formatCallbackQuery(array $data): void
+    {
+        $callback = $data['callback_query'] ?? null;
+        if (!$callback || !isset($callback['data'], $callback['message']['chat']['id'], $callback['id'])) {
+            return;
+        }
+
+        $chat = $callback['message']['chat'];
+        $this->msg = (object) [
+            'command' => (string) $callback['data'],
+            'args' => [],
+            'chat_id' => $chat['id'],
+            'from_id' => $callback['from']['id'] ?? $chat['id'],
+            'message_id' => $callback['message']['message_id'] ?? null,
+            'callback_query_id' => (string) $callback['id'],
+            'message_type' => 'callback_query',
+            'text' => (string) $callback['data'],
+            'is_private' => ($chat['type'] ?? '') === 'private',
+            'language_code' => $callback['from']['language_code'] ?? null,
+        ];
     }
 
     private function formatChatJoinRequest(array $data): void

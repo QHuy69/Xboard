@@ -59,6 +59,8 @@ class ConfigSave extends FormRequest
         'frontend_theme_header' => 'nullable|in:dark,light',
         'frontend_theme_color' => 'nullable|in:default,darkblue,black,green',
         'frontend_background_url' => 'nullable|url',
+        'crisp_website_id' => 'nullable|uuid',
+        'messenger_page_username' => 'nullable|regex:/^[A-Za-z0-9._-]{3,100}$/',
         // email
         'email_host' => '',
         'email_port' => '',
@@ -134,6 +136,8 @@ class ConfigSave extends FormRequest
             'telegram_webhook_url.url' => 'URL Telegram Webhook không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
             'telegram_discuss_link.url' => 'URL nhóm Telegram không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
             'logo.url' => 'URL logo không hợp lệ, phải bắt đầu bằng http:// hoặc https://',
+            'crisp_website_id.uuid' => 'Crisp Website ID không đúng định dạng UUID',
+            'messenger_page_username.regex' => 'Tên người dùng Messenger chỉ được chứa chữ cái, số, dấu chấm, gạch dưới hoặc gạch ngang',
             'secure_path.min' => 'Đường dẫn quản trị phải có ít nhất 7 ký tự',
             'secure_path.regex' => 'Đường dẫn quản trị chỉ được chứa chữ cái, số, dấu gạch dưới hoặc dấu gạch ngang',
             'captcha_type.in' => 'Loại CAPTCHA chỉ có thể là reCAPTCHA, Turnstile hoặc reCAPTCHA v3',

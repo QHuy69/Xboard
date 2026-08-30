@@ -2,7 +2,7 @@
     "name": "CoinPayments",
     "code": "coin_payments",
     "type": "payment",
-    "version": "1.0.0",
-    "description": "CoinPayments payment plugin",
+    "version": "2.0.0",
+    "description": "CoinPayments Invoice API v2 with signed webhooks",
     "author": "XBoard Team"
-} 
+}
