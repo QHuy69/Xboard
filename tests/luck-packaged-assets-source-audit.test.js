@@ -97,5 +97,34 @@ assert(
   ciSmoke.includes('docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template"'),
   'Fresh-image smoke must validate Luck markers inside the packaged template'
 );
+for (const packagedAssetGuard of [
+  'docker exec "$container_name" test -s "$public_file"',
+  'docker exec "$container_name" test -s "$storage_file"',
+  'docker exec "$container_name" cmp -s "$public_file" "$build_source"',
+  'docker exec "$container_name" cmp -s "$storage_file" "$build_source"',
+  'Packaged Luck asset returned HTTP $http_status: $asset_url'
+]) {
+  assert(
+    ciSmoke.includes(packagedAssetGuard),
+    `Fresh-image smoke is missing packaged asset guard: ${packagedAssetGuard}`
+  );
+}
+const optionalRuntimeStart = ciSmoke.indexOf(
+  'if docker exec "$container_name" test -f "$luck_entry_public"; then'
+);
+const runtimeFetch = ciSmoke.indexOf(
+  'luck_entry_js="$(curl --fail --silent --show-error'
+);
+const missingDistributionBranch = ciSmoke.indexOf(
+  'Fresh SQLite image has no user-installed Luck distribution; production-volume lazy routes skipped'
+);
+assert(
+  optionalRuntimeStart >= 0 && runtimeFetch > optionalRuntimeStart && missingDistributionBranch > runtimeFetch,
+  'Fresh-image smoke must only inspect the generated Luck graph when the user-installed distribution exists'
+);
+assert(
+  ciSmoke.includes('elif docker exec "$container_name" test -f "$luck_entry_storage"; then'),
+  'Fresh-image smoke must fail if a mounted Luck entry was not published to public/theme'
+);
 
 console.log('Luck packaged icons survive image build, persistent theme mounts and xboard:update refreshes.');

@@ -110,13 +110,43 @@ for luck_dashboard_template in \
     exit 1
   fi
 done
-for dashboard_asset_url in \
-  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=21" \
-  "http://127.0.0.1:${host_port}/theme/Luck/i18n-v18.js?v=61"; do
-  curl --fail --silent --show-error --output /dev/null "$dashboard_asset_url"
-done
+verify_packaged_luck_asset() {
+  local public_file="$1"
+  local storage_file="$2"
+  local build_source="$3"
+  local asset_url="$4"
+  local http_status
 
-luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=61")"
+  docker exec "$container_name" test -s "$public_file"
+  docker exec "$container_name" test -s "$storage_file"
+  docker exec "$container_name" cmp -s "$public_file" "$build_source"
+  docker exec "$container_name" cmp -s "$storage_file" "$build_source"
+  http_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "$asset_url")"
+  if [ "$http_status" != 200 ]; then
+    echo "Packaged Luck asset returned HTTP $http_status: $asset_url" >&2
+    exit 1
+  fi
+}
+
+verify_packaged_luck_asset \
+  '/www/public/theme/Luck/assets/luck-overrides.css' \
+  '/www/storage/theme/Luck/assets/luck-overrides.css' \
+  '/tmp/luck-custom/luck-overrides.css' \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=21"
+verify_packaged_luck_asset \
+  '/www/public/theme/Luck/i18n-v18.js' \
+  '/www/storage/theme/Luck/i18n-v18.js' \
+  '/tmp/luck-custom/luck-i18n-v18.js' \
+  "http://127.0.0.1:${host_port}/theme/Luck/i18n-v18.js?v=61"
+echo "[smoke] Packaged Luck shell and maintained assets passed"
+
+luck_entry_public='/www/public/theme/Luck/assets/BBbuoBq5-fresh.js'
+luck_entry_storage='/www/storage/theme/Luck/assets/BBbuoBq5-fresh.js'
+if docker exec "$container_name" test -f "$luck_entry_public"; then
+  # A reusable image can be started with a pre-populated Luck volume. When the
+  # complete distribution is available, keep exercising its published lazy
+  # graph exactly as the production deployment gate does.
+  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=61")"
 node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$node_route_asset" in
   ./oPGsis9D*-access-v2.js) ;;
@@ -179,6 +209,15 @@ for route_platform_glyph in '📋' '📊' '⚠️' '💰' '📝' '💡'; do
   fi
 done
 echo "[smoke] Portable dashboard, empty-state and transfer icons passed"
+elif docker exec "$container_name" test -f "$luck_entry_storage"; then
+  echo "Luck entry exists in the mounted theme but was not published to public/theme." >&2
+  exit 1
+else
+  # Luck is an admin-uploaded theme and is intentionally not part of a fresh
+  # Xboard database. Its patch transformations are covered by the PHP source
+  # smoke below; the strict runtime graph check remains in deploy-production.
+  echo "[smoke] Fresh SQLite image has no user-installed Luck distribution; production-volume lazy routes skipped"
+fi
 
 mapfile -t admin_js_paths < <({ grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
 mapfile -t admin_css_paths < <({ grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
