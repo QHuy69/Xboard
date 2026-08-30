@@ -181,10 +181,6 @@ final class LuckThemeAssetPatcher
 
     public static function patchNodeFlags(string $contents): string
     {
-        if (str_contains($contents, 'class: "luck-node-flag"')) {
-            return $contents;
-        }
-
         $countryNeedle = <<<'JS'
           const countryInfo = getCountryInfo(row.name);
           return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
@@ -213,20 +209,19 @@ JS;
         // Treat the generated fragment as one atomic patch. Partially
         // replacing only the image would reference undefined flagCode or
         // displayName variables after a Luck upstream update.
-        if (!str_contains($contents, $countryNeedle)
-            || !str_contains($contents, $imageNeedle)
-            || !str_contains($contents, $nameNeedle)) {
-            return $contents;
-        }
-
-        // The generated node table points at /flags/{code}.svg even though the
-        // Luck distribution does not ship that directory. Regional-indicator
-        // emoji are not a safe fallback either: Windows can render them as two
-        // letters or an empty box. Use our packaged SVG sprite and retain a
-        // visible ISO badge so even an unknown flag can never become blank.
-        $contents = str_replace(
-            $countryNeedle,
-            <<<'JS'
+        if (!str_contains($contents, 'const flagAssetCode = packagedFlagCodes.has(flagCode)')
+            && str_contains($contents, $countryNeedle)
+            && str_contains($contents, $imageNeedle)
+            && str_contains($contents, $nameNeedle)) {
+            // The generated desktop node table points at /flags/{code}.svg
+            // even though the Luck distribution does not ship that directory.
+            // Regional-indicator emoji are not a safe fallback either:
+            // Windows can render them as two letters or an empty box. Use our
+            // packaged SVG sprite and retain a visible ISO badge so even an
+            // unknown flag can never become blank.
+            $contents = str_replace(
+                $countryNeedle,
+                <<<'JS'
           const countryInfo = getCountryInfo(row.name);
           const flagCode = /^[A-Z]{2}$/.test(String(countryInfo.code || "").toUpperCase()) ? String(countryInfo.code).toUpperCase() : "UN";
           const packagedFlagCodes = new Set(["AE", "AU", "BR", "CA", "CH", "CN", "DE", "DK", "ES", "FI", "FR", "GB", "HK", "ID", "IN", "IT", "JP", "KR", "MY", "NL", "NO", "PL", "RU", "SE", "SG", "TH", "TW", "US", "VN"]);
@@ -234,12 +229,12 @@ JS;
           const displayName = String(row.name || "").replace(/^\s*[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, "") || String(row.name || "");
           return h("div", { style: { display: "flex", alignItems: "center", gap: "6px" } }, [
 JS,
-            $contents
-        );
+                $contents
+            );
 
-        $contents = str_replace(
-            $imageNeedle,
-            <<<'JS'
+            $contents = str_replace(
+                $imageNeedle,
+                <<<'JS'
             h("span", {
               class: "luck-node-flag",
               role: "img",
@@ -259,14 +254,83 @@ JS,
               }, flagCode)
             ]),
 JS,
-            $contents
-        );
+                $contents
+            );
 
-        $contents = str_replace(
-            $nameNeedle,
-            'h("span", { style: { fontWeight: "600" } }, displayName)',
-            $contents
-        );
+            $contents = str_replace(
+                $nameNeedle,
+                'h("span", { style: { fontWeight: "600" } }, displayName)',
+                $contents
+            );
+        }
+
+        $mobileRenderNeedle = <<<'JS'
+              (openBlock(true), createElementBlock(Fragment, null, renderList(servers.value, (server, index) => {
+                return openBlock(), createElementBlock("div", {
+JS;
+        $mobileImageNeedle = <<<'JS'
+                    createBaseVNode("img", {
+                      src: `/flags/${getCountryInfo(server.name).code.toLowerCase()}.svg`,
+                      alt: getCountryInfo(server.name).name,
+                      style: { "width": "28px", "height": "19px", "border-radius": "3px", "border": "1px solid rgba(0,0,0,0.15)", "box-shadow": "0 1px 2px rgba(0,0,0,0.1)" },
+                      onError: _cache[0] || (_cache[0] = (e) => e.target.src = "/flags/un.svg")
+                    }, null, 40, _hoisted_9),
+JS;
+        $mobileNameNeedle = 'createBaseVNode("div", _hoisted_11, toDisplayString(server.name), 1),';
+
+        // Luck has a separate card renderer below the desktop table for phone
+        // and narrow-tablet layouts. Patch that complete renderer independently
+        // so an already-patched desktop table can never make the mobile branch
+        // return early and keep requesting the non-existent /flags directory.
+        if (!str_contains($contents, 'const mobileFlagAssetCode = mobilePackagedFlagCodes.has(mobileFlagCode)')
+            && str_contains($contents, $mobileRenderNeedle)
+            && str_contains($contents, $mobileImageNeedle)
+            && str_contains($contents, $mobileNameNeedle)) {
+            $contents = str_replace(
+                $mobileRenderNeedle,
+                <<<'JS'
+              (openBlock(true), createElementBlock(Fragment, null, renderList(servers.value, (server, index) => {
+                const mobileCountryInfo = getCountryInfo(server.name);
+                const mobileFlagCode = /^[A-Z]{2}$/.test(String(mobileCountryInfo.code || "").toUpperCase()) ? String(mobileCountryInfo.code).toUpperCase() : "UN";
+                const mobilePackagedFlagCodes = new Set(["AE", "AU", "BR", "CA", "CH", "CN", "DE", "DK", "ES", "FI", "FR", "GB", "HK", "ID", "IN", "IT", "JP", "KR", "MY", "NL", "NO", "PL", "RU", "SE", "SG", "TH", "TW", "US", "VN"]);
+                const mobileFlagAssetCode = mobilePackagedFlagCodes.has(mobileFlagCode) ? mobileFlagCode.toLowerCase() : "un";
+                const mobileDisplayName = String(server.name || "").replace(/^\s*[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, "") || String(server.name || "");
+                return openBlock(), createElementBlock("div", {
+JS,
+                $contents
+            );
+
+            $contents = str_replace(
+                $mobileImageNeedle,
+                <<<'JS'
+                    createBaseVNode("span", {
+                      class: "luck-node-flag",
+                      role: "img",
+                      "aria-label": mobileCountryInfo.name,
+                      title: mobileCountryInfo.name
+                    }, [
+                      createBaseVNode("svg", {
+                        viewBox: "0 0 32 22",
+                        "aria-hidden": "true",
+                        focusable: "false"
+                      }, [
+                        createBaseVNode("use", { href: `/theme/Luck/assets/luck-flags.svg?v=1#${mobileFlagAssetCode}` })
+                      ]),
+                      createBaseVNode("span", {
+                        class: "luck-node-flag-code",
+                        "aria-hidden": "true"
+                      }, mobileFlagCode)
+                    ]),
+JS,
+                $contents
+            );
+
+            $contents = str_replace(
+                $mobileNameNeedle,
+                'createBaseVNode("div", _hoisted_11, toDisplayString(mobileDisplayName), 1),',
+                $contents
+            );
+        }
 
         return $contents;
     }

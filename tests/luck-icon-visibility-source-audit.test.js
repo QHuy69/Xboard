@@ -48,7 +48,9 @@ for (const marker of [
 }
 
 assert(patcher.includes('/theme/Luck/assets/luck-flags.svg?v=1#${flagAssetCode}'), 'node flags must use the packaged local SVG sprite');
+assert(patcher.includes('/theme/Luck/assets/luck-flags.svg?v=1#${mobileFlagAssetCode}'), 'mobile node-card flags must use the packaged local SVG sprite');
 assert(patcher.includes('class: "luck-node-flag-code"'), 'unknown flags need a visible ISO fallback');
+assert(patcher.includes('const mobileFlagAssetCode = mobilePackagedFlagCodes.has(mobileFlagCode)'), 'mobile node cards need their own ISO-safe sprite lookup');
 assert(!patcher.includes('String.fromCodePoint(...flagCode'), 'node flags must not rely on regional-indicator emoji');
 assert(!/(?:href|src)=["']https?:\/\//.test(flags), 'flag sprite must be entirely local');
 

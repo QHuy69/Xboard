@@ -114,11 +114,15 @@
         }
       }
 
-      if (count($scripts) === 0 && count($fallbackScripts) === 1) {
+      // Fallback is an atomic pair. If either side is missing or ambiguous,
+      // discard both instead of combining one stale manifest entry with one
+      // entry from index.html.
+      if (count($fallbackScripts) === 1 && count($fallbackStyles) === 1) {
         $scripts = $fallbackScripts;
-      }
-      if (count($styles) === 0 && count($fallbackStyles) === 1) {
         $styles = $fallbackStyles;
+      } else {
+        $scripts = [];
+        $styles = [];
       }
     }
 

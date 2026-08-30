@@ -46,7 +46,8 @@ post_deploy_checks() {
   local container_id="$1"
   local expected_revision_prefix="$2"
   local started_at="$3"
-  local health actual asset_revision_short migration_status integrity dashboard_html luck_entry_js node_route_asset admin_html admin_js_path admin_css_path admin_asset_version admin_js_file admin_css_file ip_status last_heartbeat
+  local health actual asset_revision_short migration_status integrity dashboard_html luck_entry_js node_route_asset admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found ip_status last_heartbeat
+  local -a admin_js_paths admin_css_paths admin_locale_paths
 
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
   if [ "$health" != "healthy" ]; then
@@ -106,16 +107,38 @@ post_deploy_checks() {
       return 1
       ;;
   esac
-  curl --fail --silent --show-error --output /dev/null \
-    "http://127.0.0.1:7001/theme/Luck/assets/${node_route_asset#./}" || {
+  node_route_js="$(curl --fail --silent --show-error \
+    "http://127.0.0.1:7001/theme/Luck/assets/${node_route_asset#./}")" || {
       echo "The deployed lazy node-route module is unavailable: $node_route_asset" >&2
       return 1
     }
+  if grep -aFq '/flags/' <<<"$node_route_js"; then
+    echo "The deployed Luck node route still requests the missing /flags directory." >&2
+    return 1
+  fi
+  for node_flag_marker in \
+    'luck-flags.svg?v=1#${flagAssetCode}' \
+    'luck-flags.svg?v=1#${mobileFlagAssetCode}' \
+    'const mobileFlagCode =' \
+    'toDisplayString(mobileDisplayName)'; do
+    grep -aFq "$node_flag_marker" <<<"$node_route_js" || {
+      echo "The deployed Luck node route is missing portable flag marker: $node_flag_marker" >&2
+      return 1
+    }
+  done
+  node_flag_host_count="$( { grep -aoF 'class: "luck-node-flag"' <<<"$node_route_js" || true; } | wc -l | tr -d '[:space:]')"
+  if [ "$node_flag_host_count" -lt 2 ]; then
+    echo "The deployed Luck node route patched only $node_flag_host_count of 2 flag renderers." >&2
+    return 1
+  fi
 
-  admin_js_path="$(grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
-  admin_css_path="$(grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
-  if [ -z "$admin_js_path" ] || [ -z "$admin_css_path" ]; then
-    echo "The deployed admin shell did not publish versioned JavaScript and CSS URLs." >&2
+  mapfile -t admin_js_paths < <({ grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+  mapfile -t admin_css_paths < <({ grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+  mapfile -t admin_locale_paths < <({ grep -oE 'src="/assets/admin/locales/[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+  if [ "${#admin_js_paths[@]}" -ne 1 ] \
+    || [ "${#admin_css_paths[@]}" -lt 1 ] \
+    || [ "${#admin_locale_paths[@]}" -lt 1 ]; then
+    echo "The deployed admin shell emitted an unexpected asset set: ${#admin_js_paths[@]} entry JS, ${#admin_css_paths[@]} CSS, ${#admin_locale_paths[@]} locales." >&2
     return 1
   fi
   admin_asset_version="$(docker exec "$container_id" php -r '
@@ -124,12 +147,21 @@ post_deploy_checks() {
     $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
     echo rawurlencode((string) config("app.version", ""));
   ')" || return 1
-  if [ -z "$admin_asset_version" ] \
-    || [ "${admin_js_path##*\?v=}" != "$admin_asset_version" ] \
-    || [ "${admin_css_path##*\?v=}" != "$admin_asset_version" ]; then
+  if [ -z "$admin_asset_version" ]; then
     echo "The deployed admin asset URL does not match config app.version: $admin_asset_version" >&2
     return 1
   fi
+  for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"; do
+    if [ "${admin_asset_path##*\?v=}" != "$admin_asset_version" ]; then
+      echo "The deployed admin asset URL does not match config app.version: $admin_asset_path" >&2
+      return 1
+    fi
+    admin_asset_file="/www/public${admin_asset_path%%\?*}"
+    docker exec "$container_id" test -f "$admin_asset_file" || {
+      echo "The deployed admin asset is missing: $admin_asset_file" >&2
+      return 1
+    }
+  done
   case "$admin_asset_version" in
     *-"$asset_revision_short") ;;
     *)
@@ -137,17 +169,24 @@ post_deploy_checks() {
       return 1
       ;;
   esac
+  admin_js_path="${admin_js_paths[0]}"
   admin_js_file="/www/public${admin_js_path%%\?*}"
-  admin_css_file="/www/public${admin_css_path%%\?*}"
   docker exec "$container_id" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file" || {
     echo "The deployed admin bundle is missing the portable Vietnamese SVG flag." >&2
     return 1
   }
   docker exec "$container_id" grep -aFq 'viewBox:"0 0 30 20"' "$admin_js_file" || return 1
-  docker exec "$container_id" grep -aFq 'xboard-admin-icon-visibility' "$admin_css_file" || {
+  admin_css_marker_found=false
+  for admin_css_path in "${admin_css_paths[@]}"; do
+    admin_css_file="/www/public${admin_css_path%%\?*}"
+    if docker exec "$container_id" grep -aFq 'xboard-admin-icon-visibility' "$admin_css_file"; then
+      admin_css_marker_found=true
+    fi
+  done
+  if [ "$admin_css_marker_found" != true ]; then
     echo "The deployed admin stylesheet is missing the icon shrink guard." >&2
     return 1
-  }
+  fi
 
   ip_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:7001/api/v1/user/devices/current)" || return 1
   case "$ip_status" in

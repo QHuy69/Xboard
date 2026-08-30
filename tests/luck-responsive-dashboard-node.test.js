@@ -98,6 +98,9 @@ for (const viewport of [
 assert(patcher.includes('public static function patchNodeFlags'), 'node flag asset patch is missing');
 assert(patcher.includes('class: "luck-node-flag"'), 'node flag patch does not emit the visible flag glyph');
 assert(patcher.includes('luck-flags.svg?v=1#${flagAssetCode}'), 'node flags must use the packaged SVG sprite');
+assert(patcher.includes('const mobileFlagCode ='), 'mobile node cards need an independent portable flag code');
+assert(patcher.includes('luck-flags.svg?v=1#${mobileFlagAssetCode}'), 'mobile node cards must use the packaged SVG sprite');
+assert(patcher.includes('toDisplayString(mobileDisplayName)'), 'mobile node names must remove duplicate flag emoji');
 assert(!patcher.includes('String.fromCodePoint(...flagCode'), 'node flags must not depend on Windows emoji rendering');
 assert(patcher.includes('displayName'), 'duplicate flag emoji must be removed from the node name');
 assert(routes.includes('LuckThemeAssetPatcher::patchNodeFlags($fixedContents)'), 'node flag patch is not applied while publishing Luck assets');

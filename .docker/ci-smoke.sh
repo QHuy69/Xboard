@@ -99,14 +99,38 @@ case "$node_route_asset" in
     exit 1
     ;;
 esac
-curl --fail --silent --show-error \
-  "http://127.0.0.1:${host_port}/theme/Luck/assets/${node_route_asset#./}" >/dev/null
-echo "[smoke] Lazy node-route module passed"
+node_route_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${node_route_asset#./}")"
+if grep -aFq '/flags/' <<<"$node_route_js"; then
+  echo "Published Luck node route still requests the missing /flags directory." >&2
+  exit 1
+fi
+for node_flag_marker in \
+  'luck-flags.svg?v=1#${flagAssetCode}' \
+  'luck-flags.svg?v=1#${mobileFlagAssetCode}' \
+  'const mobileFlagCode =' \
+  'toDisplayString(mobileDisplayName)'; do
+  grep -aFq "$node_flag_marker" <<<"$node_route_js" || {
+    echo "Published Luck node route is missing portable flag marker: $node_flag_marker" >&2
+    exit 1
+  }
+done
+node_flag_host_count="$( { grep -aoF 'class: "luck-node-flag"' <<<"$node_route_js" || true; } | wc -l | tr -d '[:space:]')"
+if [ "$node_flag_host_count" -lt 2 ]; then
+  echo "Published Luck node route patched only $node_flag_host_count of 2 flag renderers." >&2
+  exit 1
+fi
+echo "[smoke] Desktop and mobile lazy node-route flags passed"
 
-admin_js_path="$(grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
-admin_css_path="$(grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
-test -n "$admin_js_path"
-test -n "$admin_css_path"
+mapfile -t admin_js_paths < <({ grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+mapfile -t admin_css_paths < <({ grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+mapfile -t admin_locale_paths < <({ grep -oE 'src="/assets/admin/locales/[^"]+\.js\?v=[^"]+"' <<<"$admin_html" || true; } | cut -d'"' -f2)
+if [ "${#admin_js_paths[@]}" -ne 1 ] \
+  || [ "${#admin_css_paths[@]}" -lt 1 ] \
+  || [ "${#admin_locale_paths[@]}" -lt 1 ]; then
+  echo "Admin shell emitted an unexpected asset set: ${#admin_js_paths[@]} entry JS, ${#admin_css_paths[@]} CSS, ${#admin_locale_paths[@]} locales." >&2
+  exit 1
+fi
 admin_asset_version="$(docker exec "$container_name" php -r '
   require "/www/vendor/autoload.php";
   $app = require "/www/bootstrap/app.php";
@@ -114,8 +138,11 @@ admin_asset_version="$(docker exec "$container_name" php -r '
   echo rawurlencode((string) config("app.version", ""));
 ')"
 test -n "$admin_asset_version"
-test "${admin_js_path##*\?v=}" = "$admin_asset_version"
-test "${admin_css_path##*\?v=}" = "$admin_asset_version"
+for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"; do
+  test "${admin_asset_path##*\?v=}" = "$admin_asset_version"
+  admin_asset_file="/www/public${admin_asset_path%%\?*}"
+  docker exec "$container_name" test -f "$admin_asset_file"
+done
 if [ -n "${GITHUB_SHA:-}" ]; then
   expected_admin_asset_pattern="^[0-9]{8}-${GITHUB_SHA:0:7}$"
   if ! [[ "$admin_asset_version" =~ $expected_admin_asset_pattern ]]; then
@@ -123,11 +150,21 @@ if [ -n "${GITHUB_SHA:-}" ]; then
     exit 1
   fi
 fi
+admin_js_path="${admin_js_paths[0]}"
 admin_js_file="/www/public${admin_js_path%%\?*}"
-admin_css_file="/www/public${admin_css_path%%\?*}"
 docker exec "$container_name" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file"
 docker exec "$container_name" grep -aFq 'viewBox:"0 0 30 20"' "$admin_js_file"
-docker exec "$container_name" grep -aFq 'xboard-admin-icon-visibility' "$admin_css_file"
+admin_css_marker_found=false
+for admin_css_path in "${admin_css_paths[@]}"; do
+  admin_css_file="/www/public${admin_css_path%%\?*}"
+  if docker exec "$container_name" grep -aFq 'xboard-admin-icon-visibility' "$admin_css_file"; then
+    admin_css_marker_found=true
+  fi
+done
+if [ "$admin_css_marker_found" != true ]; then
+  echo "Admin stylesheets are missing the icon visibility marker." >&2
+  exit 1
+fi
 echo "[smoke] Versioned admin SVG icon assets passed"
 
 docker exec "$container_name" php /www/tests/smoke-order-idempotency.php

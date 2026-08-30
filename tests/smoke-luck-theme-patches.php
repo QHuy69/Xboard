@@ -153,6 +153,62 @@ if (LuckThemeAssetPatcher::patchNodeFlags($incompleteNodeFlagFixture) !== $incom
     exit(1);
 }
 
+$mobileNodeFlagFixture = <<<'JS'
+              (openBlock(true), createElementBlock(Fragment, null, renderList(servers.value, (server, index) => {
+                return openBlock(), createElementBlock("div", {
+                  key: `mobile-${server.type}-${server.id}`,
+                  class: "mobile-server-item"
+                }, [
+                  createBaseVNode("div", _hoisted_8, [
+                    createBaseVNode("img", {
+                      src: `/flags/${getCountryInfo(server.name).code.toLowerCase()}.svg`,
+                      alt: getCountryInfo(server.name).name,
+                      style: { "width": "28px", "height": "19px", "border-radius": "3px", "border": "1px solid rgba(0,0,0,0.15)", "box-shadow": "0 1px 2px rgba(0,0,0,0.1)" },
+                      onError: _cache[0] || (_cache[0] = (e) => e.target.src = "/flags/un.svg")
+                    }, null, 40, _hoisted_9),
+                    createBaseVNode("div", _hoisted_10, [
+                      createBaseVNode("div", _hoisted_11, toDisplayString(server.name), 1),
+                    ])
+                  ])
+                ]);
+              }))
+JS;
+$patchedMobileNodeFlagFixture = LuckThemeAssetPatcher::patchNodeFlags($mobileNodeFlagFixture);
+if (str_contains($patchedMobileNodeFlagFixture, '/flags/')
+    || !str_contains($patchedMobileNodeFlagFixture, 'const mobileFlagCode =')
+    || !str_contains($patchedMobileNodeFlagFixture, 'const mobileFlagAssetCode =')
+    || !str_contains($patchedMobileNodeFlagFixture, 'class: "luck-node-flag"')
+    || !str_contains($patchedMobileNodeFlagFixture, '"aria-label": mobileCountryInfo.name')
+    || !str_contains($patchedMobileNodeFlagFixture, '/theme/Luck/assets/luck-flags.svg?v=1#${mobileFlagAssetCode}')
+    || !str_contains($patchedMobileNodeFlagFixture, 'class: "luck-node-flag-code"')
+    || !str_contains($patchedMobileNodeFlagFixture, 'toDisplayString(mobileDisplayName)')
+    || LuckThemeAssetPatcher::patchNodeFlags($patchedMobileNodeFlagFixture) !== $patchedMobileNodeFlagFixture) {
+    fwrite(STDERR, "Luck mobile node-card flag replacement failed.\n");
+    exit(1);
+}
+
+$combinedNodeFlagFixture = $nodeFlagFixture . "\n" . $mobileNodeFlagFixture;
+$patchedCombinedNodeFlagFixture = LuckThemeAssetPatcher::patchNodeFlags($combinedNodeFlagFixture);
+if (str_contains($patchedCombinedNodeFlagFixture, '/flags/')
+    || substr_count($patchedCombinedNodeFlagFixture, 'class: "luck-node-flag"') !== 2
+    || substr_count($patchedCombinedNodeFlagFixture, 'luck-flags.svg?v=1#${') !== 2
+    || !str_contains($patchedCombinedNodeFlagFixture, 'const flagAssetCode =')
+    || !str_contains($patchedCombinedNodeFlagFixture, 'const mobileFlagAssetCode =')) {
+    fwrite(STDERR, "Luck desktop and mobile node flags must be patched in the same pass.\n");
+    exit(1);
+}
+
+$incompleteMobileNodeFlagFixture = str_replace(
+    'createBaseVNode("div", _hoisted_11, toDisplayString(server.name), 1),',
+    'createBaseVNode("div", toDisplayString(server.name), 1),',
+    $mobileNodeFlagFixture
+);
+if (LuckThemeAssetPatcher::patchNodeFlags($incompleteMobileNodeFlagFixture) !== $incompleteMobileNodeFlagFixture
+    || str_contains(LuckThemeAssetPatcher::patchNodeFlags($incompleteMobileNodeFlagFixture), 'mobileFlagCode')) {
+    fwrite(STDERR, "Luck mobile node flag patch must be atomic when upstream markup changes.\n");
+    exit(1);
+}
+
 $entryAsset = getenv('LUCK_ENTRY_ASSET');
 if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = (string) file_get_contents($entryAsset);

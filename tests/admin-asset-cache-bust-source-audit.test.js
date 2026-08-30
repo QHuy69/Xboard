@@ -31,7 +31,15 @@ assert(
 assert(view.includes("$fallbackHtmlPath = public_path('assets/admin/index.html')"), 'Missing-manifest fallback does not use the distribution entry document.');
 assert(view.includes('$resolveAsset = static function'), 'Admin manifest assets are not constrained to real packaged files.');
 assert(view.includes("realpath(public_path('assets/admin/' . $relative))"), 'Admin manifest assets are not resolved below the packaged asset root.');
+assert(view.includes('str_starts_with($absolute, $rootPrefix)'), 'Resolved admin assets are not confined to the packaged asset root.');
 assert(!view.includes('filemtime('), 'Admin fallback can still mix independently selected builds by modification time.');
+assert(
+  view.includes('if (count($fallbackScripts) === 1 && count($fallbackStyles) === 1)') &&
+    view.includes('$scripts = $fallbackScripts;') &&
+    view.includes('$styles = $fallbackStyles;') &&
+    !view.includes('if (count($scripts) === 0 && count($fallbackScripts)'),
+  'Admin fallback does not replace JavaScript and CSS as one verified pair.'
+);
 for (const missing of ['assets/index.js', 'assets/index.css', 'assets/vendor.css', 'locales/ko-KR.js']) {
   assert(!view.includes(missing), `Admin fallback still references absent file: ${missing}`);
 }
@@ -59,6 +67,16 @@ for (const [name, source] of [['published-image smoke', smoke], ['production dep
   assert(
     source.includes('admin_asset_version') && source.includes('config("app.version", "")'),
     `The ${name} does not compare emitted URLs with the build-stamped app version.`
+  );
+}
+
+for (const source of [smoke, deploy]) {
+  assert(
+    source.includes('mapfile -t admin_js_paths') &&
+      source.includes('mapfile -t admin_css_paths') &&
+      source.includes('mapfile -t admin_locale_paths') &&
+      source.includes('for admin_asset_path in "${admin_js_paths[@]}" "${admin_css_paths[@]}" "${admin_locale_paths[@]}"; do'),
+    'A release gate does not validate every emitted admin asset URL and file.'
   );
 }
 
