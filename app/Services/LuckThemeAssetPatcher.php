@@ -77,7 +77,9 @@ final class LuckThemeAssetPatcher
         $pattern = '#(?<asset>(?:\./|assets/)[^"\'\?\s]+\.js)(?<query>\?v=\d+)?#';
 
         return preg_replace_callback($pattern, static function (array $match): string {
-            return $match['asset'] . ($match['query'] ?? '?v=3');
+            $query = $match['query'] ?? '';
+
+            return $match['asset'] . ($query !== '' ? $query : '?v=3');
         }, $contents) ?? $contents;
     }
 
