@@ -17,6 +17,8 @@ Các lệnh chính: `/start`, `/menu`, `/bind`, `/traffic`, `/getlatesturl`, `/u
 - `/nodes`: xem trạng thái node và số người đang trực tuyến trên từng node.
 - `/setreportgroup`: quản trị viên hoặc nhân viên dùng lệnh này trong nhóm để chọn nhóm nhận báo cáo định kỳ.
 - Có thể cấu hình chu kỳ báo cáo node là 5, 15 hoặc 60 phút.
+- Tự động tạo backup database mỗi ngày, nén và mã hóa AES-256-GCM trước khi gửi vào chat riêng của quản trị viên.
+- `/setbackupchat`: đặt chat riêng hiện tại làm nơi nhận backup; `/backupdb`: chạy thử một bản backup ngay.
 
 ## Quy trình cộng tác viên
 
@@ -33,5 +35,17 @@ Quy trình được giới hạn cho quản trị viên, nhân viên hoặc Tele
 - Bật/tắt thông báo ticket và thanh toán.
 - Bật/tắt báo cáo node theo nhóm và chọn chu kỳ báo cáo.
 - Bật/tắt quy trình cộng tác viên và danh sách Telegram ID được phép.
+- Bật/tắt backup database, đặt giờ chạy, dung lượng tối đa và mật khẩu mã hóa tối thiểu 16 ký tự.
+
+Nên đặt mật khẩu trong biến môi trường `TELEGRAM_DATABASE_BACKUP_PASSWORD` thay vì lưu ở cấu hình plugin. File tạm được cấp quyền riêng, luôn bị xóa sau khi gửi hoặc khi có lỗi và tác vụ có khóa chống chạy trùng.
+
+Để khôi phục file nhận từ Telegram, tải file `.xbenc` về máy chủ, đặt đúng mật khẩu vào biến môi trường rồi chạy:
+
+```bash
+php artisan backup:telegram-decrypt backup.sql.gz.xbenc backup.sql.gz
+gzip -dc backup.sql.gz > backup.sql
+```
+
+Lệnh giải mã từ chối ghi đè file đã tồn tại và không nhận mật khẩu trực tiếp trên dòng lệnh để tránh lộ trong lịch sử shell.
 
 Bot sử dụng dữ liệu `online` hiện có của XBoard. Số này được tổng hợp từ báo cáo thiết bị/IP theo từng node và tự hết hạn khi thiết bị ngừng báo cáo.

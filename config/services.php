@@ -30,4 +30,9 @@ return [
         'region' => env('AWS_V2BOARD_REGION', 'us-east-1'),
     ],
 
+    'telegram' => [
+        // Prefer this environment secret over storing the backup password in plugin configuration.
+        'database_backup_password' => env('TELEGRAM_DATABASE_BACKUP_PASSWORD', ''),
+    ],
+
 ];

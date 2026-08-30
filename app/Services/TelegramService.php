@@ -42,6 +42,37 @@ class TelegramService
         $this->request('sendMessage', $params);
     }
 
+    public function sendDocument(int $chatId, string $filePath, string $caption = ''): object
+    {
+        if (!is_file($filePath) || !is_readable($filePath)) {
+            throw new ApiException('Telegram document is not readable');
+        }
+
+        $handle = fopen($filePath, 'rb');
+        if ($handle === false) throw new ApiException('Cannot open Telegram document');
+
+        try {
+            $response = Http::timeout(180)
+                ->withHeaders(['Accept' => 'application/json'])
+                ->attach('document', $handle, basename($filePath))
+                ->post($this->apiUrl . 'sendDocument', array_filter([
+                    'chat_id' => $chatId,
+                    'caption' => $caption,
+                ], static fn ($value) => $value !== ''));
+
+            return $this->validateResponse($response, 'sendDocument');
+        } catch (\Throwable $e) {
+            Log::error('Telegram document upload failed', [
+                'chat_id' => $chatId,
+                'size' => filesize($filePath) ?: null,
+                'error' => $e->getMessage(),
+            ]);
+            throw new ApiException("Telegram service error: {$e->getMessage()}");
+        } finally {
+            fclose($handle);
+        }
+    }
+
     public function answerCallbackQuery(string $callbackQueryId, string $text = ''): void
     {
         $this->request('answerCallbackQuery', array_filter([
@@ -160,22 +191,7 @@ class TelegramService
         try {
             $response = $this->http->get($this->apiUrl . $method, $params);
 
-            if (!$response->successful()) {
-                throw new ApiException("Telegram HTTP request failed: {$response->status()}");
-            }
-
-            $data = $response->object();
-
-            if (!isset($data->ok)) {
-                throw new ApiException('Invalid Telegram API response');
-            }
-
-            if (!$data->ok) {
-                $description = $data->description ?? 'unknown error';
-                throw new ApiException("Telegram API error: {$description}");
-            }
-
-            return $data;
+            return $this->validateResponse($response, $method);
 
         } catch (\Exception $e) {
             Log::error('Telegram API request failed', [
@@ -186,5 +202,21 @@ class TelegramService
 
             throw new ApiException("Telegram service error: {$e->getMessage()}");
         }
+    }
+
+    protected function validateResponse(\Illuminate\Http\Client\Response $response, string $method): object
+    {
+        if (!$response->successful()) {
+            throw new ApiException("Telegram {$method} HTTP request failed: {$response->status()}");
+        }
+
+        $data = $response->object();
+        if (!isset($data->ok)) throw new ApiException('Invalid Telegram API response');
+        if (!$data->ok) {
+            $description = $data->description ?? 'unknown error';
+            throw new ApiException("Telegram API error: {$description}");
+        }
+
+        return $data;
     }
 }

@@ -4,6 +4,7 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 require_once dirname(__DIR__) . '/plugins-core/CoinPayments/Plugin.php';
 
 use Plugin\CoinPayments\Plugin as CoinPaymentsPlugin;
+use App\Services\EncryptedDatabaseBackupService;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
 
@@ -95,10 +96,59 @@ expectSource('plugins-core/Telegram/Plugin.php', [
     "Log::notice('Telegram reseller created customer'",
     "if (!$actor || (!$actor->is_admin && !$actor->is_staff))",
     "listen('order.open.after'",
+    "'/backupdb'",
+    "Cache::lock('telegram:database-backup'",
+    "app(EncryptedDatabaseBackupService::class)->create",
+    'Schedule registration does not call boot()',
 ]);
 
+expectSource('app/Services/TelegramService.php', [
+    'function sendDocument(',
+    "->attach('document'",
+]);
+
+$backupService = app(EncryptedDatabaseBackupService::class);
+$plainPath = tempnam(sys_get_temp_dir(), 'xboard-backup-plain-');
+$encryptedPath = $plainPath . '.xbenc';
+$decryptedPath = $plainPath . '.restored';
+$backupFixture = random_bytes(1024 * 1024 + 317);
+file_put_contents($plainPath, $backupFixture);
+try {
+    $backupService->encryptFile($plainPath, $encryptedPath, 'ci-backup-password-2026');
+    $backupService->decryptFile($encryptedPath, $decryptedPath, 'ci-backup-password-2026');
+    if (!hash_equals(hash('sha256', $backupFixture), hash_file('sha256', $decryptedPath))) {
+        fwrite(STDERR, "Encrypted database backup round-trip failed.\n");
+        exit(1);
+    }
+
+    $wrongPasswordPath = $plainPath . '.wrong-password';
+    $wrongPasswordRejected = false;
+    try {
+        $backupService->decryptFile($encryptedPath, $wrongPasswordPath, 'wrong-backup-password-2026');
+    } catch (\Throwable) {
+        $wrongPasswordRejected = true;
+    }
+    if (!$wrongPasswordRejected || file_exists($wrongPasswordPath)) {
+        fwrite(STDERR, "Encrypted database backup accepted a wrong password or left partial output.\n");
+        exit(1);
+    }
+} finally {
+    @unlink($plainPath);
+    @unlink($encryptedPath);
+    @unlink($decryptedPath);
+    @unlink($wrongPasswordPath ?? '');
+}
+
 foreach (['plugins-core/CoinPayments/config.json', 'plugins-core/Telegram/config.json', 'resources/lang/vi-VN.json'] as $file) {
-    json_decode((string) file_get_contents(dirname(__DIR__) . '/' . $file), true, 512, JSON_THROW_ON_ERROR);
+    $decoded = json_decode((string) file_get_contents(dirname(__DIR__) . '/' . $file), true, 512, JSON_THROW_ON_ERROR);
+    if ($file === 'plugins-core/Telegram/config.json') {
+        foreach ($decoded['config'] as $field) {
+            if (($field['type'] ?? '') === 'select' && !array_is_list($field['options'] ?? [])) {
+                fwrite(STDERR, "Telegram select options must be an admin-compatible list.\n");
+                exit(1);
+            }
+        }
+    }
 }
 
 echo "CoinPayments signing, surplus guard, account locale and Telegram integration checks passed.\n";

@@ -105,7 +105,9 @@ RUN php -l routes/web.php \
     && php -l app/Services/LuckThemeAssetPatcher.php \
     && php -l app/Services/OrderService.php \
     && php -l app/Services/TelegramService.php \
+    && php -l app/Services/EncryptedDatabaseBackupService.php \
     && php -l app/Services/TrafficResetService.php \
+    && php -l app/Console/Commands/DecryptTelegramDatabaseBackup.php \
     && php -l plugins-core/CoinPayments/Plugin.php \
     && php -l plugins-core/Telegram/Plugin.php \
     && php -l tests/smoke-order-idempotency.php \

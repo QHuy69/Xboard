@@ -9,6 +9,7 @@ use App\Models\Server;
 use App\Models\Ticket;
 use App\Models\TrafficResetLog;
 use App\Models\User;
+use App\Services\EncryptedDatabaseBackupService;
 use App\Services\OrderService;
 use App\Services\Plugin\AbstractPlugin;
 use App\Services\Plugin\HookManager;
@@ -35,6 +36,8 @@ class Plugin extends AbstractPlugin
         '/unbind' => ['description' => 'Hủy liên kết tài khoản', 'handler' => 'handleUnbindCommand'],
         '/nodes' => ['description' => 'Xem người dùng online theo node', 'handler' => 'handleNodesCommand'],
         '/setreportgroup' => ['description' => 'Đặt nhóm nhận báo cáo node', 'handler' => 'handleSetReportGroupCommand'],
+        '/setbackupchat' => ['description' => 'Đặt nơi nhận backup database', 'handler' => 'handleSetBackupChatCommand'],
+        '/backupdb' => ['description' => 'Backup database ngay', 'handler' => 'handleBackupDatabaseCommand'],
         '/reseller' => ['description' => 'Tạo tài khoản khách hàng', 'handler' => 'handleResellerCommand'],
         '/cancel' => ['description' => 'Hủy thao tác hiện tại', 'handler' => 'handleCancelCommand'],
     ];
@@ -54,6 +57,11 @@ class Plugin extends AbstractPlugin
             'forbidden' => 'Bạn không có quyền dùng tính năng này.', 'cancelled' => 'Đã hủy thao tác hiện tại.',
             'nodes_title' => '🖥 Người dùng online theo node', 'node_line' => ':state :name (:type): :online người dùng',
             'report_group_ok' => '✅ Nhóm này sẽ nhận báo cáo node tự động.', 'report_group_only' => 'Lệnh này phải được gửi trong nhóm Telegram.',
+            'backup_chat_ok' => '✅ Chat riêng này sẽ nhận backup database tự động.',
+            'backup_private' => 'Vì an toàn, lệnh backup database chỉ dùng trong chat riêng với bot.',
+            'backup_started' => '⏳ Đang tạo và mã hóa backup database...',
+            'backup_config_invalid' => '⚠️ Chưa cấu hình mật khẩu backup tối thiểu 16 ký tự.',
+            'backup_failed' => '❌ Backup database thất bại. Hãy kiểm tra log hệ thống.',
             'reseller_intro' => '🤝 Tạo tài khoản khách. Hãy nhập email khách hàng hoặc bấm Hủy.',
             'reseller_email_invalid' => 'Email không hợp lệ, vui lòng nhập lại.', 'reseller_email_exists' => 'Email này đã tồn tại.',
             'reseller_choose_plan' => 'Chọn gói cho :email:', 'reseller_no_plan' => 'Không có gói nào đang được phép bán.',
@@ -65,6 +73,7 @@ class Plugin extends AbstractPlugin
             'purchased' => '✅ Kích hoạt thành công gói :plan. Hạn: :expires',
             'traffic_reset' => '✅ Lưu lượng của bạn đã được đặt lại.',
             'url_reset' => "🔐 Liên kết đăng ký đã được đặt lại:\n:url",
+            'ticket_replied' => '✅ Ticket #:id đã được trả lời.',
             'button_traffic' => '📊 Lưu lượng', 'button_url' => '🔗 Link đăng ký', 'button_nodes' => '🖥 Node online',
             'button_reseller' => '🤝 CTV', 'button_cancel' => '❌ Hủy', 'button_create' => '➕ Tạo tài khoản',
         ],
@@ -82,6 +91,11 @@ class Plugin extends AbstractPlugin
             'cancelled' => 'Current operation cancelled.', 'nodes_title' => '🖥 Online users by node',
             'node_line' => ':state :name (:type): :online users', 'report_group_ok' => '✅ This group will receive automatic node reports.',
             'report_group_only' => 'Send this command in a Telegram group.', 'reseller_intro' => '🤝 Enter the customer email or tap Cancel.',
+            'backup_chat_ok' => '✅ This private chat will receive automatic database backups.',
+            'backup_private' => 'For safety, database backup commands are only available in a private chat with the bot.',
+            'backup_started' => '⏳ Creating and encrypting the database backup...',
+            'backup_config_invalid' => '⚠️ Configure a database backup password with at least 16 characters first.',
+            'backup_failed' => '❌ Database backup failed. Check the system log.',
             'reseller_email_invalid' => 'Invalid email. Try again.', 'reseller_email_exists' => 'This email already exists.',
             'reseller_choose_plan' => 'Choose a plan for :email:', 'reseller_no_plan' => 'No plans are currently for sale.',
             'reseller_choose_period' => 'Choose a billing period for :plan:', 'reseller_coupon' => 'Enter a 100% discount coupon:',
@@ -90,6 +104,7 @@ class Plugin extends AbstractPlugin
             'renewed' => '✅ :plan renewed. New expiry: :expires', 'upgraded' => '✅ Plan changed to :plan. New expiry: :expires',
             'purchased' => '✅ :plan activated. Expiry: :expires', 'traffic_reset' => '✅ Your traffic was reset.',
             'url_reset' => "🔐 Your subscription link was reset:\n:url",
+            'ticket_replied' => '✅ Ticket #:id was answered.',
             'button_traffic' => '📊 Traffic', 'button_url' => '🔗 Subscription link', 'button_nodes' => '🖥 Online nodes',
             'button_reseller' => '🤝 Reseller', 'button_cancel' => '❌ Cancel', 'button_create' => '➕ Create account',
         ],
@@ -104,6 +119,11 @@ class Plugin extends AbstractPlugin
             'url' => "🔗 您的订阅链接：\n\n:url", 'forbidden' => '您无权使用此功能。', 'cancelled' => '已取消当前操作。',
             'nodes_title' => '🖥 各节点在线用户', 'node_line' => ':state :name (:type)：:online 人',
             'report_group_ok' => '✅ 本群将接收自动节点报告。', 'report_group_only' => '请在 Telegram 群组中发送此命令。',
+            'backup_chat_ok' => '✅ 此私聊将接收自动数据库备份。',
+            'backup_private' => '为确保安全，数据库备份命令只能在机器人私聊中使用。',
+            'backup_started' => '⏳ 正在创建并加密数据库备份…',
+            'backup_config_invalid' => '⚠️ 请先设置至少 16 个字符的数据库备份密码。',
+            'backup_failed' => '❌ 数据库备份失败，请检查系统日志。',
             'reseller_intro' => '🤝 请输入客户邮箱，或点击取消。', 'reseller_email_invalid' => '邮箱无效，请重试。',
             'reseller_email_exists' => '该邮箱已存在。', 'reseller_choose_plan' => '为 :email 选择套餐：', 'reseller_no_plan' => '暂无可售套餐。',
             'reseller_choose_period' => '请选择 :plan 的周期：', 'reseller_coupon' => '请输入 100% 优惠码：',
@@ -112,6 +132,7 @@ class Plugin extends AbstractPlugin
             'renewed' => '✅ :plan 续费成功，新到期时间：:expires', 'upgraded' => '✅ 已更换为 :plan，新到期时间：:expires',
             'purchased' => '✅ :plan 开通成功，到期时间：:expires', 'traffic_reset' => '✅ 流量已重置。',
             'url_reset' => "🔐 订阅链接已重置：\n:url",
+            'ticket_replied' => '✅ 工单 #:id 已回复。',
             'button_traffic' => '📊 流量', 'button_url' => '🔗 订阅链接', 'button_nodes' => '🖥 在线节点',
             'button_reseller' => '🤝 合作伙伴', 'button_cancel' => '❌ 取消', 'button_create' => '➕ 创建账号',
         ],
@@ -139,10 +160,24 @@ class Plugin extends AbstractPlugin
 
     public function schedule(Schedule $schedule): void
     {
-        if (!$this->getConfig('enable_node_group_report', false)) return;
-        $interval = (int) $this->getConfig('node_report_interval_minutes', 15);
-        $event = $schedule->call(fn () => $this->sendScheduledNodeReport())->withoutOverlapping();
-        match ($interval) { 5 => $event->everyFiveMinutes(), 60 => $event->hourly(), default => $event->everyFifteenMinutes() };
+        // Schedule registration does not call boot(), so scheduled callbacks
+        // must initialize their own Telegram client.
+        if (!isset($this->telegramService)) $this->telegramService = new TelegramService();
+
+        if ($this->getConfig('enable_node_group_report', false)) {
+            $interval = (int) $this->getConfig('node_report_interval_minutes', 15);
+            $event = $schedule->call(fn () => $this->sendScheduledNodeReport())->withoutOverlapping();
+            match ($interval) { 5 => $event->everyFiveMinutes(), 60 => $event->hourly(), default => $event->everyFifteenMinutes() };
+        }
+
+        if ($this->getConfig('enable_database_backup', false)) {
+            $time = $this->validBackupTime((string) $this->getConfig('database_backup_time', '03:30'));
+            $schedule->call(fn () => $this->sendDatabaseBackup())
+                ->name('telegram-database-backup')
+                ->dailyAt($time)
+                ->onOneServer()
+                ->withoutOverlapping(180);
+        }
     }
 
     public function handleMessage(bool $handled, array $data): bool
@@ -283,10 +318,72 @@ class Plugin extends AbstractPlugin
         $this->sendMessage($msg, $this->text('report_group_ok', $locale));
     }
 
+    public function handleSetBackupChatCommand(object $msg): void
+    {
+        $locale = $this->localeForMessage($msg);
+        if (!$this->isAdmin($msg)) { $this->sendMessage($msg, $this->text('forbidden', $locale)); return; }
+        if (!$msg->is_private) { $this->sendMessage($msg, $this->text('backup_private', $locale)); return; }
+        admin_setting(['telegram_database_backup_chat_id' => (string) $msg->chat_id]);
+        $this->sendMessage($msg, $this->text('backup_chat_ok', $locale));
+    }
+
+    public function handleBackupDatabaseCommand(object $msg): void
+    {
+        $locale = $this->localeForMessage($msg);
+        if (!$this->isAdmin($msg)) { $this->sendMessage($msg, $this->text('forbidden', $locale)); return; }
+        if (!$msg->is_private) { $this->sendMessage($msg, $this->text('backup_private', $locale)); return; }
+        if (!$this->validBackupPassword()) { $this->sendMessage($msg, $this->text('backup_config_invalid', $locale)); return; }
+
+        admin_setting(['telegram_database_backup_chat_id' => (string) $msg->chat_id]);
+        $this->sendMessage($msg, $this->text('backup_started', $locale));
+        $this->sendDatabaseBackup((int) $msg->chat_id, $locale);
+    }
+
     public function sendScheduledNodeReport(): void
     {
         $chatId = (int) admin_setting('telegram_node_report_chat_id', 0);
         if ($chatId) $this->telegramService->sendMessage($chatId, $this->nodeReport('vi-VN'));
+    }
+
+    public function sendDatabaseBackup(?int $targetChatId = null, string $locale = 'vi-VN'): void
+    {
+        $chatId = $targetChatId ?: (int) ($this->getConfig('database_backup_chat_id', 0)
+            ?: admin_setting('telegram_database_backup_chat_id', 0));
+        if ($chatId <= 0) {
+            Log::warning('Telegram database backup skipped: no valid private destination chat configured');
+            return;
+        }
+
+        $password = $this->backupPassword();
+        if (strlen($password) < 16) {
+            Log::warning('Telegram database backup skipped: encryption password is missing or too short');
+            $this->telegramService->sendMessage($chatId, $this->text('backup_config_invalid', $locale));
+            return;
+        }
+
+        $lock = Cache::lock('telegram:database-backup', 10800);
+        if (!$lock->get()) return;
+        $backupPath = null;
+
+        try {
+            $backupPath = app(EncryptedDatabaseBackupService::class)->create($password);
+            $size = filesize($backupPath);
+            $maxBytes = max(1, (int) $this->getConfig('database_backup_max_mb', 45)) * 1024 * 1024;
+            if ($size === false || $size > $maxBytes) throw new \RuntimeException('Encrypted backup exceeds configured Telegram upload limit.');
+
+            $this->telegramService->sendDocument(
+                $chatId,
+                $backupPath,
+                "🔐 XBoard database backup\n" . now()->format('Y-m-d H:i:s T') . "\nAES-256-GCM"
+            );
+            Log::notice('Encrypted database backup sent to Telegram', ['chat_id' => $chatId, 'size' => $size]);
+        } catch (\Throwable $e) {
+            Log::error('Telegram database backup failed', ['chat_id' => $chatId, 'error' => $e->getMessage()]);
+            try { $this->telegramService->sendMessage($chatId, $this->text('backup_failed', $locale)); } catch (\Throwable) {}
+        } finally {
+            if ($backupPath) @unlink($backupPath);
+            $lock->release();
+        }
     }
 
     public function handleResellerCommand(object $msg): void
@@ -403,10 +500,12 @@ class Plugin extends AbstractPlugin
     {
         if (!$this->getConfig('enable_payment_notify', true) || !$order->payment) return;
         $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($order) {
-            $vi = str_starts_with(strtolower($admin->locale ?? 'vi-VN'), 'vi');
-            return $vi
-                ? sprintf("💰 Thanh toán thành công %.2f CNY\nCổng: %s\nKênh: %s\nĐơn: `%s`", $order->total_amount / 100, Helper::escapeMarkdown($order->payment->payment), Helper::escapeMarkdown($order->payment->name), $order->trade_no)
-                : sprintf("💰 Payment received %.2f CNY\nGateway: %s\nChannel: %s\nOrder: `%s`", $order->total_amount / 100, Helper::escapeMarkdown($order->payment->payment), Helper::escapeMarkdown($order->payment->name), $order->trade_no);
+            $values = [$order->total_amount / 100, Helper::escapeMarkdown($order->payment->payment), Helper::escapeMarkdown($order->payment->name), $order->trade_no];
+            return match ($this->language((string) ($admin->locale ?? 'vi-VN'))) {
+                'vi' => sprintf("💰 Thanh toán thành công %.2f CNY\nCổng: %s\nKênh: %s\nĐơn: `%s`", ...$values),
+                'zh' => sprintf("💰 支付成功 %.2f CNY\n网关：%s\n通道：%s\n订单：`%s`", ...$values),
+                default => sprintf("💰 Payment received %.2f CNY\nGateway: %s\nChannel: %s\nOrder: `%s`", ...$values),
+            };
         }, true);
     }
 
@@ -415,10 +514,13 @@ class Plugin extends AbstractPlugin
         if (!$this->getConfig('enable_ticket_notify', true)) return;
         $message = $ticket->messages()->latest()->first(); $user = User::find($ticket->user_id); if (!$user || !$message) return;
         $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($ticket, $user, $message) {
-            $vi = str_starts_with(strtolower($admin->locale ?? 'vi-VN'), 'vi');
-            return $vi
-                ? "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Chủ đề*: `" . Helper::escapeMarkdown($ticket->subject) . "`\n💬 *Nội dung*: `" . Helper::escapeMarkdown($message->message) . '`'
-                : "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Subject*: `" . Helper::escapeMarkdown($ticket->subject) . "`\n💬 *Message*: `" . Helper::escapeMarkdown($message->message) . '`';
+            $subject = Helper::escapeMarkdown($ticket->subject);
+            $body = Helper::escapeMarkdown($message->message);
+            return match ($this->language((string) ($admin->locale ?? 'vi-VN'))) {
+                'vi' => "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Chủ đề*: `{$subject}`\n💬 *Nội dung*: `{$body}`",
+                'zh' => "📮 *工单 #{$ticket->id}*\n📧 `{$user->email}`\n📝 *主题*：`{$subject}`\n💬 *内容*：`{$body}`",
+                default => "📮 *Ticket #{$ticket->id}*\n📧 `{$user->email}`\n📝 *Subject*: `{$subject}`\n💬 *Message*: `{$body}`",
+            };
         }, true);
     }
 
@@ -428,7 +530,7 @@ class Plugin extends AbstractPlugin
         if (!$actor || (!$actor->is_admin && !$actor->is_staff)) { $this->sendMessage($msg, $this->text('forbidden', $this->localeForMessage($msg))); return; }
         $ticketId = (int) ($matches[1] ?? 0); if (!$ticketId || !Ticket::find($ticketId)) return;
         (new TicketService())->replyByAdmin($ticketId, $msg->text, $actor->id);
-        $this->sendMessage($msg, "✅ Ticket #{$ticketId} đã được trả lời.");
+        $this->sendMessage($msg, $this->text('ticket_replied', $this->localeForMessage($msg), ['id' => $ticketId]));
     }
 
     public function handleUnknownCommand(array $data): void
@@ -450,9 +552,9 @@ class Plugin extends AbstractPlugin
     public function addLocalizedBotCommands(array $localized): array
     {
         $descriptions = [
-            'vi' => ['start' => 'Mở menu chính', 'menu' => 'Mở menu chính', 'bind' => 'Liên kết tài khoản', 'traffic' => 'Xem lưu lượng', 'getlatesturl' => 'Lấy liên kết đăng ký', 'unbind' => 'Hủy liên kết tài khoản', 'nodes' => 'Xem người dùng online theo node', 'setreportgroup' => 'Đặt nhóm nhận báo cáo node', 'reseller' => 'Tạo tài khoản khách hàng', 'cancel' => 'Hủy thao tác hiện tại'],
-            'en' => ['start' => 'Open the main menu', 'menu' => 'Open the main menu', 'bind' => 'Link an account', 'traffic' => 'View traffic', 'getlatesturl' => 'Get subscription link', 'unbind' => 'Unlink the account', 'nodes' => 'View online users by node', 'setreportgroup' => 'Set the node report group', 'reseller' => 'Create a customer account', 'cancel' => 'Cancel the current action'],
-            'zh' => ['start' => '打开主菜单', 'menu' => '打开主菜单', 'bind' => '绑定账号', 'traffic' => '查看流量', 'getlatesturl' => '获取订阅链接', 'unbind' => '解绑账号', 'nodes' => '查看各节点在线用户', 'setreportgroup' => '设置节点报告群组', 'reseller' => '创建客户账号', 'cancel' => '取消当前操作'],
+            'vi' => ['start' => 'Mở menu chính', 'menu' => 'Mở menu chính', 'bind' => 'Liên kết tài khoản', 'traffic' => 'Xem lưu lượng', 'getlatesturl' => 'Lấy liên kết đăng ký', 'unbind' => 'Hủy liên kết tài khoản', 'nodes' => 'Xem người dùng online theo node', 'setreportgroup' => 'Đặt nhóm nhận báo cáo node', 'setbackupchat' => 'Đặt chat nhận backup database', 'backupdb' => 'Backup database ngay', 'reseller' => 'Tạo tài khoản khách hàng', 'cancel' => 'Hủy thao tác hiện tại'],
+            'en' => ['start' => 'Open the main menu', 'menu' => 'Open the main menu', 'bind' => 'Link an account', 'traffic' => 'View traffic', 'getlatesturl' => 'Get subscription link', 'unbind' => 'Unlink the account', 'nodes' => 'View online users by node', 'setreportgroup' => 'Set the node report group', 'setbackupchat' => 'Set the database backup chat', 'backupdb' => 'Back up the database now', 'reseller' => 'Create a customer account', 'cancel' => 'Cancel the current action'],
+            'zh' => ['start' => '打开主菜单', 'menu' => '打开主菜单', 'bind' => '绑定账号', 'traffic' => '查看流量', 'getlatesturl' => '获取订阅链接', 'unbind' => '解绑账号', 'nodes' => '查看各节点在线用户', 'setreportgroup' => '设置节点报告群组', 'setbackupchat' => '设置数据库备份私聊', 'backupdb' => '立即备份数据库', 'reseller' => '创建客户账号', 'cancel' => '取消当前操作'],
         ];
         foreach ($descriptions as $language => $items) {
             $localized[$language] = collect($items)->map(
@@ -482,6 +584,7 @@ class Plugin extends AbstractPlugin
 
     protected function operatorUser(object $msg): ?User { return $this->boundUser($msg, false); }
     protected function isOperator(object $msg): bool { $u = $this->operatorUser($msg); return (bool) ($u && ($u->is_admin || $u->is_staff)); }
+    protected function isAdmin(object $msg): bool { $u = $this->operatorUser($msg); return (bool) ($u && $u->is_admin); }
     protected function isReseller(object $msg): bool
     {
         if (!$this->getConfig('enable_reseller_bot', false)) return false;
@@ -495,6 +598,19 @@ class Plugin extends AbstractPlugin
     protected function resellerState(object $msg): ?array { $state = Cache::get($this->resellerKey($msg)); return is_array($state) ? $state : null; }
     protected function setResellerState(object $msg, array $state): void { Cache::put($this->resellerKey($msg), $state, now()->addMinutes(15)); }
     protected function clearResellerState(object $msg): void { Cache::forget($this->resellerKey($msg)); }
+
+    protected function backupPassword(): string
+    {
+        return (string) (config('services.telegram.database_backup_password') ?: $this->getConfig('database_backup_password', ''));
+    }
+
+    protected function validBackupPassword(): bool { return strlen($this->backupPassword()) >= 16; }
+
+    protected function validBackupTime(string $time): string
+    {
+        if (!preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $time)) return '03:30';
+        return $time;
+    }
 
     protected function localeForMessage(object $msg): string
     {

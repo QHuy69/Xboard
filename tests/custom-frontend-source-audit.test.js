@@ -48,6 +48,8 @@ includesAll('public/assets/admin/assets/index-CEIYH7i8.js', [
   'edit.form.language',
   'crisp_website_id',
   'messenger_page_username',
+  'case"string":case"password"',
+  'type:"password"===i.type?"password":"text"',
 ]);
 
 console.log('Register navigation, auth, payment, responsive support and language controls verified.');

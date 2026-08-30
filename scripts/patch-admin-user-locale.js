@@ -24,6 +24,10 @@ const replacements = [
   [
     'Q.jsx(Xy,{children:"This will be displayed on the admin login page."}),Q.jsx(Qy,{})]})}),Q.jsx(Lf,{type:"submit",children:"Save Settings"})',
     'Q.jsx(Xy,{children:"This will be displayed on the admin login page."}),Q.jsx(Qy,{})]})}),Q.jsx($y,{control:t.control,name:"crisp_website_id",render:({field:e})=>Q.jsxs(Gy,{children:[Q.jsx(Zy,{children:"Crisp Website ID"}),Q.jsx(Yy,{children:Q.jsx(u8e,{placeholder:"UUID trang web Crisp",...e})}),Q.jsx(Xy,{children:"Để trống nếu không dùng Crisp."}),Q.jsx(Qy,{})]})}),Q.jsx($y,{control:t.control,name:"messenger_page_username",render:({field:e})=>Q.jsxs(Gy,{children:[Q.jsx(Zy,{children:"Tên người dùng Messenger"}),Q.jsx(Yy,{children:Q.jsx(u8e,{placeholder:"Ví dụ: zaoguang.support",...e})}),Q.jsx(Xy,{children:"Tên sau m.me/, không nhập toàn bộ URL."}),Q.jsx(Qy,{})]})}),Q.jsx(Lf,{type:"submit",children:"Save Settings"})'
+  ],
+  [
+    'case"string":return Q.jsx(TYt,{control:e.control,name:s,label:i.label||i.description,placeholder:i.placeholder,description:i.label?i.description:void 0,required:i.required},t);case"number"',
+    'case"string":case"password":return Q.jsx(TYt,{control:e.control,name:s,label:i.label||i.description,placeholder:i.placeholder,description:i.label?i.description:void 0,required:i.required,type:"password"===i.type?"password":"text"},t);case"number"'
   ]
 ];
 
@@ -36,4 +40,4 @@ for (const [needle, replacement] of replacements) {
 }
 
 fs.writeFileSync(target, source);
-console.log('Admin user language and support settings patched.');
+console.log('Admin user language, support settings and secret plugin fields patched.');

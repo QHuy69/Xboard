@@ -1,7 +1,7 @@
 {
-    "name": "Telegram Bot 集成",
+    "name": "Tích hợp bot Telegram",
     "code": "telegram",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "description": "Bot Telegram đa ngôn ngữ, menu, thông báo, báo cáo node và công cụ CTV",
     "author": "XBoard Team",
     "require": {
@@ -28,10 +28,48 @@
         },
         "node_report_interval_minutes": {
             "type": "select",
-            "default": 15,
+            "default": "15",
             "label": "Chu kỳ báo cáo node",
             "description": "Số phút giữa các báo cáo.",
-            "options": {"5": "5 phút", "15": "15 phút", "60": "60 phút"}
+            "options": [
+                {"value": "5", "label": "5 phút"},
+                {"value": "15", "label": "15 phút"},
+                {"value": "60", "label": "60 phút"}
+            ]
+        },
+        "enable_database_backup": {
+            "type": "boolean",
+            "default": false,
+            "label": "Tự động backup database qua Telegram",
+            "description": "Mỗi ngày tạo file nén, mã hóa rồi gửi vào chat riêng đã đặt bằng /setbackupchat."
+        },
+        "database_backup_time": {
+            "type": "string",
+            "default": "03:30",
+            "label": "Giờ backup database",
+            "description": "Giờ theo múi giờ của máy chủ, định dạng HH:MM."
+        },
+        "database_backup_chat_id": {
+            "type": "string",
+            "default": "",
+            "label": "Chat ID nhận backup (không bắt buộc)",
+            "description": "Có thể để trống rồi gửi /setbackupchat cho bot trong chat riêng."
+        },
+        "database_backup_password": {
+            "type": "password",
+            "default": "",
+            "label": "Mật khẩu mã hóa backup",
+            "description": "Tối thiểu 16 ký tự. Nên đặt TELEGRAM_DATABASE_BACKUP_PASSWORD trong .env thay vì lưu tại đây."
+        },
+        "database_backup_max_mb": {
+            "type": "select",
+            "default": "45",
+            "label": "Dung lượng backup tối đa",
+            "description": "Dừng gửi và báo lỗi nếu file vượt giới hạn đã chọn.",
+            "options": [
+                {"value": "20", "label": "20 MB"},
+                {"value": "45", "label": "45 MB"}
+            ]
         },
         "enable_reseller_bot": {
             "type": "boolean",
