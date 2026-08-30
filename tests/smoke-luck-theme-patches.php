@@ -194,7 +194,9 @@ $dashboardTemplate = (string) file_get_contents(dirname(__DIR__) . '/luck-dashbo
 if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, 'pointer-events: none !important;')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country,')
-    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=14')) {
+    || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
+    || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
+    || !str_contains($dashboardTemplate, 'luck-overrides.css?v=15')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);
 }

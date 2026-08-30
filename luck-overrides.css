@@ -298,6 +298,19 @@ button {
   opacity: 1 !important;
 }
 
+/* The generated map scales active countries by 1.03 and changes their stroke
+   from .8px to 2px on hover. Near an island/edge that moves the path out from
+   under the pointer, causing an endless hover/unhover loop. Keep the tooltip
+   but leave the actual SVG geometry and hit area unchanged. */
+.world-map-container .map-svg .country.has-nodes:hover,
+.world-map-container .map-svg .country.online:hover,
+.world-map-container .map-svg .country.offline:hover,
+.world-map-container .map-svg .country.partial:hover {
+  transform: none !important;
+  filter: none !important;
+  stroke-width: 0.8px !important;
+}
+
 /* The tooltip is positioned beside the pointer. If it can receive pointer
    events it covers the country path, fires mouseleave, disappears, and then
    immediately triggers mouseenter again. That loop is the visible flicker. */
