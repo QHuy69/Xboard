@@ -1019,6 +1019,31 @@ body.luck-donate-open {
   text-align: right !important;
 }
 
+/* Luck chooses MobileDashboardLayout from the mobile user agent, so landscape
+   phones can be wider than the 768px CSS breakpoint. A backdrop filter on its
+   scrolling content establishes a containing block for fixed descendants and
+   moves the subscription QR overlay above the screen by exactly scrollTop.
+   Remove that containing block on every mobile-layout width. Browsers with
+   :has() restore the normal blur whenever no subscription dialog is mounted;
+   older WebViews keep the functional no-blur fallback. */
+.mobile-dashboard .mobile-content {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+@supports selector(.mobile-content:has(*)) {
+  .mobile-dashboard .mobile-content:not(:has(.subscription-dialog-overlay)) {
+    -webkit-backdrop-filter: blur(20px) !important;
+    backdrop-filter: blur(20px) !important;
+  }
+}
+
+.mobile-dashboard .subscription-dialog-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  overscroll-behavior: contain;
+}
+
 @media (max-width: 768px) {
   /* Keep the mobile shell inside the viewport. The generated Luck rules keep
      desktop flex rows for the alert/profile blocks, which makes actions and
