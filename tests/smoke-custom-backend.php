@@ -35,6 +35,10 @@ if (!hash_equals('wAQN/sw1iJTVHmYgXUkPwgnDJjQFtuu+0fmeMFZinN8=', $signature)) {
 
 $app = require dirname(__DIR__) . '/bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
+set_exception_handler(static function (Throwable $throwable): never {
+    fwrite(STDERR, "Uncaught backend smoke-test error: {$throwable->getMessage()}\n");
+    exit(1);
+});
 $webhookUrl = 'https://payments.example.test/coinpayments/callback';
 $timestamp = gmdate('Y-m-d\TH:i:s');
 $payload = json_encode([
@@ -94,7 +98,7 @@ expectSource('plugins-core/Telegram/Plugin.php', [
     "'/reseller'",
     '(int) $coupon->value !== 100',
     "Log::notice('Telegram reseller created customer'",
-    "if (!$actor || (!$actor->is_admin && !$actor->is_staff))",
+    'if (!$actor || (!$actor->is_admin && !$actor->is_staff))',
     "listen('order.open.after'",
     "'/backupdb'",
     "Cache::lock('telegram:database-backup'",

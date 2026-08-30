@@ -37,7 +37,14 @@ if is_enabled ENABLE_HORIZON; then
 fi
 
 if is_enabled ENABLE_WS_SERVER; then
-    has_process 'artisan ws-server'
+    php -r '
+        $socket = @fsockopen($argv[1], (int) $argv[2], $errorCode, $errorMessage, 2);
+        if (!is_resource($socket)) {
+            fwrite(STDERR, "WebSocket server is not accepting connections: {$errorCode} {$errorMessage}\n");
+            exit(1);
+        }
+        fclose($socket);
+    ' "${WS_HOST:-127.0.0.1}" "${WS_PORT:-8076}"
 fi
 
 if is_enabled ENABLE_CADDY; then
