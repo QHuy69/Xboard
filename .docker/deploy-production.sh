@@ -16,14 +16,22 @@ current_container="$(docker ps \
   --filter 'label=com.docker.compose.service=xboard' \
   --format '{{.ID}}' | head -n 1)"
 previous_image=""
+rollback_image=""
 
 if [ -n "$current_container" ]; then
-  previous_image="$(docker inspect --format '{{.Config.Image}}' "$current_container")"
   timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
+  previous_image_id="$(docker inspect --format '{{.Image}}' "$current_container")"
+  rollback_image="xboard-local-rollback:${timestamp}"
+  docker image tag "$previous_image_id" "$rollback_image"
+  previous_image="$rollback_image"
+
   backup_name="database.sqlite.pre-${timestamp}"
   docker exec "$current_container" sqlite3 /www/.docker/.data/database.sqlite \
     "VACUUM INTO '/www/.docker/.data/${backup_name}'"
+  docker exec "$current_container" sqlite3 "/www/.docker/.data/${backup_name}" \
+    'PRAGMA integrity_check;' | grep -qx 'ok'
   echo "Database backup created: .docker/.data/${backup_name}"
+  echo "Rollback image retained: $rollback_image"
 fi
 
 rollback() {
