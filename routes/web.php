@@ -533,7 +533,7 @@ Route::get('/' . admin_setting('secure_path', 'Huy2006'), function () {
         'theme_header' => admin_setting('frontend_theme_header', 'dark'),
         'theme_color' => admin_setting('frontend_theme_color', 'default'),
         'background_url' => admin_setting('frontend_background_url'),
-        'version' => app(UpdateService::class)->getCurrentVersion(),
+        'version' => config('app.version', '1.0.0'),
         'logo' => admin_setting('logo'),
         'secure_path' => admin_setting('secure_path', 'Huy2006')
     ]);

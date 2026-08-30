@@ -107,6 +107,22 @@ admin_js_path="$(grep -oE 'src="/assets/admin/assets/index-[^"]+\.js\?v=[^"]+"' 
 admin_css_path="$(grep -oE 'href="/assets/admin/assets/index-[^"]+\.css\?v=[^"]+"' <<<"$admin_html" | cut -d'"' -f2)"
 test -n "$admin_js_path"
 test -n "$admin_css_path"
+admin_asset_version="$(docker exec "$container_name" php -r '
+  require "/www/vendor/autoload.php";
+  $app = require "/www/bootstrap/app.php";
+  $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+  echo rawurlencode((string) config("app.version", ""));
+')"
+test -n "$admin_asset_version"
+test "${admin_js_path##*\?v=}" = "$admin_asset_version"
+test "${admin_css_path##*\?v=}" = "$admin_asset_version"
+if [ -n "${GITHUB_SHA:-}" ]; then
+  expected_admin_asset_pattern="^[0-9]{8}-${GITHUB_SHA:0:7}$"
+  if ! [[ "$admin_asset_version" =~ $expected_admin_asset_pattern ]]; then
+    echo "Admin asset version $admin_asset_version does not match the build-stamped image revision ${GITHUB_SHA:0:7}." >&2
+    exit 1
+  fi
+fi
 admin_js_file="/www/public${admin_js_path%%\?*}"
 admin_css_file="/www/public${admin_css_path%%\?*}"
 docker exec "$container_name" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file"

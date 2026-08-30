@@ -46,7 +46,7 @@ post_deploy_checks() {
   local container_id="$1"
   local expected_revision_prefix="$2"
   local started_at="$3"
-  local health actual migration_status integrity dashboard_html luck_entry_js node_route_asset admin_html admin_js_path admin_css_path admin_js_file admin_css_file ip_status last_heartbeat
+  local health actual asset_revision_short migration_status integrity dashboard_html luck_entry_js node_route_asset admin_html admin_js_path admin_css_path admin_asset_version admin_js_file admin_css_file ip_status last_heartbeat
 
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
   if [ "$health" != "healthy" ]; then
@@ -55,6 +55,11 @@ post_deploy_checks() {
   fi
 
   actual="$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$container_id")" || return 1
+  if ! [[ "$actual" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Running container has no valid immutable revision label: $actual" >&2
+    return 1
+  fi
+  asset_revision_short="${actual:0:7}"
   if [ -n "$expected_revision_prefix" ]; then
     case "$actual" in
       "$expected_revision_prefix"*) ;;
@@ -113,6 +118,25 @@ post_deploy_checks() {
     echo "The deployed admin shell did not publish versioned JavaScript and CSS URLs." >&2
     return 1
   fi
+  admin_asset_version="$(docker exec "$container_id" php -r '
+    require "/www/vendor/autoload.php";
+    $app = require "/www/bootstrap/app.php";
+    $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    echo rawurlencode((string) config("app.version", ""));
+  ')" || return 1
+  if [ -z "$admin_asset_version" ] \
+    || [ "${admin_js_path##*\?v=}" != "$admin_asset_version" ] \
+    || [ "${admin_css_path##*\?v=}" != "$admin_asset_version" ]; then
+    echo "The deployed admin asset URL does not match config app.version: $admin_asset_version" >&2
+    return 1
+  fi
+  case "$admin_asset_version" in
+    *-"$asset_revision_short") ;;
+    *)
+      echo "Admin asset version $admin_asset_version does not match immutable image revision $asset_revision_short." >&2
+      return 1
+      ;;
+  esac
   admin_js_file="/www/public${admin_js_path%%\?*}"
   admin_css_file="/www/public${admin_css_path%%\?*}"
   docker exec "$container_id" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file" || {
