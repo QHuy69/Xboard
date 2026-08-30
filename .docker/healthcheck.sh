@@ -6,6 +6,18 @@ is_enabled() {
     [ "$value" = "true" ]
 }
 
+has_process() {
+    expected="$1"
+    for command_line in /proc/[0-9]*/cmdline; do
+        [ -r "$command_line" ] || continue
+        if tr '\000' ' ' < "$command_line" 2>/dev/null | grep -Fq "$expected"; then
+            return 0
+        fi
+    done
+    echo "Required process is not running: $expected" >&2
+    return 1
+}
+
 if is_enabled ENABLE_REDIS; then
     redis-cli -s /data/redis.sock ping 2>/dev/null | grep -q PONG
 fi
@@ -21,13 +33,13 @@ if is_enabled ENABLE_WEB; then
 fi
 
 if is_enabled ENABLE_HORIZON; then
-    pgrep -f 'artisan horizon' >/dev/null
+    has_process 'artisan horizon'
 fi
 
 if is_enabled ENABLE_WS_SERVER; then
-    pgrep -f 'artisan ws-server' >/dev/null
+    has_process 'artisan ws-server'
 fi
 
 if is_enabled ENABLE_CADDY; then
-    pgrep -f 'caddy run' >/dev/null
+    has_process 'caddy run'
 fi

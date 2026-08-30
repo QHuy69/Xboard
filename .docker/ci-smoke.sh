@@ -65,6 +65,8 @@ for _ in $(seq 1 60); do
   case "$health" in
     healthy) break ;;
     unhealthy)
+      echo "Container healthcheck reported unhealthy." >&2
+      docker inspect --format '{{range .State.Health.Log}}{{.Start}} exit={{.ExitCode}} {{printf "%q" .Output}}{{println}}{{end}}' "$container_name" >&2
       docker logs "$container_name"
       exit 1
       ;;
