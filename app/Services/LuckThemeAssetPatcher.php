@@ -47,6 +47,27 @@ final class LuckThemeAssetPatcher
     }
 
     /**
+     * Force every lazy route through one cache-busted shared runtime. Route
+     * chunks are cached independently from the entry module, so leaving even
+     * one stock BBbuoBq5 import can revive an older subscription-dialog graph.
+     */
+    public static function rewriteSharedRuntimeAssetImport(string $contents): string
+    {
+        $pattern = '#(?<prefix>\./|assets/)(?<name>BBbuoBq5[^"\'\?]*\.js)(?:\?v=\d+)?#';
+
+        return preg_replace_callback($pattern, static function (array $match): string {
+            return $match['prefix'] . self::sharedRuntimeAssetName($match['name']);
+        }, $contents) ?? $contents;
+    }
+
+    public static function sharedRuntimeAssetName(string $assetName): string
+    {
+        $name = preg_replace('/(?:-runtime-v\d+)+\.js$/', '.js', basename($assetName)) ?? basename($assetName);
+
+        return preg_replace('/\.js$/', '-runtime-v3.js', $name) ?? $name;
+    }
+
+    /**
      * Point every subscription-dialog lazy import at one normalized physical
      * chunk. Persistent Luck volumes can contain an older generated payment
      * suffix, so appending blindly would create payment-v3-payment-v4 chains.

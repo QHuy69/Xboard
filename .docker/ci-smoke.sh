@@ -97,7 +97,7 @@ for luck_dashboard_template in \
   for dashboard_asset_marker in \
     'id="luck-overrides-stylesheet"' \
     'luck-overrides.css?v=24' \
-    'BBbuoBq5-fresh.js?v=62' \
+    'BBbuoBq5-fresh.js?v=63' \
     'i18n-v18.js?v=61' \
     'data-luck-icon="language"'; do
     docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template" || {
@@ -150,7 +150,25 @@ if docker exec "$container_name" test -f "$luck_entry_public"; then
   # A reusable image can be started with a pre-populated Luck volume. When the
   # complete distribution is available, keep exercising its published lazy
   # graph exactly as the production deployment gate does.
-  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=62")"
+  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=63")"
+shared_runtime_asset="$(grep -oE '\./BBbuoBq5[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+case "$shared_runtime_asset" in
+  ./BBbuoBq5*-runtime-v3.js) ;;
+  *)
+    echo "Published Luck entry has no cache-busted shared runtime: $shared_runtime_asset" >&2
+    exit 1
+    ;;
+esac
+shared_runtime_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${shared_runtime_asset#./}")"
+grep -aEq '\./C6e3mGRa[^"?]*-payment-v4\.js' <<<"$shared_runtime_js" || {
+  echo "Published shared runtime does not select the Vue-owned dialog chunk." >&2
+  exit 1
+}
+if grep -aEq '\./C6e3mGRa[^"?]*-payment-v3\.js' <<<"$shared_runtime_js"; then
+  echo "Published shared runtime can still revive the old payment-v3 dialog." >&2
+  exit 1
+fi
 subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$subscription_dialog_asset" in
   ./C6e3mGRa*-payment-v4.js) ;;

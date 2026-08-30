@@ -36,7 +36,7 @@ if ($discoveredAnimationAssets !== $expectedAnimationAssets) {
     exit(1);
 }
 
-$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js");';
+$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js"); import("./BBbuoBq5-v3-fresh-runtime-v2.js");';
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BR9H_Zte', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'CK-I2Xx_', '-free');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'DSCv3-VU', '-managed');
@@ -45,6 +45,7 @@ $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'q_WC3BFv', '-registe
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'ByaxWMaA', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'C0KnXkt1', '-payment-v3');
 $entry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry);
+$entry = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry);
 $entry = LuckThemeAssetPatcher::versionPortableIconAssetImports($entry);
 if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
@@ -55,9 +56,32 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'ByaxWMaA-v3-fresh-localized.js')
 	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v3.js')
 	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v4.js')
+	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
 	|| LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry) !== $entry
+	|| LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::versionPortableIconAssetImports($entry) !== $entry) {
     fwrite(STDERR, "Luck asset cache-busting rewrite failed.\n");
+    exit(1);
+}
+
+foreach ([
+    'BBbuoBq5-v3-fresh.js',
+    'BBbuoBq5-v3-fresh-runtime-v2.js',
+    'BBbuoBq5-v3-fresh-runtime-v2-runtime-v3.js',
+] as $sharedRuntimeAsset) {
+    if (LuckThemeAssetPatcher::sharedRuntimeAssetName($sharedRuntimeAsset) !== 'BBbuoBq5-v3-fresh-runtime-v3.js') {
+        fwrite(STDERR, "Luck shared-runtime asset normalization failed.\n");
+        exit(1);
+    }
+}
+
+$genericRoute = 'import("./BBbuoBq5-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js");';
+$genericRoute = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($genericRoute);
+$genericRoute = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($genericRoute);
+if (!str_contains($genericRoute, 'BBbuoBq5-v3-fresh-runtime-v3.js')
+    || !str_contains($genericRoute, 'C6e3mGRa-v3-fresh-payment-v4.js')
+    || str_contains($genericRoute, 'payment-v3.js')) {
+    fwrite(STDERR, "Luck generic route can still revive a cached shared runtime or payment-v3 dialog.\n");
     exit(1);
 }
 
@@ -286,16 +310,18 @@ if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'ByaxWMaA', '-localized');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'C0KnXkt1', '-payment-v3');
     $productionEntry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($productionEntry);
+    $productionEntry = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($productionEntry);
     $productionEntry = LuckThemeAssetPatcher::versionPortableIconAssetImports($productionEntry);
     if (!str_contains($productionEntry, 'BBIEjj8f-v3-fresh-auth-v3.js')
         || !str_contains($productionEntry, 'lsrL0SOU-v3-fresh.js?v=2')
         || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
         || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
-        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v4.js')) {
+        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v4.js')
+        || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v3.js')) {
         fwrite(STDERR, "Luck production entry did not select cache-busted login and portable-icon chunks.\n");
         exit(1);
     }
-    file_put_contents(sys_get_temp_dir() . '/luck-entry-runtime-v2-check.js', $productionEntry);
+    file_put_contents(sys_get_temp_dir() . '/luck-entry-runtime-v3-check.js', $productionEntry);
 }
 
 $login = <<<'JS'
@@ -319,7 +345,7 @@ import { useAuthStore } from "./BBbuoBq5-v3-fresh.js";
     };
 JS;
 $login = LuckThemeAssetPatcher::patchLoginErrors($login);
-$login = LuckThemeAssetPatcher::rewriteAssetImport($login, 'BBbuoBq5', '-runtime-v2');
+$login = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($login);
 if (!str_contains($login, 'error.response.status !== 422')
     || !str_contains($login, 'serverMessage')
     || !str_contains($login, 'error.luckAuthStage === "profile"')
@@ -331,7 +357,7 @@ if (!str_contains($login, 'error.response.status !== 422')
     || !str_contains($login, 'router.currentRoute.value.path !== "/dashboard"')
     || !str_contains($login, 'router.currentRoute.value.path !== "/register"')
     || str_contains($login, 'router.push("/dashboard")')
-    || !str_contains($login, 'BBbuoBq5-v3-fresh-runtime-v2.js')) {
+    || !str_contains($login, 'BBbuoBq5-v3-fresh-runtime-v3.js')) {
     fwrite(STDERR, "Luck login-error classification patch failed.\n");
     exit(1);
 }
@@ -525,10 +551,10 @@ if (LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($incompleteSubscripti
 $loginAsset = getenv('LUCK_LOGIN_ASSET');
 if ($loginAsset && is_file($loginAsset)) {
     $productionLogin = LuckThemeAssetPatcher::patchLoginErrors((string) file_get_contents($loginAsset));
-    $productionLogin = LuckThemeAssetPatcher::rewriteAssetImport($productionLogin, 'BBbuoBq5', '-runtime-v2');
+    $productionLogin = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($productionLogin);
     if (!str_contains($productionLogin, 'error.response.status !== 422')
         || !str_contains($productionLogin, 'serverMessage')
-        || !str_contains($productionLogin, 'BBbuoBq5-v3-fresh-runtime-v2.js')) {
+        || !str_contains($productionLogin, 'BBbuoBq5-v3-fresh-runtime-v3.js')) {
         fwrite(STDERR, "Luck production login chunk was not patched.\n");
         exit(1);
     }
@@ -597,7 +623,7 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
     || !str_contains($dashboardTemplate, 'luck-overrides.css?v=24')
-    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=62')
+    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=63')
     || !str_contains($dashboardTemplate, 'i18n-v18.js?v=61')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);

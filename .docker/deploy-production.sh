@@ -82,8 +82,8 @@ post_deploy_checks() {
     echo "The deployed dashboard still manually reparents the Vue subscription overlay." >&2
     return 1
   fi
-  grep -q 'BBbuoBq5-fresh.js?v=62' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck entry JS v62." >&2
+  grep -q 'BBbuoBq5-fresh.js?v=63' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck entry JS v63." >&2
     return 1
   }
   grep -q 'i18n-v18.js?v=61' <<<"$dashboard_html" || {
@@ -92,7 +92,7 @@ post_deploy_checks() {
   }
   for asset_url in \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=24' \
-    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=62' \
+    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-flags.svg?v=1'; do
@@ -109,7 +109,25 @@ post_deploy_checks() {
     return 1
   }
 
-  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=62')" || return 1
+  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63')" || return 1
+  shared_runtime_asset="$(grep -oE '\./BBbuoBq5[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+  case "$shared_runtime_asset" in
+    ./BBbuoBq5*-runtime-v3.js) ;;
+    *)
+      echo "The deployed Luck entry has no cache-busted shared runtime: $shared_runtime_asset" >&2
+      return 1
+      ;;
+  esac
+  shared_runtime_js="$(curl --fail --silent --show-error \
+    "http://127.0.0.1:7001/theme/Luck/assets/${shared_runtime_asset#./}")" || return 1
+  grep -aEq '\./C6e3mGRa[^"?]*-payment-v4\.js' <<<"$shared_runtime_js" || {
+    echo "The deployed shared runtime does not select the Vue-owned dialog chunk." >&2
+    return 1
+  }
+  if grep -aEq '\./C6e3mGRa[^"?]*-payment-v3\.js' <<<"$shared_runtime_js"; then
+    echo "The deployed shared runtime can still revive the old payment-v3 dialog." >&2
+    return 1
+  fi
   subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$subscription_dialog_asset" in
     ./C6e3mGRa*-payment-v4.js) ;;

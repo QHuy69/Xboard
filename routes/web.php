@@ -158,6 +158,12 @@ $renderTheme = function (Request $request) {
                                 // chunk is published to public/theme.
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents);
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchPortableUnicodeIcons($loadingPatchedContents);
+                                // Every lazy chunk must select the same shared
+                                // runtime. An unchanged nested import can revive
+                                // a browser-cached payment-v3 dialog after the
+                                // entry has already selected payment-v4.
+                                $loadingPatchedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($loadingPatchedContents);
+                                $loadingPatchedContents = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($loadingPatchedContents);
                             }
                         }
                         // Luck's generated world-map chunk has occasionally
@@ -236,7 +242,8 @@ $renderTheme = function (Request $request) {
                                 // shared store/API module. Publish it under a new URL as well;
                                 // otherwise a browser can execute a cached nested entry which
                                 // still points back to the unpatched login and plan chunks.
-                                $runtimeTarget = preg_replace('/\.js$/', '-runtime-v2.js', $target);
+                                $runtimeTarget = $publicThemePath . '/assets/'
+                                    . LuckThemeAssetPatcher::sharedRuntimeAssetName($runtimeFile);
                                 if (@file_put_contents($runtimeTarget, $fixedContents) === false) {
                                     Log::warning('Theme shared runtime asset could not be cache-busted', ['target' => $runtimeTarget]);
                                 }
@@ -283,7 +290,7 @@ $renderTheme = function (Request $request) {
                                     ],
                                     $fixedContents
                                 );
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 if (@file_put_contents($target, $fixedContents) === false) {
                                     Log::warning('Theme world-map asset could not be repaired', ['target' => $target]);
                                 }
@@ -300,7 +307,7 @@ $renderTheme = function (Request $request) {
                             $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchTrafficChart($assetContents);
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 @file_put_contents($target, $fixedContents);
                                 $localizedTarget = preg_replace('/\.js$/', '-localized.js', $target);
                                 @file_put_contents($localizedTarget, $fixedContents);
@@ -312,7 +319,7 @@ $renderTheme = function (Request $request) {
                             $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchFreePlans($assetContents);
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 @file_put_contents($target, $fixedContents);
                                 $freeTarget = preg_replace('/\.js$/', '-free.js', $target);
                                 @file_put_contents($freeTarget, $fixedContents);
@@ -324,7 +331,7 @@ $renderTheme = function (Request $request) {
                             $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchInviteManagement($assetContents);
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 @file_put_contents($target, $fixedContents);
                                 $managedTarget = preg_replace('/\.js$/', '-managed.js', $target);
                                 @file_put_contents($managedTarget, $fixedContents);
@@ -336,7 +343,7 @@ $renderTheme = function (Request $request) {
                             $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchLoginErrors($assetContents);
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
                                 @file_put_contents($target, $fixedContents);
                                 $errorsTarget = preg_replace('/\.js$/', '-auth-v3.js', $target);
@@ -349,7 +356,7 @@ $renderTheme = function (Request $request) {
                             $assetContents = $loadingPatchedContents;
                             if ($assetContents !== false) {
                                 $fixedContents = LuckThemeAssetPatcher::patchRegisterFlow($assetContents);
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
                                 @file_put_contents($target, $fixedContents);
                                 $registerTarget = preg_replace('/\.js$/', '-register-v2.js', $target);
@@ -378,7 +385,7 @@ $renderTheme = function (Request $request) {
                                 if ($isSubscriptionDialogAsset) {
                                     $fixedContents = LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($fixedContents);
                                 }
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBbuoBq5', '-runtime-v2');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($fixedContents);
                                 @file_put_contents($target, $fixedContents);
                                 $paymentTarget = $isSubscriptionDialogAsset
                                     ? $publicThemePath . '/assets/' . LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)
