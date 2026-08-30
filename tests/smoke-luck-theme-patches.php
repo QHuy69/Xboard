@@ -36,7 +36,7 @@ if ($discoveredAnimationAssets !== $expectedAnimationAssets) {
     exit(1);
 }
 
-$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js"); import("./BBbuoBq5-v3-fresh-runtime-v2.js"); import("./CO5Ntz5l-v3-fresh.js");';
+$entry = 'import("./lsrL0SOU-v3-fresh.js"); import("./BR9H_Zte-v3-fresh.js"); import("./CK-I2Xx_-v3-fresh.js"); import("./DSCv3-VU-v3-fresh.js"); import("./BBIEjj8f-v3-fresh.js"); import("./q_WC3BFv-v3-fresh.js"); import("./ByaxWMaA-v3-fresh.js"); import("./C0KnXkt1-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js"); import("./BBbuoBq5-v3-fresh-runtime-v2.js"); import("./CO5Ntz5l-v3-fresh.js"); import("./DM1yaN1X-v3-fresh.js");';
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BR9H_Zte', '-localized');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'CK-I2Xx_', '-free');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'DSCv3-VU', '-managed');
@@ -47,7 +47,7 @@ $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'C0KnXkt1', '-payment
 $entry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry);
 $entry = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry);
 $entry = LuckThemeAssetPatcher::versionPortableIconAssetImports($entry);
-$entry = LuckThemeAssetPatcher::versionJavascriptAssetImports($entry);
+$entry = LuckThemeAssetPatcher::versionDashboardRouteAssetImport($entry);
 if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
 	|| !str_contains($entry, 'CK-I2Xx_-v3-fresh-free.js')
@@ -59,9 +59,10 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v4.js')
 	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
 	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=3')
+	|| str_contains($entry, 'DM1yaN1X-v3-fresh.js?v=3')
 	|| LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry) !== $entry
-	|| LuckThemeAssetPatcher::versionJavascriptAssetImports($entry) !== $entry
+	|| LuckThemeAssetPatcher::versionDashboardRouteAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::versionPortableIconAssetImports($entry) !== $entry) {
     fwrite(STDERR, "Luck asset cache-busting rewrite failed.\n");
     exit(1);
@@ -315,14 +316,15 @@ if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($productionEntry);
     $productionEntry = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($productionEntry);
     $productionEntry = LuckThemeAssetPatcher::versionPortableIconAssetImports($productionEntry);
-    $productionEntry = LuckThemeAssetPatcher::versionJavascriptAssetImports($productionEntry);
+    $productionEntry = LuckThemeAssetPatcher::versionDashboardRouteAssetImport($productionEntry);
     if (!str_contains($productionEntry, 'BBIEjj8f-v3-fresh-auth-v3.js')
         || !str_contains($productionEntry, 'lsrL0SOU-v3-fresh.js?v=2')
         || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
         || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
         || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v4.js')
         || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
-        || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=3#', $productionEntry)) {
+        || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=3#', $productionEntry)
+        || str_contains($productionEntry, 'DM1yaN1X-v3-fresh.js?v=3')) {
         fwrite(STDERR, "Luck production entry did not select cache-busted login and portable-icon chunks.\n");
         exit(1);
     }

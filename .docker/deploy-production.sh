@@ -110,6 +110,10 @@ post_deploy_checks() {
   }
 
   luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63')" || return 1
+  if grep -aEq 'DM1yaN1X[^"?]*\.js\?v=3' <<<"$luck_entry_js"; then
+    echo "The deployed Luck entry creates a duplicate cache-keyed Vue runtime." >&2
+    return 1
+  fi
   dashboard_route_asset="$(grep -oE '\./CO5Ntz5l[^"?]+\.js\?v=[0-9]+' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$dashboard_route_asset" in
     ./CO5Ntz5l*.js?v=*) ;;

@@ -235,7 +235,7 @@ $renderTheme = function (Request $request) {
                                     ],
                                     $fixedContents
                                 );
-                                $fixedContents = LuckThemeAssetPatcher::versionJavascriptAssetImports($fixedContents);
+                                $fixedContents = LuckThemeAssetPatcher::versionDashboardRouteAssetImport($fixedContents);
                                 if (@file_put_contents($target, $fixedContents) === false) {
                                     Log::warning('Theme entry asset could not be cache-busted', ['target' => $target]);
                                 }

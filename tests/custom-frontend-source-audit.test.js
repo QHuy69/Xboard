@@ -31,7 +31,7 @@ includesAll('app/Services/LuckThemeAssetPatcher.php', [
   'public static function patchNodeFlags',
   'public static function patchSubscriptionDialogTeleport',
   'public static function rewriteSharedRuntimeAssetImport',
-  'public static function versionJavascriptAssetImports',
+  'public static function versionDashboardRouteAssetImport',
   'class: "luck-node-flag"',
   'formData.email.trim().toLowerCase()',
   'formData.password.length < 8',
@@ -51,7 +51,7 @@ includesAll('routes/web.php', [
   'LuckThemeAssetPatcher::patchNodeFlags($fixedContents)',
   'LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($fixedContents)',
   'LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($loadingPatchedContents)',
-  'LuckThemeAssetPatcher::versionJavascriptAssetImports($fixedContents)',
+  'LuckThemeAssetPatcher::versionDashboardRouteAssetImport($fixedContents)',
   'if ($loadingPatchedContents !== false)',
 ]);
 

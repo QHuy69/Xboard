@@ -67,19 +67,15 @@ final class LuckThemeAssetPatcher
         return preg_replace('/\.js$/', '-runtime-v3.js', $name) ?? $name;
     }
 
-    /**
-     * Give every first-level module in the Luck entry a stable cache key.
-     * Updating only the entry URL is insufficient because browsers cache lazy
-     * route chunks separately and those chunks can import an obsolete runtime.
-     */
-    public static function versionJavascriptAssetImports(string $contents): string
+    /** Cache-bust only the dashboard route that imports the shared runtime.
+     * Versioning Vue's runtime itself would create two module identities and
+     * break Teleport/ref ownership between the preloaded and lazy graphs. */
+    public static function versionDashboardRouteAssetImport(string $contents): string
     {
-        $pattern = '#(?<asset>(?:\./|assets/)[^"\'\?\s]+\.js)(?<query>\?v=\d+)?#';
+        $pattern = '#(?<prefix>\./|assets/)(?<name>CO5Ntz5l[^"\'\?]*\.js)(?:\?v=\d+)?#';
 
         return preg_replace_callback($pattern, static function (array $match): string {
-            $query = $match['query'] ?? '';
-
-            return $match['asset'] . ($query !== '' ? $query : '?v=3');
+            return $match['prefix'] . $match['name'] . '?v=3';
         }, $contents) ?? $contents;
     }
 
