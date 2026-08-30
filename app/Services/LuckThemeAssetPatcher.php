@@ -536,14 +536,15 @@ JS,
             $contents
         );
 
-        $contents = str_replace(
-            <<<'JS'
+        if (!str_contains($contents, 'registerSubmitting.value = false;')) {
+            $contents = str_replace(
+                <<<'JS'
         } else {
           customMessage.networkError();
         }
       }
 JS,
-            <<<'JS'
+                <<<'JS'
         } else {
           customMessage.networkError();
         }
@@ -551,8 +552,9 @@ JS,
         registerSubmitting.value = false;
       }
 JS,
-            $contents
-        );
+                $contents
+            );
+        }
 
         $contents = str_replace(
             [

@@ -14,6 +14,7 @@ for (const marker of [
   'if (!authStore.isAuthenticated)',
   'if (registerSubmitting.value || authStore.isLoading) return;',
   "if (!str_contains($contents, 'registerSubmitting.value = true;'))",
+  "if (!str_contains($contents, 'registerSubmitting.value = false;'))",
   'registerSubmitting.value = false;',
   'router.currentRoute.value.path !== "/dashboard"',
 ]) {
