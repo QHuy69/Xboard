@@ -86,19 +86,29 @@ fi
 echo "[smoke] Container healthcheck passed"
 
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/api/v1/guest/comm/config" >/dev/null
-dashboard_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard")"
+curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard" >/dev/null
 admin_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006")"
 echo "[smoke] Public HTTP endpoints passed"
 
-for dashboard_asset_marker in \
-  'id="luck-overrides-stylesheet"' \
-  'luck-overrides.css?v=21' \
-  'BBbuoBq5-fresh.js?v=61' \
-  'i18n-v18.js?v=61'; do
-  grep -aFq "$dashboard_asset_marker" <<<"$dashboard_html" || {
-    echo "Published Luck dashboard is missing versioned asset marker: $dashboard_asset_marker" >&2
+for luck_dashboard_template in \
+  '/www/public/theme/Luck/dashboard.blade.php' \
+  '/www/storage/theme/Luck/dashboard.blade.php'; do
+  docker exec "$container_name" test -f "$luck_dashboard_template"
+  for dashboard_asset_marker in \
+    'id="luck-overrides-stylesheet"' \
+    'luck-overrides.css?v=21' \
+    'BBbuoBq5-fresh.js?v=61' \
+    'i18n-v18.js?v=61' \
+    'data-luck-icon="language"'; do
+    docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template" || {
+      echo "Packaged Luck dashboard is missing marker $dashboard_asset_marker in $luck_dashboard_template" >&2
+      exit 1
+    }
+  done
+  if docker exec "$container_name" grep -aFq '🌐' "$luck_dashboard_template"; then
+    echo "Packaged Luck dashboard still contains a platform-dependent globe glyph: $luck_dashboard_template" >&2
     exit 1
-  }
+  fi
 done
 for dashboard_asset_url in \
   "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=21" \
@@ -138,20 +148,6 @@ if [ "$node_flag_host_count" -lt 2 ]; then
   exit 1
 fi
 echo "[smoke] Desktop and mobile lazy node-route flags passed"
-
-for dashboard_icon_marker in \
-  'data-luck-icon="language"'; do
-  grep -aFq "$dashboard_icon_marker" <<<"$dashboard_html" || {
-    echo "Published Luck dashboard is missing portable inline icon marker: $dashboard_icon_marker" >&2
-    exit 1
-  }
-done
-for dashboard_platform_glyph in '🌐'; do
-  if grep -aFq "$dashboard_platform_glyph" <<<"$dashboard_html"; then
-    echo "Published Luck dashboard still contains platform-dependent glyph: $dashboard_platform_glyph" >&2
-    exit 1
-  fi
-done
 
 orders_route_asset="$( { grep -aoE '\./lsrL0SOU[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"
 traffic_route_asset="$( { grep -aoE '\./BR9H_Zte[^"?]+\.js\?v=2' <<<"$luck_entry_js" || true; } | sort -u | head -n 1)"

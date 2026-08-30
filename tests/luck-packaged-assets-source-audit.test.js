@@ -3,6 +3,7 @@ const fs = require('fs');
 
 const dockerfile = fs.readFileSync('Dockerfile', 'utf8');
 const entrypoint = fs.readFileSync('.docker/entrypoint.sh', 'utf8');
+const ciSmoke = fs.readFileSync('.docker/ci-smoke.sh', 'utf8');
 const deploy = fs.readFileSync('.docker/deploy-production.sh', 'utf8');
 const flags = fs.readFileSync('luck-flags.svg', 'utf8');
 
@@ -78,5 +79,23 @@ for (const asset of ['luck-clash.svg', 'luck-flags.svg?v=1']) {
     `Production deployment must verify the packaged icon asset ${asset}`
   );
 }
+
+for (const packagedTemplate of [
+  "'/www/public/theme/Luck/dashboard.blade.php'",
+  "'/www/storage/theme/Luck/dashboard.blade.php'"
+]) {
+  assert(
+    ciSmoke.includes(packagedTemplate),
+    `Fresh-image smoke must inspect the packaged template ${packagedTemplate}`
+  );
+}
+assert(
+  !ciSmoke.includes('dashboard_html='),
+  'Fresh-image smoke must not assume the installed account has selected the Luck theme'
+);
+assert(
+  ciSmoke.includes('docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template"'),
+  'Fresh-image smoke must validate Luck markers inside the packaged template'
+);
 
 console.log('Luck packaged icons survive image build, persistent theme mounts and xboard:update refreshes.');
