@@ -111,7 +111,9 @@ jobs:
 
       - name: Smoke test published image
         shell: bash
-        env:
-          SMOKE_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.short_sha }}
-        run: bash .docker/ci-smoke.sh "$SMOKE_IMAGE"
+        run: |
+          # Docker repository names are lowercase even when github.repository
+          # preserves the owner's display casing.
+          SMOKE_IMAGE="$(printf '%s' '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.short_sha }}' | tr '[:upper:]' '[:lower:]')"
+          bash .docker/ci-smoke.sh "$SMOKE_IMAGE"
 
