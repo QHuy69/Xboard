@@ -68,6 +68,20 @@ final class LuckThemeAssetPatcher
     }
 
     /**
+     * Give every first-level module in the Luck entry a stable cache key.
+     * Updating only the entry URL is insufficient because browsers cache lazy
+     * route chunks separately and those chunks can import an obsolete runtime.
+     */
+    public static function versionJavascriptAssetImports(string $contents): string
+    {
+        $pattern = '#(?<asset>(?:\./|assets/)[^"\'\?\s]+\.js)(?<query>\?v=\d+)?#';
+
+        return preg_replace_callback($pattern, static function (array $match): string {
+            return $match['asset'] . ($match['query'] ?? '?v=3');
+        }, $contents) ?? $contents;
+    }
+
+    /**
      * Point every subscription-dialog lazy import at one normalized physical
      * chunk. Persistent Luck volumes can contain an older generated payment
      * suffix, so appending blindly would create payment-v3-payment-v4 chains.

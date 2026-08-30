@@ -50,6 +50,7 @@ assert(template.includes('new MutationObserver(scheduleRefresh).observe(document
 for (const [name, source] of [['published-image smoke', ciSmoke], ['production deploy gate', deploy]]) {
   assert(source.includes('subscription_dialog_asset'), `${name} must resolve the lazy subscription-dialog chunk`);
   assert(source.includes('shared_runtime_asset'), `${name} must reject a cached nested shared runtime`);
+  assert(source.includes('dashboard_route_asset'), `${name} must open the cache-busted dashboard route graph`);
   assert(source.includes('./BBbuoBq5*-runtime-v3.js'), `${name} must require shared runtime v3`);
   assert(source.includes('./C6e3mGRa*-payment-v4.js'), `${name} must require the normalized v4 dialog chunk`);
   assert(source.includes('PortalledSubscriptionDialog'), `${name} must require the Vue-owned Teleport wrapper`);

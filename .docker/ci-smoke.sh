@@ -151,7 +151,17 @@ if docker exec "$container_name" test -f "$luck_entry_public"; then
   # complete distribution is available, keep exercising its published lazy
   # graph exactly as the production deployment gate does.
   luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=63")"
-shared_runtime_asset="$(grep -oE '\./BBbuoBq5[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
+dashboard_route_asset="$(grep -oE '\./CO5Ntz5l[^"?]+\.js\?v=[0-9]+' <<<"$luck_entry_js" | sort -u | head -n 1)"
+case "$dashboard_route_asset" in
+  ./CO5Ntz5l*.js?v=*) ;;
+  *)
+    echo "Published Luck entry has no cache-busted dashboard route: $dashboard_route_asset" >&2
+    exit 1
+    ;;
+esac
+dashboard_route_js="$(curl --fail --silent --show-error \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/${dashboard_route_asset#./}")"
+shared_runtime_asset="$(grep -oE '\./BBbuoBq5[^"?]+\.js' <<<"$dashboard_route_js" | sort -u | head -n 1)"
 case "$shared_runtime_asset" in
   ./BBbuoBq5*-runtime-v3.js) ;;
   *)
