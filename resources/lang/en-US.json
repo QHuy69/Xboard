@@ -319,5 +319,8 @@
     "Display a Messenger support button on the customer dashboard using the plugin configuration.": "Display a Messenger support button on the customer dashboard using the plugin configuration.",
     "Facebook Page username": "Facebook Page username",
     "Enter the Page username from the end of its m.me link, not the full URL.": "Enter the Page username from the end of its m.me link, not the full URL.",
-    "Chat with support on Messenger": "Chat with support on Messenger"
+    "Chat with support on Messenger": "Chat with support on Messenger",
+    "Donation account information": "Donation account information",
+    "Language selector": "Language selector",
+    "Choose language": "Choose language"
 }

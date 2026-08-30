@@ -1,26 +1,38 @@
 @php
     $isVi = $locale === 'vi-VN';
     $isZh = $locale === 'zh-CN';
+    $isTw = $locale === 'zh-TW';
     $isJa = $locale === 'ja-JP';
     $isKo = $locale === 'ko-KR';
-    $text = function (string $vi, string $en, string $zh, string $ja, string $ko) use ($isVi, $isZh, $isJa, $isKo): string {
-        return $isVi ? $vi : ($isZh ? $zh : ($isJa ? $ja : ($isKo ? $ko : $en)));
+    $isFa = $locale === 'fa-IR';
+    $isRu = $locale === 'ru-RU';
+    $text = function (string $vi, string $en, string $zh, string $tw, string $ja, string $ko, string $fa, string $ru) use ($isVi, $isZh, $isTw, $isJa, $isKo, $isFa, $isRu): string {
+        return match (true) {
+            $isVi => $vi,
+            $isZh => $zh,
+            $isTw => $tw,
+            $isJa => $ja,
+            $isKo => $ko,
+            $isFa => $fa,
+            $isRu => $ru,
+            default => $en,
+        };
     };
     $scriptLabels = [
-        'remaining' => $text('Thời gian còn lại để thanh toán', 'Time remaining to pay', '剩余支付时间', '支払い残り時間', '결제 남은 시간'),
-        'expired' => $text('Đơn hàng đã hết thời gian thanh toán.', 'This order has expired.', '订单已过期。', 'この注文の支払い期限が切れました。', '주문 결제 시간이 만료되었습니다.'),
-        'checking' => $text('Đang kiểm tra...', 'Checking...', '检查中...', '確認中...', '확인 중...'),
-        'pending' => $text('Chưa nhận được thanh toán.', 'Payment has not been received yet.', '尚未收到付款。', 'まだ支払いを確認できません。', '아직 결제가 확인되지 않았습니다.'),
-        'paid' => $text('Thanh toán thành công.', 'Payment successful.', '支付成功。', '支払いが完了しました。', '결제가 완료되었습니다.'),
-        'cancelled' => $text('Đơn hàng đã bị hủy.', 'This order was cancelled.', '订单已取消。', '注文はキャンセルされました。', '주문이 취소되었습니다.')
+        'remaining' => $text('Thời gian còn lại để thanh toán', 'Time remaining to pay', '剩余支付时间', '剩餘付款時間', '支払い残り時間', '결제 남은 시간', 'زمان باقی‌مانده برای پرداخت', 'Оставшееся время для оплаты'),
+        'expired' => $text('Đơn hàng đã hết thời gian thanh toán.', 'This order has expired.', '订单已过期。', '此訂單已逾期。', 'この注文の支払い期限が切れました。', '주문 결제 시간이 만료되었습니다.', 'مهلت پرداخت این سفارش به پایان رسیده است.', 'Срок оплаты заказа истёк.'),
+        'checking' => $text('Đang kiểm tra...', 'Checking...', '检查中...', '正在檢查...', '確認中...', '확인 중...', 'در حال بررسی...', 'Проверка...'),
+        'pending' => $text('Chưa nhận được thanh toán.', 'Payment has not been received yet.', '尚未收到付款。', '尚未收到付款。', 'まだ支払いを確認できません。', '아직 결제가 확인되지 않았습니다.', 'پرداخت هنوز دریافت نشده است.', 'Платёж ещё не получен.'),
+        'paid' => $text('Thanh toán thành công.', 'Payment successful.', '支付成功。', '付款成功。', '支払いが完了しました。', '결제가 완료되었습니다.', 'پرداخت موفق بود.', 'Платёж выполнен успешно.'),
+        'cancelled' => $text('Đơn hàng đã bị hủy.', 'This order was cancelled.', '订单已取消。', '此訂單已取消。', '注文はキャンセルされました。', '주문이 취소되었습니다.', 'این سفارش لغو شده است.', 'Заказ отменён.')
     ];
 @endphp
 <!doctype html>
-<html lang="{{ $locale }}">
+<html lang="{{ $locale }}" dir="{{ $locale === 'fa-IR' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $text('Thanh toán', 'Payment', '支付', 'お支払い', '결제') }} · ZaoGuang Service</title>
+    <title>{{ $text('Thanh toán', 'Payment', '支付', '付款', 'お支払い', '결제', 'پرداخت', 'Оплата') }} · ZaoGuang Service</title>
     <style>
         :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
         * { box-sizing: border-box; }
@@ -33,8 +45,8 @@
         .summary { display: grid; gap: 10px; margin-bottom: 20px; padding: 16px 18px; background: #f6fafb; border: 1px solid #e7f1ef; border-radius: 14px; }
         .row { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
         .label { color: #718096; }
-        .value { text-align: right; font-weight: 650; word-break: break-word; }
-        .amount { font-size: 24px; color: #1caa82; }
+        .value { text-align: end; font-weight: 650; overflow-wrap: anywhere; unicode-bidi: plaintext; }
+        .amount { direction: ltr; font-size: 24px; color: #1caa82; unicode-bidi: isolate; }
         .qr-wrap { display: grid; place-items: center; padding: 18px; background: #fff; border: 1px solid #e8eef0; border-radius: 16px; }
         .qr-wrap img { width: min(320px, 100%); height: auto; image-rendering: pixelated; border-radius: 8px; }
         .hint { margin: 15px 0 0; text-align: center; color: #677489; line-height: 1.55; }
@@ -45,31 +57,31 @@
         .primary { background: #49bfa7; color: white; }
         .secondary { background: #edf3f5; color: #475569; }
         .status { min-height: 24px; margin-top: 14px; text-align: center; color: #627083; }
-        @media (max-width: 480px) { .body, .header { padding-left: 20px; padding-right: 20px; } .row { align-items: flex-start; flex-direction: column; gap: 3px; } .value { text-align: left; } }
+        @media (max-width: 480px) { body { padding: 12px; } .body, .header { padding-inline: 20px; } .row { align-items: stretch; flex-direction: column; gap: 3px; } .value { text-align: start; } .button { flex: 1 1 100%; } }
     </style>
 </head>
 <body>
 <main class="card">
     <header class="header">
-        <h1>{{ $text('Thanh toán qua VietQR', 'Pay with VietQR', '使用 VietQR 支付', 'VietQRで支払う', 'VietQR 결제') }}</h1>
-        <p>{{ $text('ZaoGuang Service · Đơn hàng', 'ZaoGuang Service · Order', 'ZaoGuang Service · 订单', 'ZaoGuang Service · 注文', 'ZaoGuang Service · 주문') }} {{ $order->trade_no }}</p>
+        <h1>{{ $text('Thanh toán qua VietQR', 'Pay with VietQR', '使用 VietQR 支付', '使用 VietQR 付款', 'VietQRで支払う', 'VietQR 결제', 'پرداخت با VietQR', 'Оплата через VietQR') }}</h1>
+        <p>{{ $text('ZaoGuang Service · Đơn hàng', 'ZaoGuang Service · Order', 'ZaoGuang Service · 订单', 'ZaoGuang Service · 訂單', 'ZaoGuang Service · 注文', 'ZaoGuang Service · 주문', 'ZaoGuang Service · سفارش', 'ZaoGuang Service · Заказ') }} <bdi>{{ $order->trade_no }}</bdi></p>
     </header>
     <section class="body">
         <div class="summary">
-            <div class="row"><span class="label">{{ $text('Ngân hàng', 'Bank', '银行', '銀行', '은행') }}</span><span class="value">{{ $bankName }}</span></div>
-            <div class="row"><span class="label">{{ $text('Tài khoản nhận', 'Receiving account', '收款账户', '受取口座', '입금 계좌') }}</span><span class="value">{{ $paymentAccount }}</span></div>
-            <div class="row"><span class="label">{{ $text('Chủ tài khoản', 'Account name', '账户名称', '口座名義', '예금주') }}</span><span class="value">{{ $accountName }}</span></div>
-            <div class="row"><span class="label">{{ $text('Số tiền', 'Amount', '金额', '金額', '금액') }}</span><span class="value amount">{{ number_format($amountVnd) }} VND</span></div>
-            <div class="row"><span class="label">{{ $text('Giá gốc', 'Original price', '原价', '元の価格', '원래 금액') }}</span><span class="value">¥{{ $amountCny }}</span></div>
-            <div class="row"><span class="label">{{ $text('Nội dung chuyển khoản', 'Transfer description', '转账备注', '振込内容', '입금 메모') }}</span><span class="value">{{ $transferDescription }}</span></div>
+            <div class="row"><span class="label">{{ $text('Ngân hàng', 'Bank', '银行', '銀行', '銀行', '은행', 'بانک', 'Банк') }}</span><bdi class="value">{{ $bankName }}</bdi></div>
+            <div class="row"><span class="label">{{ $text('Tài khoản nhận', 'Receiving account', '收款账户', '收款帳戶', '受取口座', '입금 계좌', 'حساب مقصد', 'Счёт получателя') }}</span><bdi class="value">{{ $paymentAccount }}</bdi></div>
+            <div class="row"><span class="label">{{ $text('Chủ tài khoản', 'Account name', '账户名称', '帳戶名稱', '口座名義', '예금주', 'نام صاحب حساب', 'Владелец счёта') }}</span><bdi class="value">{{ $accountName }}</bdi></div>
+            <div class="row"><span class="label">{{ $text('Số tiền', 'Amount', '金额', '金額', '金額', '금액', 'مبلغ', 'Сумма') }}</span><bdi class="value amount">{{ number_format($amountVnd) }} VND</bdi></div>
+            <div class="row"><span class="label">{{ $text('Giá gốc', 'Original price', '原价', '原價', '元の価格', '원래 금액', 'قیمت اصلی', 'Исходная цена') }}</span><bdi class="value">¥{{ $amountCny }}</bdi></div>
+            <div class="row"><span class="label">{{ $text('Nội dung chuyển khoản', 'Transfer description', '转账备注', '轉帳備註', '振込内容', '입금 메모', 'شرح انتقال', 'Назначение перевода') }}</span><bdi class="value">{{ $transferDescription }}</bdi></div>
         </div>
-        <div class="qr-wrap"><img src="{{ $qrUrl }}" alt="{{ $text('Mã QR thanh toán', 'Payment QR code', '支付二维码', '支払いQRコード', '결제 QR 코드') }}"></div>
-        <p class="hint">{{ $text('Mở ứng dụng ngân hàng, quét mã QR và chuyển đúng số tiền. Hệ thống tự động đối soát sau khi nhận được tiền.', 'Open your banking app, scan the QR code, and transfer the exact amount. Payment is matched automatically after receipt.', '打开银行应用扫描二维码并转账准确金额。到账后系统会自动核对。', '銀行アプリでQRコードを読み取り、正確な金額を送金してください。入金後に自動照合されます。', '은행 앱으로 QR 코드를 스캔하고 정확한 금액을 이체하세요. 입금 후 자동으로 확인됩니다.') }}</p>
+        <div class="qr-wrap"><img src="{{ $qrUrl }}" alt="{{ $text('Mã QR thanh toán', 'Payment QR code', '支付二维码', '付款 QR 碼', '支払いQRコード', '결제 QR 코드', 'کد QR پرداخت', 'QR-код для оплаты') }}"></div>
+        <p class="hint">{{ $text('Mở ứng dụng ngân hàng, quét mã QR và chuyển đúng số tiền. Hệ thống tự động đối soát sau khi nhận được tiền.', 'Open your banking app, scan the QR code, and transfer the exact amount. Payment is matched automatically after receipt.', '打开银行应用扫描二维码并转账准确金额。到账后系统会自动核对。', '開啟銀行應用程式，掃描 QR 碼並轉帳正確金額。款項入帳後系統會自動核對。', '銀行アプリでQRコードを読み取り、正確な金額を送金してください。入金後に自動照合されます。', '은행 앱으로 QR 코드를 스캔하고 정확한 금액을 이체하세요. 입금 후 자동으로 확인됩니다.', 'برنامه بانکی را باز کنید، کد QR را اسکن و مبلغ دقیق را انتقال دهید. پس از دریافت وجه، پرداخت به‌صورت خودکار تطبیق داده می‌شود.', 'Откройте банковское приложение, отсканируйте QR-код и переведите точную сумму. После поступления средств платёж будет сопоставлен автоматически.') }}</p>
         <div id="countdown" class="countdown"></div>
         <div id="status" class="status" aria-live="polite"></div>
         <div class="actions">
-            <a class="button secondary" href="{{ $returnUrl }}">{{ $text('Quay lại đơn hàng', 'Back to orders', '返回订单', '注文に戻る', '주문으로 돌아가기') }}</a>
-            <button id="check" class="button primary" type="button">{{ $text('Kiểm tra thanh toán', 'Check payment', '检查支付状态', '支払い状態を確認', '결제 상태 확인') }}</button>
+            <a class="button secondary" href="{{ $returnUrl }}">{{ $text('Quay lại đơn hàng', 'Back to orders', '返回订单', '返回訂單', '注文に戻る', '주문으로 돌아가기', 'بازگشت به سفارش‌ها', 'Назад к заказам') }}</a>
+            <button id="check" class="button primary" type="button">{{ $text('Kiểm tra thanh toán', 'Check payment', '检查支付状态', '檢查付款', '支払い状態を確認', '결제 상태 확인', 'بررسی پرداخت', 'Проверить оплату') }}</button>
         </div>
     </section>
 </main>

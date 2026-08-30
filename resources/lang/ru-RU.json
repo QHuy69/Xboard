@@ -319,5 +319,8 @@
     "Display a Messenger support button on the customer dashboard using the plugin configuration.": "Показывать кнопку поддержки Messenger на панели клиента в соответствии с настройками плагина.",
     "Facebook Page username": "Имя пользователя Facebook Page",
     "Enter the Page username from the end of its m.me link, not the full URL.": "Введите имя пользователя Page из конца ссылки m.me, а не полный URL.",
-    "Chat with support on Messenger": "Связаться с поддержкой в Messenger"
+    "Chat with support on Messenger": "Связаться с поддержкой в Messenger",
+    "Donation account information": "Реквизиты счёта для пожертвований",
+    "Language selector": "Выбор языка",
+    "Choose language": "Выбрать язык"
 }

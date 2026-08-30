@@ -319,5 +319,8 @@
     "Display a Messenger support button on the customer dashboard using the plugin configuration.": "نمایش دکمه پشتیبانی Messenger در داشبورد مشتری بر اساس پیکربندی افزونه.",
     "Facebook Page username": "نام کاربری Facebook Page",
     "Enter the Page username from the end of its m.me link, not the full URL.": "نام کاربری Page در انتهای پیوند m.me را وارد کنید، نه نشانی کامل را.",
-    "Chat with support on Messenger": "گفت‌وگو با پشتیبانی در Messenger"
+    "Chat with support on Messenger": "گفت‌وگو با پشتیبانی در Messenger",
+    "Donation account information": "اطلاعات حساب دریافت کمک مالی",
+    "Language selector": "گزینشگر زبان",
+    "Choose language": "انتخاب زبان"
 }

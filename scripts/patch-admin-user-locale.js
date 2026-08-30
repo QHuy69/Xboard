@@ -4,6 +4,8 @@ const path = require('path');
 const target = path.resolve(__dirname, '../public/assets/admin/assets/index-CEIYH7i8.js');
 let source = fs.readFileSync(target, 'utf8');
 
+const canonicalSupportFields = 'Q.jsx(Xy,{children:"This will be displayed on the admin login page."}),Q.jsx(Qy,{})]})}),Q.jsx($y,{control:t.control,name:"crisp_website_id",render:({field:e})=>Q.jsxs(Gy,{children:[Q.jsx(Zy,{children:"Crisp Website ID"}),Q.jsx(Yy,{children:Q.jsx(u8e,{placeholder:"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",...e})}),Q.jsx(Xy,{children:"UUID Website ID from Crisp settings. Leave blank to keep Crisp Chat disabled."}),Q.jsx(Qy,{})]})}),Q.jsx($y,{control:t.control,name:"messenger_page_username",render:({field:e})=>Q.jsxs(Gy,{children:[Q.jsx(Zy,{children:"Facebook Page username"}),Q.jsx(Yy,{children:Q.jsx(u8e,{placeholder:"facebook.page.name",...e})}),Q.jsx(Xy,{children:"Enter the Page username from the end of its m.me link, not the full URL."}),Q.jsx(Qy,{})]})}),Q.jsx(Lf,{type:"submit",children:"Save Settings"})';
+
 const replacements = [
   [
     'plan_id:dy().nullable().default(null),banned:uy().default(!1)',
@@ -23,7 +25,7 @@ const replacements = [
   ],
   [
     'Q.jsx(Xy,{children:"This will be displayed on the admin login page."}),Q.jsx(Qy,{})]})}),Q.jsx(Lf,{type:"submit",children:"Save Settings"})',
-    'Q.jsx(Xy,{children:"This will be displayed on the admin login page."}),Q.jsx(Qy,{})]})}),Q.jsx($y,{control:t.control,name:"crisp_website_id",render:({field:e})=>Q.jsxs(Gy,{children:[Q.jsx(Zy,{children:"Crisp Website ID"}),Q.jsx(Yy,{children:Q.jsx(u8e,{placeholder:"UUID trang web Crisp",...e})}),Q.jsx(Xy,{children:"Để trống nếu không dùng Crisp."}),Q.jsx(Qy,{})]})}),Q.jsx($y,{control:t.control,name:"messenger_page_username",render:({field:e})=>Q.jsxs(Gy,{children:[Q.jsx(Zy,{children:"Tên người dùng Messenger"}),Q.jsx(Yy,{children:Q.jsx(u8e,{placeholder:"Ví dụ: zaoguang.support",...e})}),Q.jsx(Xy,{children:"Tên sau m.me/, không nhập toàn bộ URL."}),Q.jsx(Qy,{})]})}),Q.jsx(Lf,{type:"submit",children:"Save Settings"})'
+    canonicalSupportFields
   ],
   [
     'case"string":return Q.jsx(TYt,{control:e.control,name:s,label:i.label||i.description,placeholder:i.placeholder,description:i.label?i.description:void 0,required:i.required},t);case"number"',

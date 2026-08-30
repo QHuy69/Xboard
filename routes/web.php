@@ -449,20 +449,43 @@ Route::get('/pay/{tradeNo}', function (Request $request, string $tradeNo) {
         'total_amount' => $totalAmount,
     ]);
 
-    $languages = collect($request->getLanguages())
-        ->map(fn ($language) => strtolower(str_replace('_', '-', (string) $language)))
-        ->all();
+    $supportedLocales = ['vi-VN', 'en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-RU'];
+    $resolveLocale = static function (string $language) use ($supportedLocales): ?string {
+        $normalized = strtolower(str_replace('_', '-', trim($language)));
+        foreach ($supportedLocales as $supportedLocale) {
+            if ($normalized === strtolower($supportedLocale)) {
+                return $supportedLocale;
+            }
+        }
+        if (preg_match('/^zh-(?:tw|hk|mo|hant)(?:-|$)/', $normalized)) {
+            return 'zh-TW';
+        }
+        if (str_starts_with($normalized, 'zh')) {
+            return 'zh-CN';
+        }
+        return match (strtok($normalized, '-')) {
+            'vi' => 'vi-VN',
+            'en' => 'en-US',
+            'ja' => 'ja-JP',
+            'ko' => 'ko-KR',
+            'fa' => 'fa-IR',
+            'ru' => 'ru-RU',
+            default => null,
+        };
+    };
+
     $locale = 'en-US';
-    foreach ($languages as $language) {
-        if (str_starts_with($language, 'vi')) { $locale = 'vi-VN'; break; }
-        if (str_starts_with($language, 'zh')) { $locale = 'zh-CN'; break; }
-        if (str_starts_with($language, 'ja')) { $locale = 'ja-JP'; break; }
-        if (str_starts_with($language, 'ko')) { $locale = 'ko-KR'; break; }
+    foreach ($request->getLanguages() as $language) {
+        $resolvedLocale = $resolveLocale((string) $language);
+        if ($resolvedLocale !== null) {
+            $locale = $resolvedLocale;
+            break;
+        }
     }
     if ($request->filled('lang')) {
-        $requested = str_replace('_', '-', (string) $request->input('lang'));
-        if (in_array($requested, ['vi-VN', 'en-US', 'zh-CN', 'ja-JP', 'ko-KR'], true)) {
-            $locale = $requested;
+        $requestedLocale = $resolveLocale((string) $request->input('lang'));
+        if ($requestedLocale !== null) {
+            $locale = $requestedLocale;
         }
     }
 

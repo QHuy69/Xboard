@@ -319,5 +319,8 @@
     "Display a Messenger support button on the customer dashboard using the plugin configuration.": "プラグイン設定に従って顧客ダッシュボードに Messenger サポートボタンを表示します。",
     "Facebook Page username": "Facebook Page ユーザー名",
     "Enter the Page username from the end of its m.me link, not the full URL.": "m.me リンク末尾の Page ユーザー名を入力してください。完全な URL は入力しないでください。",
-    "Chat with support on Messenger": "Messenger でサポートに問い合わせる"
+    "Chat with support on Messenger": "Messenger でサポートに問い合わせる",
+    "Donation account information": "寄付先口座情報",
+    "Language selector": "言語選択",
+    "Choose language": "言語を選択"
 }

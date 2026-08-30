@@ -322,5 +322,8 @@
     "Display a Messenger support button on the customer dashboard using the plugin configuration.": "根據外掛程式設定，在客戶儀表板顯示 Messenger 客服按鈕。",
     "Facebook Page username": "Facebook Page 使用者名稱",
     "Enter the Page username from the end of its m.me link, not the full URL.": "輸入 m.me 連結末尾的 Page 使用者名稱，不要輸入完整 URL。",
-    "Chat with support on Messenger": "透過 Messenger 聯絡客服"
+    "Chat with support on Messenger": "透過 Messenger 聯絡客服",
+    "Donation account information": "捐贈收款帳戶資訊",
+    "Language selector": "語言選擇器",
+    "Choose language": "選擇語言"
 }

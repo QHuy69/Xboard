@@ -92,7 +92,10 @@ for (const needle of [
   "$messengerInstalled && !(bool) $supportPluginStates->get('messenger')",
   "aria-label=\"{{ __('Chat with support on Messenger') }}\"",
   "title=\"{{ __('Chat with support on Messenger') }}\"",
-  "dir=\"{{ app()->getLocale() === 'fa-IR' ? 'rtl' : 'ltr' }}\""
+  "dir=\"{{ app()->getLocale() === 'fa-IR' ? 'rtl' : 'ltr' }}\"",
+  "aria-label=\"{{ __('Donation account information') }}\"",
+  "aria-label=\"{{ __('Language selector') }}\"",
+  "aria-label=\"{{ __('Choose language') }}\""
 ]) {
   assert(dashboard.includes(needle), `Support widgets are missing lifecycle/i18n behavior: ${needle}`);
 }
@@ -106,5 +109,39 @@ const messengerRule = css.match(/\.luck-messenger-support\s*\{([\s\S]*?)\}/)?.[1
 assert(messengerRule.includes('inset-inline-end:'), 'Messenger support button does not use a logical inline position');
 assert(!/(?:^|[;\s])right\s*:/.test(messengerRule), 'Messenger support button still hard-codes an LTR-only right position');
 assert(messengerRule.includes('unicode-bidi: isolate'), 'Messenger support button is not isolated for RTL rendering');
+
+const accessibilityKeys = ['Donation account information', 'Language selector', 'Choose language'];
+for (const [locale, translations] of Object.entries(locales)) {
+  const missing = accessibilityKeys.filter((key) => !(key in translations));
+  assert.deepStrictEqual(missing, [], `${locale} is missing Luck accessibility copy: ${JSON.stringify(missing)}`);
+  if (locale !== 'en-US') {
+    const fallback = accessibilityKeys.filter((key) => translations[key] === locales['en-US'][key]);
+    assert.deepStrictEqual(fallback, [], `${locale} falls back to English accessibility copy: ${JSON.stringify(fallback)}`);
+  }
+}
+
+const adminPatch = fs.readFileSync('scripts/patch-admin-user-locale.js', 'utf8');
+const adminBundle = fs.readFileSync('public/assets/admin/assets/index-CEIYH7i8.js', 'utf8');
+for (const canonicalMetadata of [
+  'Crisp Website ID',
+  'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+  'UUID Website ID from Crisp settings. Leave blank to keep Crisp Chat disabled.',
+  'Facebook Page username',
+  'facebook.page.name',
+  'Enter the Page username from the end of its m.me link, not the full URL.'
+]) {
+  assert(adminPatch.includes(canonicalMetadata), `Admin patch is missing canonical plugin metadata: ${canonicalMetadata}`);
+  assert(adminBundle.includes(canonicalMetadata), `Admin bundle is missing canonical plugin metadata: ${canonicalMetadata}`);
+}
+for (const legacyVietnamese of [
+  'UUID trang web Crisp',
+  'Để trống nếu không dùng Crisp.',
+  'Tên người dùng Messenger',
+  'Ví dụ: zaoguang.support',
+  'Tên sau m.me/, không nhập toàn bộ URL.'
+]) {
+  assert(!adminPatch.includes(legacyVietnamese), `Admin patch still hard-codes Vietnamese support metadata: ${legacyVietnamese}`);
+  assert(!adminBundle.includes(legacyVietnamese), `Admin bundle still hard-codes Vietnamese support metadata: ${legacyVietnamese}`);
+}
 
 console.log(`Support plugin manifests expose ${metadataKeys.size} canonical keys translated across ${Object.keys(locales).length} locales, with disabled-plugin and RTL-safe widget guards.`);

@@ -324,5 +324,8 @@
     "Display a Messenger support button on the customer dashboard using the plugin configuration.": "Hiển thị nút hỗ trợ Messenger trên bảng điều khiển của khách hàng theo cấu hình plugin.",
     "Facebook Page username": "Tên người dùng Facebook Page",
     "Enter the Page username from the end of its m.me link, not the full URL.": "Nhập tên người dùng Page ở cuối liên kết m.me, không nhập toàn bộ URL.",
-    "Chat with support on Messenger": "Trò chuyện với bộ phận hỗ trợ qua Messenger"
+    "Chat with support on Messenger": "Trò chuyện với bộ phận hỗ trợ qua Messenger",
+    "Donation account information": "Thông tin tài khoản nhận ủng hộ",
+    "Language selector": "Bộ chọn ngôn ngữ",
+    "Choose language": "Chọn ngôn ngữ"
 }

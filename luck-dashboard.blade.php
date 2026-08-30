@@ -68,7 +68,7 @@
         <h2 id="luck-donate-title">Bạn đang sử dụng gói chống lag mùa đứt cáp</h2>
         <p id="luck-donate-message" class="luck-donate-message">Ủng hộ mình tại đây để duy trì đường truyền ổn định.</p>
         <img class="luck-donate-qr" src="/luck-donate-qr.svg" alt="Mã QR ủng hộ" decoding="async">
-        <dl class="luck-donate-bank" aria-label="Thông tin tài khoản nhận ủng hộ">
+        <dl class="luck-donate-bank" aria-label="{{ __('Donation account information') }}">
           <div><dt id="luck-donate-bank-label">Ngân hàng</dt><dd>ACB</dd></div>
           <div><dt id="luck-donate-account-label">Số tài khoản</dt><dd>35333297</dd></div>
           <div><dt id="luck-donate-owner-label">Chủ tài khoản</dt><dd>NGUYEN HOANG QUANG HUY</dd></div>
@@ -569,9 +569,9 @@
       }, 0);
     }());
   </script>
-  <div class="luck-language-picker" aria-label="Language selector">
+  <div class="luck-language-picker" aria-label="{{ __('Language selector') }}">
     <label for="luck-language-select">🌐</label>
-    <select id="luck-language-select" aria-label="Language">
+    <select id="luck-language-select" aria-label="{{ __('Choose language') }}">
       <option value="vi-VN">Tiếng Việt</option>
       <option value="en-US">English</option>
       <option value="zh-CN">简体中文</option>
