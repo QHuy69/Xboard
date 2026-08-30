@@ -60,6 +60,29 @@ jobs:
       - name: Install PHP test dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
+      - name: Run standalone PHP source smoke checks
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          run_smoke() {
+            local smoke_file="$1"
+            echo "::group::[php-source-smoke] ${smoke_file}"
+            if php "$smoke_file"; then
+              echo "::endgroup::"
+              return 0
+            else
+              local status=$?
+              echo "::endgroup::"
+              echo "::error file=${smoke_file}::PHP source smoke failed with exit code ${status}"
+              return "$status"
+            fi
+          }
+
+          run_smoke tests/smoke-user-device-read.php
+          run_smoke tests/smoke-node-access-url.php
+          run_smoke tests/smoke-luck-theme-patches.php
+
       - name: Run PHP unit and feature regression suite
         shell: bash
         run: |
