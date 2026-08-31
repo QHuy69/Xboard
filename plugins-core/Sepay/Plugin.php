@@ -168,7 +168,10 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         $this->verifyWebhookAuthorization();
 
         if (strtolower(trim((string) ($params['transferType'] ?? ''))) !== 'in') {
-            return 'ignored';
+            return [
+                'ack_only' => true,
+                'custom_result' => ['success' => true],
+            ];
         }
 
         $configuredBank = $this->normalise((string) $this->getConfig('sepay_bank_code', 'Vietcombank'));
@@ -205,7 +208,11 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         return [
             'trade_no' => $tradeNo,
             'callback_no' => $callbackNo,
-            'custom_result' => 'success'
+            // SePay only acknowledges a webhook when the response body is
+            // JSON {"success":true}. Returning an array lets Laravel emit that
+            // exact JSON contract while other gateways keep their own custom
+            // response bodies unchanged.
+            'custom_result' => ['success' => true]
         ];
     }
 

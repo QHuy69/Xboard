@@ -44,13 +44,14 @@ final class CoinPaymentsCheckoutSnapshot
 
     public static function assertValid(array $snapshot): void
     {
-        if ((int) ($snapshot['snapshot_version'] ?? 0) !== self::VERSION) {
+        $snapshotVersion = filter_var($snapshot['snapshot_version'] ?? null, FILTER_VALIDATE_INT);
+        if ($snapshotVersion === false || (int) $snapshotVersion !== self::VERSION) {
             throw new \UnexpectedValueException('Unsupported CoinPayments checkout configuration snapshot.');
         }
 
         foreach (self::REQUIRED_STRING_KEYS as $key) {
             $value = $snapshot[$key] ?? null;
-            if ((!is_scalar($value) && $value !== null) || trim((string) $value) === '') {
+            if (!is_string($value) || trim($value) === '') {
                 throw new \UnexpectedValueException("CoinPayments checkout configuration snapshot is missing {$key}.");
             }
         }
@@ -59,17 +60,23 @@ final class CoinPaymentsCheckoutSnapshot
         if ($paymentId === false || (int) $paymentId <= 0) {
             throw new \UnexpectedValueException('CoinPayments checkout configuration snapshot has an invalid payment ID.');
         }
-        if (trim((string) ($snapshot['payment_uuid'] ?? '')) === '') {
+        $paymentUuid = $snapshot['payment_uuid'] ?? null;
+        if (!is_string($paymentUuid) || trim($paymentUuid) === '') {
             throw new \UnexpectedValueException('CoinPayments checkout configuration snapshot has an invalid payment UUID.');
         }
 
+        $paymentCurrency = $snapshot['coinpayments_payment_currency'] ?? '';
+        if (!is_string($paymentCurrency)) {
+            throw new \UnexpectedValueException('CoinPayments checkout configuration snapshot has an invalid payment currency.');
+        }
+
         $rate = $snapshot['coinpayments_cny_invoice_rate'] ?? null;
-        if (!is_scalar($rate) || !is_numeric($rate) || (float) $rate <= 0) {
+        if (!is_string($rate) || !is_numeric($rate) || (float) $rate <= 0) {
             throw new \UnexpectedValueException('CoinPayments checkout configuration snapshot has an invalid exchange rate.');
         }
 
-        $maxAge = filter_var($snapshot['coinpayments_webhook_max_age'] ?? null, FILTER_VALIDATE_INT);
-        if ($maxAge === false || (int) $maxAge < 60 || (int) $maxAge > 900) {
+        $maxAge = $snapshot['coinpayments_webhook_max_age'] ?? null;
+        if (!is_int($maxAge) || $maxAge < 60 || $maxAge > 900) {
             throw new \UnexpectedValueException('CoinPayments checkout configuration snapshot has an invalid webhook validity window.');
         }
     }

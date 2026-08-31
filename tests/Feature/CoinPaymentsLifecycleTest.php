@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Plugin\CoinPayments\Plugin as CoinPaymentsPlugin;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CoinPaymentsLifecycleTest extends TestCase
@@ -46,6 +47,42 @@ class CoinPaymentsLifecycleTest extends TestCase
     {
         HookManager::reset();
         parent::tearDown();
+    }
+
+    public function test_non_terminal_webhooks_require_authentication_and_ack_without_order_lookup(): void
+    {
+        $pendingPayload = [
+            'id' => 'provider-pending-without-order',
+            'type' => 'InvoicePending',
+            'invoice' => [
+                'invoiceId' => 'ORDER-DOES-NOT-EXIST',
+                'state' => 'Pending',
+            ],
+        ];
+        $this->assertSame('success', $this->invokeStandaloneWebhook($pendingPayload));
+
+        $this->assertSame('success', $this->invokeStandaloneWebhook([
+            'type' => 'InvoicePaymentCreated',
+        ]));
+
+        try {
+            $this->invokeStandaloneWebhook($pendingPayload, false);
+            $this->fail('An unauthenticated pending webhook was acknowledged.');
+        } catch (ApiException $exception) {
+            $this->assertSame(400, $exception->getCode());
+        }
+
+        try {
+            $this->invokeStandaloneWebhook([
+                'invoice' => [
+                    'invoiceId' => 'ORDER-DOES-NOT-EXIST',
+                    'state' => 'Pending',
+                ],
+            ]);
+            $this->fail('A signed webhook without an event type was acknowledged.');
+        } catch (ApiException $exception) {
+            $this->assertSame(400, $exception->getCode());
+        }
     }
 
     public function test_ready_invoice_is_immutable_and_blocks_payment_switch_cancel_delete_and_plugin_disable(): void
@@ -350,7 +387,7 @@ class CoinPaymentsLifecycleTest extends TestCase
         }
     }
 
-    /** @dataProvider terminalEventProvider */
+    #[DataProvider('terminalEventProvider')]
     public function test_authenticated_terminal_event_cancels_pending_order_once(
         string $eventType,
         string $invoiceState
@@ -557,6 +594,41 @@ class CoinPaymentsLifecycleTest extends TestCase
         });
 
         return [$user, $order, $payment, $expiresAt];
+    }
+
+    private function invokeStandaloneWebhook(array $payload, bool $validSignature = true): array|string
+    {
+        $webhookUrl = 'https://payments.example.test/coinpayments/callback';
+        $rawBody = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $timestamp = gmdate('Y-m-d\TH:i:s');
+        $request = Request::create($webhookUrl, 'POST', [], [], [], [], $rawBody);
+        $request->headers->set('Content-Type', 'application/json');
+        $request->headers->set('X-CoinPayments-Client', 'standalone-client');
+        $request->headers->set('X-CoinPayments-Timestamp', $timestamp);
+        $request->headers->set(
+            'X-CoinPayments-Signature',
+            $validSignature
+                ? CoinPaymentsPlugin::signature(
+                    'POST',
+                    $webhookUrl,
+                    'standalone-client',
+                    $timestamp,
+                    $rawBody,
+                    'standalone-secret'
+                )
+                : 'invalid-signature'
+        );
+        app()->instance('request', $request);
+
+        $plugin = new CoinPaymentsPlugin('coin_payments');
+        $plugin->setConfig([
+            'coinpayments_client_id' => 'standalone-client',
+            'coinpayments_client_secret' => 'standalone-secret',
+            'coinpayments_webhook_url' => $webhookUrl,
+            'coinpayments_webhook_max_age' => 300,
+        ]);
+
+        return $plugin->notify([]);
     }
 
     private function sendCoinPaymentsWebhook(

@@ -61,9 +61,57 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         // validatePaymentConfiguration().
     }
 
+    /** Reject malformed values while still allowing an incomplete draft. */
+    public function validatePaymentConfigurationShape(): void
+    {
+        $invalid = [];
+        foreach ([
+            'coinpayments_client_id' => __('CoinPayments Client ID'),
+            'coinpayments_client_secret' => __('CoinPayments Client Secret'),
+            'coinpayments_invoice_currency_id' => __('CoinPayments invoice currency ID'),
+            'coinpayments_payment_currency' => __('Preferred payment currency ID'),
+            'coinpayments_api_base' => __('API base URL'),
+            'coinpayments_webhook_url' => __('Webhook URL override (optional)'),
+        ] as $key => $label) {
+            if (!$this->isTextConfigValue($this->getConfig($key, ''))) {
+                $invalid[] = $label;
+            }
+        }
+
+        $rateValue = $this->getConfig('coinpayments_cny_invoice_rate', '');
+        if (!$this->isBlankConfigValue($rateValue)
+            && (!is_scalar($rateValue)
+                || is_bool($rateValue)
+                || !is_numeric($rateValue)
+                || (float) $rateValue <= 0)) {
+            $invalid[] = __('CoinPayments CNY-to-invoice exchange rate');
+        }
+
+        if ($this->normalizedWebhookMaxAge() === null) {
+            $invalid[] = __('Webhook validity window (seconds)');
+        }
+
+        if ($invalid !== []) {
+            throw new \InvalidArgumentException(__('CoinPayments payment method cannot be enabled. Please configure: :fields.', [
+                'fields' => implode(', ', array_unique($invalid)),
+            ]));
+        }
+
+        if ($this->stringConfig('coinpayments_api_base') !== '' && $this->normalizedApiBase() === null) {
+            throw new \InvalidArgumentException(__('CoinPayments API base URL must be an official CoinPayments HTTPS endpoint.'));
+        }
+
+        $configuredWebhookUrl = $this->stringConfig('coinpayments_webhook_url');
+        if ($configuredWebhookUrl !== '' && !$this->isValidHttpsUrl($configuredWebhookUrl)) {
+            throw new \InvalidArgumentException(__('CoinPayments webhook URL must be a valid HTTPS URL.'));
+        }
+    }
+
     /** Validate the effective configuration before a payment record is enabled. */
     public function validatePaymentConfiguration(): void
     {
+        $this->validatePaymentConfigurationShape();
+
         $required = [
             'coinpayments_client_id' => __('CoinPayments Client ID'),
             'coinpayments_client_secret' => __('CoinPayments Client Secret'),
@@ -75,13 +123,19 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                 $missing[] = $label;
             }
         }
+
         $rateValue = $this->getConfig('coinpayments_cny_invoice_rate', 0);
-        if (!is_scalar($rateValue) || !is_numeric($rateValue) || (float) $rateValue <= 0) {
+        if ($this->isBlankConfigValue($rateValue)
+            || !is_scalar($rateValue)
+            || is_bool($rateValue)
+            || !is_numeric($rateValue)
+            || (float) $rateValue <= 0) {
             $missing[] = __('CoinPayments CNY-to-invoice exchange rate');
         }
+
         if ($missing !== []) {
             throw new \InvalidArgumentException(__('CoinPayments payment method cannot be enabled. Please configure: :fields.', [
-                'fields' => implode(', ', $missing),
+                'fields' => implode(', ', array_unique($missing)),
             ]));
         }
 
@@ -89,15 +143,8 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             throw new \InvalidArgumentException(__('CoinPayments API base URL must be an official CoinPayments HTTPS endpoint.'));
         }
 
-        $configuredWebhookUrl = $this->getConfig('coinpayments_webhook_url', '');
-        if (!is_scalar($configuredWebhookUrl) && $configuredWebhookUrl !== null) {
-            throw new \InvalidArgumentException(__('CoinPayments webhook URL must be a valid HTTPS URL.'));
-        }
-
         $webhookUrl = $this->resolvedWebhookUrl();
-        if ($webhookUrl !== ''
-            && (!filter_var($webhookUrl, FILTER_VALIDATE_URL)
-                || !str_starts_with(strtolower($webhookUrl), 'https://'))) {
+        if ($webhookUrl !== '' && !$this->isValidHttpsUrl($webhookUrl)) {
             throw new \InvalidArgumentException(__('CoinPayments webhook URL must be a valid HTTPS URL.'));
         }
     }
@@ -145,7 +192,8 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                         // Blank password overrides historically fell back to
                         // the plugin secret. Preserve that effective value.
                         if ($key === 'coinpayments_client_secret') {
-                            if (trim((string) ($recordConfig[$key] ?? '')) === '') {
+                            if (!$this->hasNonBlankTextConfigValue($recordConfig[$key] ?? null)
+                                && $this->hasNonBlankTextConfigValue($value)) {
                                 $recordConfig[$key] = $value;
                             }
                             continue;
@@ -353,16 +401,93 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     {
         $request = request();
         $rawBody = (string) $request->getContent();
-        $payload = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
-        $tradeNo = trim((string) (data_get($payload, 'invoice.customData.trade_no')
-            ?: data_get($payload, 'invoice.invoiceId')
-            ?: data_get($payload, 'invoice.invoiceNumber')));
+        // Authenticate with the current payment credentials before parsing or
+        // acknowledging anything. A terminal callback may legitimately carry
+        // the frozen pre-rotation credentials, so only that path is allowed to
+        // fall back to its encrypted checkout snapshot below.
+        $currentAuthenticationFailure = null;
+        try {
+            $this->authenticateWebhookRequest($request, $rawBody);
+        } catch (ApiException $exception) {
+            $currentAuthenticationFailure = $exception;
+        }
+
+        try {
+            $payload = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $exception) {
+            if ($currentAuthenticationFailure !== null) {
+                throw $currentAuthenticationFailure;
+            }
+            throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
+        }
+        $eventTypeValue = is_array($payload) ? ($payload['type'] ?? null) : null;
+        if (!is_string($eventTypeValue) || trim($eventTypeValue) === '') {
+            if ($currentAuthenticationFailure !== null) {
+                throw $currentAuthenticationFailure;
+            }
+            throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
+        }
+
+        $eventType = strtolower(trim($eventTypeValue));
+        $event = match ($eventType) {
+            'invoicecompleted' => 'completed',
+            'invoicetimedout' => 'timed_out',
+            'invoicecancelled' => 'cancelled',
+            default => null,
+        };
+        if ($event === null) {
+            if ($currentAuthenticationFailure !== null) {
+                throw $currentAuthenticationFailure;
+            }
+
+            // Created, pending, paid, payment-address and future unsupported
+            // events never settle an XBoard order. CoinPayments can deliver
+            // pending once per confirmation, so acknowledge them without an
+            // order/checkout query after authenticating the delivery.
+            return 'success';
+        }
+
+        $invoice = is_array($payload) ? ($payload['invoice'] ?? null) : null;
+        $receivedProviderInvoiceId = $this->webhookText(data_get($payload, 'invoice.id'));
+        $invoiceStateValue = is_array($invoice) ? ($invoice['state'] ?? null) : null;
+        if (!is_array($invoice)
+            || $receivedProviderInvoiceId === ''
+            || !is_string($invoiceStateValue)
+            || trim($invoiceStateValue) === '') {
+            if ($currentAuthenticationFailure !== null) {
+                throw $currentAuthenticationFailure;
+            }
+            throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
+        }
+        $invoiceState = preg_replace(
+            '/[^a-z]/',
+            '',
+            strtolower(trim($invoiceStateValue))
+        );
+
+        $tradeNo = '';
+        foreach ([
+            data_get($payload, 'invoice.customData.trade_no'),
+            data_get($payload, 'invoice.invoiceId'),
+            data_get($payload, 'invoice.invoiceNumber'),
+        ] as $tradeNoValue) {
+            $tradeNo = $this->webhookText($tradeNoValue);
+            if ($tradeNo !== '') {
+                break;
+            }
+        }
         if ($tradeNo === '') {
+            if ($currentAuthenticationFailure !== null) {
+                throw $currentAuthenticationFailure;
+            }
             throw new ApiException(__('CoinPayments webhook is missing the order reference.'), 400);
         }
 
         $order = Order::where('trade_no', $tradeNo)->first();
         if (!$order) {
+            if ($currentAuthenticationFailure !== null) {
+                throw $currentAuthenticationFailure;
+            }
             throw new ApiException(__('Order does not exist'), 400);
         }
 
@@ -394,52 +519,13 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                 || ($paymentUuid !== '' && !hash_equals((string) $snapshot['payment_uuid'], $paymentUuid))) {
                 throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
             }
+            // Fresh rows must authenticate against the immutable credentials
+            // and callback URL captured before the provider POST.
+            $this->authenticateWebhookRequest($request, $rawBody, $snapshot);
+        } elseif ($currentAuthenticationFailure !== null) {
+            throw $currentAuthenticationFailure;
         }
 
-        $clientId = trim((string) $request->header('X-CoinPayments-Client', ''));
-        $timestamp = trim((string) $request->header('X-CoinPayments-Timestamp', ''));
-        $providedSignature = trim((string) $request->header('X-CoinPayments-Signature', ''));
-        $expectedClientId = $snapshot !== null
-            ? trim((string) $snapshot['coinpayments_client_id'])
-            : $this->requiredConfig('coinpayments_client_id', __('CoinPayments Client ID is not configured.'));
-        $secret = $snapshot !== null
-            ? trim((string) $snapshot['coinpayments_client_secret'])
-            : $this->requiredConfig('coinpayments_client_secret', __('CoinPayments Client Secret is not configured.'));
-
-        if ($clientId === '' || !hash_equals($expectedClientId, $clientId) || $timestamp === '' || $providedSignature === '') {
-            throw new ApiException(__('CoinPayments webhook authentication failed.'), 400);
-        }
-        $parsedTimestamp = DateTimeImmutable::createFromFormat('!Y-m-d\TH:i:s', $timestamp, new DateTimeZone('UTC'));
-        $maxAge = $snapshot !== null
-            ? (int) $snapshot['coinpayments_webhook_max_age']
-            : max(60, min(900, (int) $this->getConfig('coinpayments_webhook_max_age', 300)));
-        if (!$parsedTimestamp || abs(time() - $parsedTimestamp->getTimestamp()) > $maxAge) {
-            throw new ApiException(__('CoinPayments webhook timestamp is stale.'), 400);
-        }
-
-        $signedUrl = $snapshot !== null
-            ? (string) $snapshot['coinpayments_webhook_url']
-            : ($this->stringConfig('coinpayments_webhook_url') ?: $request->fullUrl());
-        $expectedSignature = self::signature($request->method(), $signedUrl, $clientId, $timestamp, $rawBody, $secret);
-        if (!hash_equals($expectedSignature, $providedSignature)) {
-            throw new ApiException(__('CoinPayments webhook signature does not match.'), 400);
-        }
-
-        $eventType = strtolower((string) ($payload['type'] ?? ''));
-        $invoiceState = preg_replace(
-            '/[^a-z]/',
-            '',
-            strtolower((string) data_get($payload, 'invoice.state', ''))
-        );
-        $event = match ($eventType) {
-            'invoicecompleted' => 'completed',
-            'invoicetimedout' => 'timed_out',
-            'invoicecancelled' => 'cancelled',
-            default => null,
-        };
-        if ($event === null) {
-            return 'success';
-        }
         $expectedState = match ($event) {
             'completed' => 'completed',
             'timed_out' => 'timedout',
@@ -449,14 +535,8 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
         }
 
-        $receivedProviderInvoiceIdValue = data_get($payload, 'invoice.id');
-        $receivedProviderInvoiceId = (is_scalar($receivedProviderInvoiceIdValue) || $receivedProviderInvoiceIdValue === null)
-            ? trim((string) $receivedProviderInvoiceIdValue)
-            : '';
         $topLevelInvoiceIdValue = $payload['id'] ?? null;
-        $topLevelInvoiceId = (is_scalar($topLevelInvoiceIdValue) || $topLevelInvoiceIdValue === null)
-            ? trim((string) $topLevelInvoiceIdValue)
-            : '';
+        $topLevelInvoiceId = $this->webhookText($topLevelInvoiceIdValue);
         if ($receivedProviderInvoiceId === ''
             || ($topLevelInvoiceId !== ''
                 && !hash_equals($receivedProviderInvoiceId, $topLevelInvoiceId))) {
@@ -471,7 +551,7 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         $expectedCurrencyId = $snapshot !== null
             ? trim((string) $snapshot['coinpayments_invoice_currency_id'])
             : $this->stringConfig('coinpayments_invoice_currency_id');
-        $receivedCurrencyId = trim((string) data_get($payload, 'invoice.amount.currencyId', ''));
+        $receivedCurrencyId = $this->webhookText(data_get($payload, 'invoice.amount.currencyId'));
         if ($expectedCurrencyId === '' || $receivedCurrencyId === '' || !hash_equals($expectedCurrencyId, $receivedCurrencyId)) {
             throw new ApiException(__('CoinPayments invoice currency does not match.'), 400);
         }
@@ -515,6 +595,67 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         ];
     }
 
+    private function authenticateWebhookRequest(
+        \Illuminate\Http\Request $request,
+        string $rawBody,
+        ?array $snapshot = null
+    ): void {
+        $clientId = trim((string) $request->header('X-CoinPayments-Client', ''));
+        $timestamp = trim((string) $request->header('X-CoinPayments-Timestamp', ''));
+        $providedSignature = trim((string) $request->header('X-CoinPayments-Signature', ''));
+        $expectedClientId = $snapshot !== null
+            ? trim((string) $snapshot['coinpayments_client_id'])
+            : $this->requiredConfig('coinpayments_client_id', __('CoinPayments Client ID is not configured.'));
+        $secret = $snapshot !== null
+            ? trim((string) $snapshot['coinpayments_client_secret'])
+            : $this->requiredConfig('coinpayments_client_secret', __('CoinPayments Client Secret is not configured.'));
+
+        if ($clientId === ''
+            || !hash_equals($expectedClientId, $clientId)
+            || $timestamp === ''
+            || $providedSignature === '') {
+            throw new ApiException(__('CoinPayments webhook authentication failed.'), 400);
+        }
+
+        $parsedTimestamp = DateTimeImmutable::createFromFormat(
+            '!Y-m-d\TH:i:s',
+            $timestamp,
+            new DateTimeZone('UTC')
+        );
+        $configuredMaxAge = $this->normalizedWebhookMaxAge();
+        if ($snapshot === null && $configuredMaxAge === null) {
+            throw new ApiException(__('CoinPayments webhook authentication failed.'), 400);
+        }
+        $maxAge = $snapshot !== null
+            ? (int) $snapshot['coinpayments_webhook_max_age']
+            : $configuredMaxAge;
+        if (!$parsedTimestamp || abs(time() - $parsedTimestamp->getTimestamp()) > $maxAge) {
+            throw new ApiException(__('CoinPayments webhook timestamp is stale.'), 400);
+        }
+
+        $signedUrl = $snapshot !== null
+            ? (string) $snapshot['coinpayments_webhook_url']
+            : ($this->stringConfig('coinpayments_webhook_url') ?: $request->fullUrl());
+        $expectedSignature = self::signature(
+            $request->method(),
+            $signedUrl,
+            $clientId,
+            $timestamp,
+            $rawBody,
+            $secret
+        );
+        if (!hash_equals($expectedSignature, $providedSignature)) {
+            throw new ApiException(__('CoinPayments webhook signature does not match.'), 400);
+        }
+    }
+
+    private function webhookText(mixed $value): string
+    {
+        return is_string($value) || is_int($value)
+            ? trim((string) $value)
+            : '';
+    }
+
     public static function signature(string $method, string $url, string $clientId, string $timestamp, string $payload, string $secret): string
     {
         $canonical = "\xEF\xBB\xBF" . strtoupper($method) . $url . $clientId . $timestamp . $payload;
@@ -534,9 +675,51 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     {
         $value = $this->getConfig($key, $default);
 
-        return is_scalar($value) || $value === null
+        return $this->isTextConfigValue($value)
             ? trim((string) $value)
             : '';
+    }
+
+    private function isTextConfigValue(mixed $value): bool
+    {
+        return is_string($value) || is_int($value) || $value === null;
+    }
+
+    private function isBlankConfigValue(mixed $value): bool
+    {
+        return $value === null || (is_string($value) && trim($value) === '');
+    }
+
+    private function hasNonBlankTextConfigValue(mixed $value): bool
+    {
+        return $this->isTextConfigValue($value) && trim((string) $value) !== '';
+    }
+
+    private function isValidHttpsUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && is_array($parts)
+            && strtolower((string) ($parts['scheme'] ?? '')) === 'https';
+    }
+
+    private function normalizedWebhookMaxAge(): ?int
+    {
+        $value = $this->getConfig('coinpayments_webhook_max_age', 300);
+        if ($this->isBlankConfigValue($value)) {
+            $value = 300;
+        }
+        if (!is_string($value) && !is_int($value)) {
+            return null;
+        }
+
+        $maxAge = filter_var($value, FILTER_VALIDATE_INT);
+        if ($maxAge === false || $maxAge < 60 || $maxAge > 900) {
+            return null;
+        }
+
+        return (int) $maxAge;
     }
 
     private function resolvedWebhookUrl(): string
@@ -566,6 +749,9 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     private function normalizedApiBase(): ?string
     {
         $url = $this->stringConfig('coinpayments_api_base', self::DEFAULT_API_BASE);
+        if ($url === '') {
+            $url = self::DEFAULT_API_BASE;
+        }
         if (filter_var($url, FILTER_VALIDATE_URL) === false) {
             return null;
         }

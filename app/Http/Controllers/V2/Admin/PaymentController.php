@@ -143,12 +143,6 @@ class PaymentController extends Controller
                         $params['payment'],
                         $sameGateway ? $existingPayment->id : null
                     );
-                    $submittedConfig = $paymentService->onlyKnownConfigFields($params['config']);
-                    $existingConfig = $paymentService->onlyKnownConfigFields($existingConfig);
-                    $params['config'] = $paymentService->preserveBlankPasswords(
-                        $submittedConfig,
-                        $existingConfig
-                    );
                 } catch (\Throwable $exception) {
                     // A new record or gateway change must resolve to an enabled
                     // integration. Only an unchanged historical gateway may use
@@ -163,9 +157,22 @@ class PaymentController extends Controller
                         $existingConfig
                     );
                 }
-                if ($existingPayment?->enable && $paymentService instanceof PaymentService) {
+                if ($paymentService instanceof PaymentService) {
                     try {
-                        $paymentService->validateConfiguration($params['config']);
+                        $submittedConfig = $paymentService->onlyKnownConfigFields($params['config']);
+                        // Validate the raw known fields before blank password
+                        // values are replaced by stored secrets. Otherwise a
+                        // crafted array/object secret is indistinguishable from
+                        // the intentional empty-string "keep current" marker.
+                        $paymentService->validateConfigurationShape($submittedConfig);
+                        $existingConfig = $paymentService->onlyKnownConfigFields($existingConfig);
+                        $params['config'] = $paymentService->preserveBlankPasswords(
+                            $submittedConfig,
+                            $existingConfig
+                        );
+                        if ($existingPayment?->enable) {
+                            $paymentService->validateConfiguration($params['config']);
+                        }
                     } catch (\Throwable $exception) {
                         return $this->fail([400, $exception->getMessage()]);
                     }

@@ -33,6 +33,15 @@ class PaymentController extends Controller
             if (is_string($verify)) {
                 return $verify;
             }
+            // Some authenticated webhook events are intentionally ignored but
+            // still require a provider-specific JSON acknowledgement. Return
+            // that response before verified/success hooks or order handling so
+            // an acknowledgement-only event cannot trigger payment effects.
+            if (is_array($verify)
+                && ($verify['ack_only'] ?? false) === true
+                && array_key_exists('custom_result', $verify)) {
+                return $verify['custom_result'];
+            }
             HookManager::call('payment.notify.verified', $verify);
             if ($method === 'CoinPayments' && isset($verify['event'])) {
                 $outcome = OrderService::handleCoinPaymentsNotification($verify);

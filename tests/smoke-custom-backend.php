@@ -72,17 +72,21 @@ $validCoinPaymentsConfig = [
     'coinpayments_client_id' => 'client-123',
     'coinpayments_client_secret' => 'secret-xyz',
     'coinpayments_invoice_currency_id' => '5057',
+    'coinpayments_payment_currency' => '',
     'coinpayments_cny_invoice_rate' => '0.14',
     'coinpayments_api_base' => 'https://a-api.coinpayments.net',
     'coinpayments_webhook_url' => 'https://payments.example.test/coinpayments/callback',
+    'coinpayments_webhook_max_age' => 300,
 ];
 foreach ([
     'coinpayments_client_id',
     'coinpayments_client_secret',
     'coinpayments_invoice_currency_id',
+    'coinpayments_payment_currency',
     'coinpayments_cny_invoice_rate',
     'coinpayments_api_base',
     'coinpayments_webhook_url',
+    'coinpayments_webhook_max_age',
 ] as $malformedField) {
     $malformed = new CoinPaymentsPlugin('coin_payments');
     $malformed->setConfig(array_replace($validCoinPaymentsConfig, [$malformedField => []]));
@@ -94,6 +98,27 @@ foreach ([
         // Expected: crafted array/object values cannot become the string
         // "Array" or a positive numeric cast inside request signing.
     }
+}
+
+foreach ([59, 901, '300.5', 'not-a-number'] as $invalidMaxAge) {
+    $invalidWindow = new CoinPaymentsPlugin('coin_payments');
+    $invalidWindow->setConfig(array_replace($validCoinPaymentsConfig, [
+        'coinpayments_webhook_max_age' => $invalidMaxAge,
+    ]));
+    try {
+        $invalidWindow->validatePaymentConfiguration();
+        fwrite(STDERR, "CoinPayments accepted an invalid webhook validity window.\n");
+        exit(1);
+    } catch (InvalidArgumentException) {
+        // Expected: the replay window is an integer between 60 and 900.
+    }
+}
+foreach ([60, '900'] as $validMaxAge) {
+    $boundaryWindow = new CoinPaymentsPlugin('coin_payments');
+    $boundaryWindow->setConfig(array_replace($validCoinPaymentsConfig, [
+        'coinpayments_webhook_max_age' => $validMaxAge,
+    ]));
+    $boundaryWindow->validatePaymentConfiguration();
 }
 
 HookManager::reset();
@@ -128,20 +153,6 @@ if (HookManager::filter('theme.support.messenger.page_username', '') !== 'zaogua
 }
 HookManager::reset();
 $webhookUrl = 'https://payments.example.test/coinpayments/callback';
-$timestamp = gmdate('Y-m-d\TH:i:s');
-$payload = json_encode([
-    'id' => 'invoice-pending-test',
-    'type' => 'InvoicePending',
-    'invoice' => ['invoiceId' => 'ORDER-PENDING', 'state' => 'Pending'],
-], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-$webhookRequest = Request::create($webhookUrl, 'POST', [], [], [], [], $payload);
-$webhookRequest->headers->set('Content-Type', 'application/json');
-$webhookRequest->headers->set('X-CoinPayments-Client', 'client-123');
-$webhookRequest->headers->set('X-CoinPayments-Timestamp', $timestamp);
-$webhookRequest->headers->set('X-CoinPayments-Signature', CoinPaymentsPlugin::signature(
-    'POST', $webhookUrl, 'client-123', $timestamp, $payload, 'secret-xyz'
-));
-$app->instance('request', $webhookRequest);
 $plugin = new CoinPaymentsPlugin('coin_payments');
 $plugin->setConfig([
     'coinpayments_client_id' => 'client-123',
@@ -149,18 +160,81 @@ $plugin->setConfig([
     'coinpayments_webhook_url' => $webhookUrl,
     'coinpayments_webhook_max_age' => 300,
 ]);
-$pendingResult = $plugin->notify([]);
+$notifyWithoutDatabase = static function (array $body, bool $validSignature = true) use (
+    $app,
+    $plugin,
+    $webhookUrl
+) {
+    $timestamp = gmdate('Y-m-d\TH:i:s');
+    $payload = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    $request = Request::create($webhookUrl, 'POST', [], [], [], [], $payload);
+    $request->headers->set('Content-Type', 'application/json');
+    $request->headers->set('X-CoinPayments-Client', 'client-123');
+    $request->headers->set('X-CoinPayments-Timestamp', $timestamp);
+    $request->headers->set(
+        'X-CoinPayments-Signature',
+        $validSignature
+            ? CoinPaymentsPlugin::signature(
+                'POST',
+                $webhookUrl,
+                'client-123',
+                $timestamp,
+                $payload,
+                'secret-xyz'
+            )
+            : 'invalid-signature'
+    );
+    $app->instance('request', $request);
+
+    return $plugin->notify([]);
+};
+
+$pendingPayload = [
+    'id' => 'invoice-pending-test',
+    'type' => 'InvoicePending',
+    'invoice' => [
+        'invoiceId' => 'ORDER-PENDING',
+        'state' => 'Pending',
+    ],
+];
+$pendingResult = $notifyWithoutDatabase($pendingPayload);
 if ($pendingResult !== 'success') {
     fwrite(STDERR, "CoinPayments pending webhook acknowledgement failed.\n");
     exit(1);
+}
+try {
+    $notifyWithoutDatabase($pendingPayload, false);
+    fwrite(STDERR, "CoinPayments acknowledged an unauthenticated pending webhook.\n");
+    exit(1);
+} catch (\App\Exceptions\ApiException) {
+    // Expected: authentication always precedes the early acknowledgement.
+}
+
+$unsupportedResult = $notifyWithoutDatabase([
+    'type' => 'InvoicePaymentCreated',
+]);
+if ($unsupportedResult !== 'success') {
+    fwrite(STDERR, "CoinPayments unsupported authenticated webhook acknowledgement failed.\n");
+    exit(1);
+}
+
+try {
+    $notifyWithoutDatabase([
+        'invoice' => ['invoiceId' => 'ORDER-MALFORMED', 'state' => 'Pending'],
+    ]);
+    fwrite(STDERR, "CoinPayments acknowledged a webhook without an event type.\n");
+    exit(1);
+} catch (\App\Exceptions\ApiException) {
+    // Expected: signed callbacks still need a non-empty event type.
 }
 
 expectSource('plugins-core/CoinPayments/Plugin.php', [
     '/api/v2/merchant/invoices',
     'X-CoinPayments-Signature',
     "'currency' => \$invoiceCurrencyId",
-    "eventType !== 'invoicecompleted'",
-    "invoiceState !== 'completed'",
+    'authenticateWebhookRequest',
+    "if (\$event === null)",
+    "'invoicecompleted' => 'completed'",
     'invoice.amount.currencyId',
     'invoice.amount.total',
 ]);

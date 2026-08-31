@@ -143,29 +143,50 @@ return new class extends Migration
                 $recordConfig = json_decode((string) $payment->config, true);
                 $recordConfig = is_array($recordConfig) ? $recordConfig : [];
                 $config = array_replace($legacyDefaults, $recordConfig);
-                $webhookUrl = $this->resolvedWebhookUrl(
-                    $config,
-                    (string) $payment->uuid,
-                    (string) ($payment->notify_domain ?? '')
-                );
-                $apiBase = rtrim(trim((string) ($config['coinpayments_api_base'] ?? 'https://a-api.coinpayments.net')), '/');
-                $maxAge = max(60, min(900, (int) ($config['coinpayments_webhook_max_age'] ?? 300)));
-
-                $snapshot = [
-                    'snapshot_version' => CoinPaymentsCheckoutSnapshot::VERSION,
-                    'payment_id' => (int) $payment->id,
-                    'payment_uuid' => (string) $payment->uuid,
-                    'coinpayments_client_id' => trim((string) ($config['coinpayments_client_id'] ?? '')),
-                    'coinpayments_client_secret' => trim((string) ($config['coinpayments_client_secret'] ?? '')),
-                    'coinpayments_invoice_currency_id' => trim((string) ($config['coinpayments_invoice_currency_id'] ?? '')),
-                    'coinpayments_payment_currency' => trim((string) ($config['coinpayments_payment_currency'] ?? '')),
-                    'coinpayments_cny_invoice_rate' => (string) ($config['coinpayments_cny_invoice_rate'] ?? ''),
-                    'coinpayments_api_base' => $apiBase,
-                    'coinpayments_webhook_url' => $webhookUrl,
-                    'coinpayments_webhook_max_age' => $maxAge,
-                ];
 
                 try {
+                    // Validate legacy JSON values before converting them. PHP
+                    // otherwise turns arrays into "Array" (or 1 for an int
+                    // cast), which can either abort the upgrade with an
+                    // ErrorException or create a misleading valid snapshot.
+                    $apiBase = $this->scalarConfigString(
+                        $config,
+                        'coinpayments_api_base',
+                        'https://a-api.coinpayments.net'
+                    );
+                    if ($apiBase === '') {
+                        $apiBase = 'https://a-api.coinpayments.net';
+                    }
+
+                    $snapshot = [
+                        'snapshot_version' => CoinPaymentsCheckoutSnapshot::VERSION,
+                        'payment_id' => (int) $payment->id,
+                        'payment_uuid' => (string) $payment->uuid,
+                        'coinpayments_client_id' => $this->scalarConfigString(
+                            $config,
+                            'coinpayments_client_id'
+                        ),
+                        'coinpayments_client_secret' => $this->scalarConfigString(
+                            $config,
+                            'coinpayments_client_secret'
+                        ),
+                        'coinpayments_invoice_currency_id' => $this->scalarConfigString(
+                            $config,
+                            'coinpayments_invoice_currency_id'
+                        ),
+                        'coinpayments_payment_currency' => $this->scalarConfigString(
+                            $config,
+                            'coinpayments_payment_currency'
+                        ),
+                        'coinpayments_cny_invoice_rate' => $this->positiveRate($config),
+                        'coinpayments_api_base' => rtrim($apiBase, '/'),
+                        'coinpayments_webhook_url' => $this->resolvedWebhookUrl(
+                            $config,
+                            (string) $payment->uuid,
+                            (string) ($payment->notify_domain ?? '')
+                        ),
+                        'coinpayments_webhook_max_age' => $this->webhookMaxAge($config),
+                    ];
                     $encrypted = CoinPaymentsCheckoutSnapshot::encrypt($snapshot);
                     $expectedAmount = CoinPaymentsCheckoutSnapshot::expectedAmount(
                         (int) $checkout->base_amount,
@@ -223,8 +244,18 @@ return new class extends Migration
                 $recordConfig = json_decode((string) $payment->config, true);
                 $recordConfig = is_array($recordConfig) ? $recordConfig : [];
                 foreach ($legacyPaymentDefaults as $key => $value) {
+                    if (!$this->isSafeLegacyDefault((string) $key, $value)) {
+                        continue;
+                    }
+
                     if ($key === 'coinpayments_client_secret') {
-                        if (trim((string) ($recordConfig[$key] ?? '')) === '') {
+                        $currentValue = $recordConfig[$key] ?? null;
+                        // Runtime versions <= 2.3 removed every non-scalar or
+                        // blank password override before applying the global
+                        // plugin secret. Mirror that exact fallback here so a
+                        // malformed row value cannot become authoritative just
+                        // before the effective global secret is removed.
+                        if (!$this->hasNonBlankScalarValue($currentValue)) {
                             $recordConfig[$key] = $value;
                         }
                     } elseif (!array_key_exists($key, $recordConfig)) {
@@ -270,7 +301,7 @@ return new class extends Migration
 
     private function resolvedWebhookUrl(array $config, string $uuid, string $notifyDomain): string
     {
-        $configured = trim((string) ($config['coinpayments_webhook_url'] ?? ''));
+        $configured = $this->scalarConfigString($config, 'coinpayments_webhook_url');
         if ($configured !== '') {
             return $configured;
         }
@@ -285,6 +316,75 @@ return new class extends Migration
         }
 
         return $url;
+    }
+
+    private function scalarConfigString(array $config, string $key, string $default = ''): string
+    {
+        $value = $config[$key] ?? $default;
+        if (!is_string($value) && !is_int($value)) {
+            throw new UnexpectedValueException("CoinPayments configuration {$key} must be text");
+        }
+
+        return trim((string) $value);
+    }
+
+    private function positiveRate(array $config): string
+    {
+        $value = $config['coinpayments_cny_invoice_rate'] ?? '';
+        if (!is_scalar($value) || is_bool($value) || !is_numeric($value) || (float) $value <= 0) {
+            throw new UnexpectedValueException('CoinPayments configuration coinpayments_cny_invoice_rate is invalid');
+        }
+
+        return trim((string) $value);
+    }
+
+    private function webhookMaxAge(array $config): int
+    {
+        $value = $config['coinpayments_webhook_max_age'] ?? 300;
+        if ($value === null || (is_string($value) && trim($value) === '')) {
+            $value = 300;
+        }
+        if (!is_string($value) && !is_int($value)) {
+            throw new UnexpectedValueException('CoinPayments configuration coinpayments_webhook_max_age must be text or an integer');
+        }
+
+        $maxAge = filter_var($value, FILTER_VALIDATE_INT);
+        if ($maxAge === false || $maxAge < 60 || $maxAge > 900) {
+            throw new UnexpectedValueException('CoinPayments configuration coinpayments_webhook_max_age must be between 60 and 900');
+        }
+
+        return (int) $maxAge;
+    }
+
+    private function hasNonBlankScalarValue(mixed $value): bool
+    {
+        return (is_scalar($value) || $value === null)
+            && trim((string) $value) !== '';
+    }
+
+    private function isSafeLegacyDefault(string $key, mixed $value): bool
+    {
+        if ($key === 'coinpayments_cny_invoice_rate') {
+            return is_scalar($value)
+                && !is_bool($value)
+                && is_numeric($value)
+                && (float) $value > 0;
+        }
+
+        if ($key === 'coinpayments_webhook_max_age') {
+            if ($value === null || (is_string($value) && trim($value) === '')) {
+                return true;
+            }
+            if (!is_string($value) && !is_int($value)) {
+                return false;
+            }
+
+            $maxAge = filter_var($value, FILTER_VALIDATE_INT);
+
+            return $maxAge !== false && $maxAge >= 60 && $maxAge <= 900;
+        }
+
+        return is_string($value) || is_int($value) || $value === null;
     }
 
     private function failIfActive(object $checkout, string $reason): void

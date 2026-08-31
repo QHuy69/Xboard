@@ -182,10 +182,22 @@ class PaymentService
         }
 
         $this->validateConfiguration();
-        $apiBase = trim((string) ($this->config['coinpayments_api_base'] ?? 'https://a-api.coinpayments.net'));
+        $apiBase = trim((string) ($this->config['coinpayments_api_base'] ?? ''));
+        if ($apiBase === '') {
+            $apiBase = 'https://a-api.coinpayments.net';
+        }
         $apiParts = parse_url($apiBase);
         if (!is_array($apiParts) || empty($apiParts['host'])) {
             throw new \UnexpectedValueException('CoinPayments API base URL is invalid.');
+        }
+
+        $maxAgeValue = $this->config['coinpayments_webhook_max_age'] ?? 300;
+        if ($maxAgeValue === null || (is_string($maxAgeValue) && trim($maxAgeValue) === '')) {
+            $maxAgeValue = 300;
+        }
+        $maxAge = filter_var($maxAgeValue, FILTER_VALIDATE_INT);
+        if ($maxAge === false || $maxAge < 60 || $maxAge > 900) {
+            throw new \UnexpectedValueException('CoinPayments webhook validity window is invalid.');
         }
 
         $snapshot = [
@@ -199,10 +211,7 @@ class PaymentService
             'coinpayments_cny_invoice_rate' => (string) ($this->config['coinpayments_cny_invoice_rate'] ?? ''),
             'coinpayments_api_base' => 'https://' . strtolower((string) $apiParts['host']),
             'coinpayments_webhook_url' => $this->resolvedNotifyUrl(),
-            'coinpayments_webhook_max_age' => max(
-                60,
-                min(900, (int) ($this->config['coinpayments_webhook_max_age'] ?? 300))
-            ),
+            'coinpayments_webhook_max_age' => (int) $maxAge,
         ];
         CoinPaymentsCheckoutSnapshot::assertValid($snapshot);
 
@@ -306,6 +315,29 @@ class PaymentService
             ));
         }
         $candidate->validatePaymentConfiguration();
+    }
+
+    /** Reject malformed submitted values without requiring a complete draft. */
+    public function validateConfigurationShape(?array $overrides = null): void
+    {
+        if (!method_exists($this->payment, 'validatePaymentConfigurationShape')) {
+            return;
+        }
+
+        $candidate = clone $this->payment;
+        if ($overrides !== null) {
+            $candidate->setConfig(array_replace(
+                $this->pluginPaymentDefaults,
+                array_intersect_key($this->config ?? [], [
+                    'id' => true,
+                    'uuid' => true,
+                    'enable' => true,
+                    'notify_domain' => true,
+                ]),
+                $overrides
+            ));
+        }
+        $candidate->validatePaymentConfigurationShape();
     }
 
     private function translateFormMetadata(mixed $value): string

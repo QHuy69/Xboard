@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Plugin as PluginModel;
 use App\Models\User;
+use App\Services\CoinPaymentsCheckoutSnapshot;
 use App\Services\PaymentService;
 use App\Services\Plugin\HookManager;
 use App\Services\Plugin\PluginManager;
@@ -243,6 +244,197 @@ class CoinPaymentsAvailabilityTest extends TestCase
         $this->assertSame('CoinPayments stable', $payment->name);
         $this->assertSame($originalConfig, $payment->config);
         (new PaymentService('CoinPayments', $payment->id))->validateConfiguration();
+    }
+
+    public function test_every_non_scalar_coinpayments_field_is_rejected(): void
+    {
+        foreach ([
+            'coinpayments_client_id',
+            'coinpayments_client_secret',
+            'coinpayments_invoice_currency_id',
+            'coinpayments_payment_currency',
+            'coinpayments_cny_invoice_rate',
+            'coinpayments_api_base',
+            'coinpayments_webhook_url',
+            'coinpayments_webhook_max_age',
+        ] as $field) {
+            $payment = $this->makePayment([
+                'config' => array_replace($this->validConfig(), [$field => []]),
+            ]);
+
+            try {
+                (new PaymentService('CoinPayments', $payment->id))->validateConfiguration();
+                $this->fail("CoinPayments accepted a non-scalar {$field}.");
+            } catch (\InvalidArgumentException) {
+                // Expected: no configured field may silently fall back after
+                // receiving a crafted array/object value.
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_malformed_draft_is_rejected_but_incomplete_draft_can_be_saved_disabled(): void
+    {
+        $controller = new AdminPaymentController();
+        $malformed = $controller->save(Request::create(
+            '/api/v2/admin/payment/save',
+            'POST',
+            [
+                'name' => 'Malformed CoinPayments draft',
+                'icon' => 'CoinPayments',
+                'payment' => 'CoinPayments',
+                'config' => ['coinpayments_payment_currency' => []],
+            ]
+        ));
+
+        $this->assertSame(400, $malformed->getStatusCode());
+        $this->assertDatabaseMissing('v2_payment', ['name' => 'Malformed CoinPayments draft']);
+
+        $incomplete = $controller->save(Request::create(
+            '/api/v2/admin/payment/save',
+            'POST',
+            [
+                'name' => 'Incomplete CoinPayments draft',
+                'icon' => 'CoinPayments',
+                'payment' => 'CoinPayments',
+                'config' => ['coinpayments_client_id' => ''],
+            ]
+        ));
+
+        $this->assertSame(200, $incomplete->getStatusCode());
+        $draft = Payment::query()->where('name', 'Incomplete CoinPayments draft')->firstOrFail();
+        $this->assertFalse((bool) $draft->enable);
+    }
+
+    public function test_new_disabled_draft_rejects_non_scalar_client_secret(): void
+    {
+        $response = (new AdminPaymentController())->save(Request::create(
+            '/api/v2/admin/payment/save',
+            'POST',
+            [
+                'name' => 'Malformed CoinPayments secret draft',
+                'icon' => 'CoinPayments',
+                'payment' => 'CoinPayments',
+                'config' => ['coinpayments_client_secret' => []],
+            ]
+        ));
+
+        $this->assertSame(400, $response->getStatusCode());
+        $this->assertDatabaseMissing('v2_payment', [
+            'name' => 'Malformed CoinPayments secret draft',
+        ]);
+    }
+
+    public function test_enabled_update_rejects_non_scalar_client_secret_before_preservation(): void
+    {
+        $payment = $this->makePayment([
+            'name' => 'CoinPayments secret stable',
+            'enable' => true,
+        ]);
+        $originalConfig = $payment->config;
+
+        $response = (new AdminPaymentController())->save(Request::create(
+            '/api/v2/admin/payment/save',
+            'POST',
+            [
+                'id' => $payment->id,
+                'name' => 'CoinPayments malformed secret update',
+                'icon' => 'CoinPayments',
+                'payment' => 'CoinPayments',
+                'config' => array_replace($this->validConfig(), [
+                    'coinpayments_client_secret' => [],
+                ]),
+            ]
+        ));
+
+        $this->assertSame(400, $response->getStatusCode());
+        $payment->refresh();
+        $this->assertSame('CoinPayments secret stable', $payment->name);
+        $this->assertSame($originalConfig, $payment->config);
+    }
+
+    public function test_enabled_update_blank_client_secret_preserves_saved_value(): void
+    {
+        $payment = $this->makePayment([
+            'enable' => true,
+            'config' => array_replace($this->validConfig(), [
+                'coinpayments_client_secret' => 'saved-payment-secret',
+            ]),
+        ]);
+
+        $response = (new AdminPaymentController())->save(Request::create(
+            '/api/v2/admin/payment/save',
+            'POST',
+            [
+                'id' => $payment->id,
+                'name' => 'CoinPayments blank secret update',
+                'icon' => 'CoinPayments',
+                'payment' => 'CoinPayments',
+                'config' => array_replace($this->validConfig(), [
+                    'coinpayments_client_secret' => '',
+                ]),
+            ]
+        ));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $payment->refresh();
+        $this->assertSame('CoinPayments blank secret update', $payment->name);
+        $this->assertSame('saved-payment-secret', $payment->config['coinpayments_client_secret'] ?? null);
+    }
+
+    public function test_webhook_window_blank_uses_default_and_boundaries_are_strict(): void
+    {
+        $blank = $this->makePayment([
+            'config' => array_replace($this->validConfig(), [
+                'coinpayments_webhook_max_age' => '',
+            ]),
+        ]);
+        $snapshot = (new PaymentService('CoinPayments', $blank->id))
+            ->coinPaymentsConfigurationSnapshot();
+        $this->assertSame(300, $snapshot['coinpayments_webhook_max_age']);
+
+        foreach ([59, 901, '300.5', 'not-a-number'] as $invalidWindow) {
+            $payment = $this->makePayment([
+                'config' => array_replace($this->validConfig(), [
+                    'coinpayments_webhook_max_age' => $invalidWindow,
+                ]),
+            ]);
+            try {
+                (new PaymentService('CoinPayments', $payment->id))->validateConfiguration();
+                $this->fail('CoinPayments accepted an invalid webhook validity window.');
+            } catch (\InvalidArgumentException) {
+                // Expected.
+            }
+        }
+
+        foreach ([60, '900'] as $validWindow) {
+            $payment = $this->makePayment([
+                'config' => array_replace($this->validConfig(), [
+                    'coinpayments_webhook_max_age' => $validWindow,
+                ]),
+            ]);
+            (new PaymentService('CoinPayments', $payment->id))->validateConfiguration();
+        }
+    }
+
+    public function test_snapshot_type_guards_reject_malformed_internal_values(): void
+    {
+        $payment = $this->makePayment();
+        $validSnapshot = (new PaymentService('CoinPayments', $payment->id))
+            ->coinPaymentsConfigurationSnapshot();
+
+        foreach (['snapshot_version', 'payment_uuid', 'coinpayments_payment_currency'] as $field) {
+            try {
+                CoinPaymentsCheckoutSnapshot::assertValid(array_replace(
+                    $validSnapshot,
+                    [$field => []]
+                ));
+                $this->fail("CoinPayments snapshot accepted malformed {$field}.");
+            } catch (\UnexpectedValueException) {
+                // Expected.
+                $this->addToAssertionCount(1);
+            }
+        }
     }
 
     public function test_incomplete_legacy_record_can_still_be_disabled(): void
