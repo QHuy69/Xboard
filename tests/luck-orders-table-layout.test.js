@@ -26,8 +26,8 @@ assert.match(
 );
 assert.match(
   css,
-  /@media \(min-width:\s*769px\)[\s\S]*?\.orders-table\[data-v-95571e5b\][\s\S]*?min-width:\s*1060px\s*!important/,
-  'tablet and desktop ledgers must keep a legible seven-column minimum width'
+  /@media \(min-width:\s*769px\)[\s\S]*?\.orders-table\[data-v-95571e5b\][\s\S]*?min-width:\s*1180px\s*!important/,
+  'tablet and desktop ledgers must reserve enough width for all seven columns and the three-button action group'
 );
 
 const desktopGridRules = css.match(
@@ -56,6 +56,16 @@ assert.match(
 );
 assert.match(
   css,
+  /\.actions\[data-v-95571e5b\][\s\S]*?min-width:\s*220px\s*!important[\s\S]*?flex-wrap:\s*nowrap\s*!important/,
+  'the action column must keep detail, payment and cancel buttons on one non-overlapping row'
+);
+assert.match(
+  css,
+  /\.actions\[data-v-95571e5b\]\s*>\s*\.btn-base\[data-v-95571e5b\][\s\S]*?min-width:\s*max-content\s*!important[\s\S]*?white-space:\s*nowrap\s*!important/,
+  'localized action labels must keep their intrinsic width instead of being clipped'
+);
+assert.match(
+  css,
   /@media \(max-width:\s*768px\)[\s\S]*?\.orders-table\[data-v-95571e5b\][\s\S]*?min-width:\s*0\s*!important/,
   'phones and foldables must reset the desktop minimum width for card layout'
 );
@@ -72,7 +82,7 @@ const viewportMatrix = [
   { name: 'small phone', width: 320, mode: 'cards' }
 ];
 viewportMatrix.forEach(({ name, width, mode }) => {
-  const resolvedMode = width <= 768 ? 'cards' : (width < 1060 ? 'scrollable-grid' : 'grid');
+  const resolvedMode = width <= 768 ? 'cards' : (width < 1180 ? 'scrollable-grid' : 'grid');
   assert.strictEqual(resolvedMode, mode, `${name} must resolve to the expected order layout`);
 });
 

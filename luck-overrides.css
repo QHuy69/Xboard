@@ -276,12 +276,12 @@ button {
 @media (min-width: 769px) {
   .orders-table[data-v-95571e5b] {
     width: 100% !important;
-    min-width: 1060px !important;
+    min-width: 1180px !important;
   }
 
   .orders-table[data-v-95571e5b] .table-header[data-v-95571e5b],
   .orders-table[data-v-95571e5b] .table-row[data-v-95571e5b] {
-    grid-template-columns: 72px 230px minmax(170px, 1fr) 130px 112px 134px 108px !important;
+    grid-template-columns: 72px 220px minmax(170px, 1fr) 120px 112px 128px 220px !important;
     gap: 12px !important;
     padding-inline: 16px !important;
   }
@@ -327,6 +327,21 @@ button {
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
+  }
+
+  .orders-table[data-v-95571e5b] .actions[data-v-95571e5b] {
+    box-sizing: border-box !important;
+    min-width: 220px !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  .orders-table[data-v-95571e5b] .actions[data-v-95571e5b] > .btn-base[data-v-95571e5b] {
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
+    padding-inline: 12px !important;
+    white-space: nowrap !important;
   }
 
   .orders-table[data-v-95571e5b] .order-info[data-v-95571e5b],
