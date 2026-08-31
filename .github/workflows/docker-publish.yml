@@ -62,10 +62,15 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Resolve Composer cache directory
+        id: composer-cache
+        shell: bash
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
       - name: Cache Composer packages
         uses: actions/cache@v4
         with:
-          path: ~/.composer/cache/files
+          path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
           restore-keys: |
             composer-${{ runner.os }}-
@@ -139,22 +144,33 @@ jobs:
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "version=$(date -u '+%Y%m%d')-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Extract metadata
+      - name: Extract unique smoke-candidate metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: latest=false
           tags: |
-            type=ref,event=branch
-            type=sha,format=short,prefix=,enable=true
-            type=raw,value=new,enable=${{ github.ref == 'refs/heads/master' }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
-            type=raw,value=${{ steps.get_version.outputs.version }}
+            type=raw,value=candidate-${{ github.run_id }}-${{ github.run_attempt }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Build and push
+      - name: Extract tested release tags
+        id: release-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: latest=false
+          tags: |
+            type=sha,format=short,prefix=,enable=true
+            type=sha,format=long,prefix=,enable=true
+            type=raw,value=${{ steps.get_version.outputs.version }}
+            type=ref,event=branch
+            type=raw,value=new,enable=${{ github.ref == 'refs/heads/master' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+
+      - name: Build and push unique smoke candidate
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
@@ -179,8 +195,36 @@ jobs:
       - name: Smoke test published image
         shell: bash
         run: |
+          set -Eeuo pipefail
           # Docker repository names are lowercase even when github.repository
           # preserves the owner's display casing.
-          SMOKE_IMAGE="$(printf '%s' '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.get_version.outputs.short_sha }}' | tr '[:upper:]' '[:lower:]')"
+          SMOKE_IMAGE="$(printf '%s' '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:candidate-${{ github.run_id }}-${{ github.run_attempt }}' | tr '[:upper:]' '[:lower:]')"
           bash .docker/ci-smoke.sh "$SMOKE_IMAGE"
+
+      - name: Publish tested release tags
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.build-and-push.outputs.digest }}
+          RELEASE_TAGS: ${{ steps.release-meta.outputs.tags }}
+        run: |
+          set -Eeuo pipefail
+          IMAGE_REF="$(printf '%s' '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')"
+          SMOKE_IMAGE="${IMAGE_REF}:candidate-${{ github.run_id }}-${{ github.run_attempt }}"
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          SMOKED_DIGEST="$(docker buildx imagetools inspect "$SMOKE_IMAGE" --format '{{json .Manifest}}' | jq -er '.digest')"
+          test "$SMOKED_DIGEST" = "$IMAGE_DIGEST"
+          release_tag_count=0
+          while IFS= read -r release_tag; do
+            [ -n "$release_tag" ] || continue
+            release_tag="$(printf '%s' "$release_tag" | tr '[:upper:]' '[:lower:]')"
+            docker buildx imagetools create \
+              --tag "$release_tag" \
+              "${IMAGE_REF}@${IMAGE_DIGEST}"
+            release_tag_count=$((release_tag_count + 1))
+          done <<< "$RELEASE_TAGS"
+          expected_release_tag_count=4
+          if [ '${{ github.ref }}' = 'refs/heads/master' ]; then
+            expected_release_tag_count=6
+          fi
+          test "$release_tag_count" -eq "$expected_release_tag_count"
 

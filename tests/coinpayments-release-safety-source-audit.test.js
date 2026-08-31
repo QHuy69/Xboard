@@ -49,5 +49,33 @@ assert(
     && deploy.includes('Rollback database integrity verification failed'),
   'Production rollback does not verify the captured image, health, endpoint, and restored database.',
 );
+assert(
+  deploy.includes('Digest deployments require the intended Git revision as the third argument.')
+    && deploy.includes('Digest deployments require the complete 40-character Git revision.')
+    && deploy.includes("pulled_revision=\"$(docker image inspect")
+    && deploy.includes('Pulled image has no valid immutable revision label')
+    && deploy.includes('Image revision mismatch: expected $expected_revision_prefix'),
+  'Digest deployment is not cryptographically bound to the intended parent Git revision.',
+);
+assert(
+  deploy.includes('exec 9>".docker/deploy-production.lock"')
+    && deploy.includes('flock -n 9')
+    && deploy.includes('Another Xboard deployment is already running'),
+  'Production deployment is not serialized against concurrent database and persistent-state mutation.',
+);
+assert(
+  deploy.includes('existing_container="$(docker ps -a')
+    && deploy.includes('refusing a deployment without a live rollback baseline'),
+  'Production deployment can silently proceed from a stopped container without a verified rollback baseline.',
+);
+assert(
+  deploy.includes('create_persistent_backup')
+    && deploy.includes('tar --numeric-owner --acls --xattrs -cpf')
+    && deploy.includes('test "$(stat -c \'%a\' "$persistent_backup_path")" = 600')
+    && deploy.includes('restore_persistent_backup')
+    && deploy.includes('deploy-failed-${timestamp}')
+    && deploy.includes('Persistent configuration restored'),
+  'Production rollback does not preserve and restore .env, plugin, and theme state.',
+);
 
 console.log('CoinPayments release safety source audit passed.');

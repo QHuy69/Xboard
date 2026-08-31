@@ -195,7 +195,7 @@ assert_http_status() {
   fi
 }
 
-theme_asset_url="http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=26"
+theme_asset_url="http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=27"
 assert_http_status 200 "Theme asset without browser metadata" "$theme_asset_url"
 assert_http_status 200 "Same-origin theme asset" \
   --header 'Host: panel.example.test' \
@@ -270,9 +270,12 @@ for luck_dashboard_template in \
   docker exec "$container_name" test -f "$luck_dashboard_template"
   for dashboard_asset_marker in \
     'id="luck-overrides-stylesheet"' \
-    'luck-overrides.css?v=26' \
+    'luck-overrides.css?v=27' \
     'BBbuoBq5-fresh.js?v=63' \
     'i18n-v18.js?v=61' \
+    "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
+    "target.searchParams.set('platform', platform);" \
+    "target.hash = 'platform-' + platform;" \
     'data-luck-icon="language"'; do
     docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template" || {
       echo "Packaged Luck dashboard is missing marker $dashboard_asset_marker in $luck_dashboard_template" >&2
@@ -288,6 +291,51 @@ for luck_dashboard_template in \
     exit 1
   fi
 done
+for resource_controller_marker in \
+  "\$request->query('platform', '')" \
+  "\$items->where('platform', \$selectedPlatform)" \
+  "'empty_platform' =>"; do
+  docker exec "$container_name" grep -aFq "$resource_controller_marker" \
+    '/www/app/Http/Controllers/ResourcePortalController.php' || {
+      echo "Packaged Resources controller is missing marker $resource_controller_marker" >&2
+      exit 1
+    }
+done
+for resource_view_marker in \
+  'data-selected-platform="{{ $selectedPlatform }}"' \
+  "target.scrollIntoView({ block: 'start' });" \
+  "window.addEventListener('pageshow', reveal);"; do
+  docker exec "$container_name" grep -aFq "$resource_view_marker" \
+    '/www/resources/views/resources/portal.blade.php' || {
+      echo "Packaged Resources portal is missing marker $resource_view_marker" >&2
+      exit 1
+    }
+done
+
+resources_origin="http://127.0.0.1:${host_port}/"
+for resource_platform in windows macos linux android ios; do
+  resource_html="$(curl --fail --silent --show-error \
+    --header 'Host: resources.zaoguang-vpn.com' \
+    "${resources_origin}?platform=${resource_platform}&lang=en-US")"
+  grep -Fq '<html lang="en-US" dir="ltr">' <<<"$resource_html"
+  grep -Fq "id=\"platform-${resource_platform}\" data-selected-platform=\"${resource_platform}\"" <<<"$resource_html" || {
+    echo "Resources runtime did not select ${resource_platform}." >&2
+    exit 1
+  }
+done
+resource_rtl_html="$(curl --fail --silent --show-error \
+  --header 'Host: resources.zaoguang-vpn.com' \
+  "${resources_origin}?platform=linux&lang=fa-IR")"
+grep -Fq '<html lang="fa-IR" dir="rtl">' <<<"$resource_rtl_html"
+resource_invalid_html="$(curl --fail --silent --show-error \
+  --header 'Host: resources.zaoguang-vpn.com' \
+  "${resources_origin}?platform=freebsd&lang=en-US")"
+grep -Fq 'id="apps" data-selected-platform=""' <<<"$resource_invalid_html" || {
+  echo "Resources runtime accepted an unsupported platform." >&2
+  exit 1
+}
+echo "[smoke] Resources domain routing, five-platform filtering and locale direction passed"
+
 verify_packaged_luck_asset() {
   local public_file="$1"
   local storage_file="$2"
@@ -310,7 +358,7 @@ verify_packaged_luck_asset \
   '/www/public/theme/Luck/assets/luck-overrides.css' \
   '/www/storage/theme/Luck/assets/luck-overrides.css' \
   '/tmp/luck-custom/luck-overrides.css' \
-  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=26"
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=27"
 verify_packaged_luck_asset \
   '/www/public/theme/Luck/i18n-v18.js' \
   '/www/storage/theme/Luck/i18n-v18.js' \
@@ -494,6 +542,8 @@ admin_js_path="${admin_js_paths[0]}"
 admin_js_file="/www/public${admin_js_path%%\?*}"
 docker exec "$container_name" grep -aFq 'role:"img","aria-label":"Việt Nam"' "$admin_js_file"
 docker exec "$container_name" grep -aFq 'viewBox:"0 0 30 20"' "$admin_js_file"
+docker exec "$container_name" grep -aFq 'name:"is_reseller"' "$admin_js_file"
+docker exec "$container_name" grep -aFq 'edit.form.is_reseller' "$admin_js_file"
 admin_css_marker_found=false
 for admin_css_path in "${admin_css_paths[@]}"; do
   admin_css_file="/www/public${admin_css_path%%\?*}"
@@ -567,12 +617,20 @@ migration_status="$(docker exec "$container_name" php /www/artisan migrate:statu
 grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status"
 grep -q '2026_08_30_000004_create_order_payment_checkouts.*Ran' <<<"$migration_status"
 grep -q '2026_08_31_000005_add_coinpayments_checkout_snapshot.*Ran' <<<"$migration_status"
+grep -q '2026_08_31_120000_add_is_reseller_to_users.*Ran' <<<"$migration_status"
+grep -q '2026_09_01_000001_add_unique_telegram_id_to_users.*Ran' <<<"$migration_status"
 if grep -q 'Pending' <<<"$migration_status"; then
   echo "One or more migrations remain pending." >&2
   printf '%s\n' "$migration_status" >&2
   exit 1
 fi
 verify_coinpayments_checkout_schema "$container_name"
+telegram_plugin_state="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite \
+  "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")"
+if [ "$telegram_plugin_state" != '2.2.0:1' ]; then
+  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.2.0:1." >&2
+  exit 1
+fi
 echo "[smoke] Required migrations passed with no pending migration"
 
 integrity="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')"

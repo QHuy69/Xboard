@@ -4,12 +4,21 @@ const fs = require('fs');
 const source = fs.readFileSync('app/Services/TicketService.php', 'utf8');
 
 for (const errorKey of [
-  'Ticket does not exist',
+  'Ticket does not exist or has been closed',
   'Ticket reply failed',
   'There are other unresolved tickets',
   'Failed to open ticket'
 ]) {
   assert(source.includes(`__('${errorKey}')`), `Ticket error does not follow the request locale: ${errorKey}`);
+}
+
+for (const locale of ['vi-VN', 'en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-RU']) {
+  const catalog = JSON.parse(fs.readFileSync(`resources/lang/${locale}.json`, 'utf8'));
+  assert(
+    typeof catalog['Ticket does not exist or has been closed'] === 'string'
+      && catalog['Ticket does not exist or has been closed'].trim(),
+    `${locale} is missing the closed-ticket reply error.`
+  );
 }
 
 for (const localeBranch of ['en', 'zh-TW', 'zh-CN', 'ja', 'ko', 'fa', 'ru', 'vi']) {

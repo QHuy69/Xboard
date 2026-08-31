@@ -67,6 +67,8 @@ includesAll('luck-overrides.css', [
 includesAll('public/assets/admin/assets/index-CEIYH7i8.js', [
   'name:"locale"',
   'edit.form.language',
+  'name:"is_reseller"',
+  'edit.form.is_reseller',
   'crisp_website_id',
   'messenger_page_username',
   'case"string":case"password"',

@@ -7,6 +7,8 @@ const localeDirectory = 'plugins-core/Telegram/locales';
 const expectedLocales = ['vi', 'en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'fa', 'ru'];
 const expectedSections = ['messages', 'commands', 'periods'];
 const plugin = fs.readFileSync(pluginFile, 'utf8');
+const resellerService = fs.readFileSync('app/Services/TelegramResellerService.php', 'utf8');
+const telegramService = fs.readFileSync('app/Services/TelegramService.php', 'utf8');
 const catalogs = Object.fromEntries(expectedLocales.map((locale) => [
   locale,
   JSON.parse(fs.readFileSync(path.join(localeDirectory, `${locale}.json`), 'utf8'))
@@ -114,8 +116,10 @@ assert(plugin.includes("admin_setting('telegram_node_report_locale', 'vi')"),
   'Scheduled node reports do not remember the group locale');
 assert(plugin.includes("admin_setting('telegram_database_backup_locale', 'vi')"),
   'Scheduled database backups do not remember the destination locale');
-assert(plugin.includes('$user->locale = $this->canonicalUserLocale($this->localeForMessage($msg))'),
-  'Telegram reseller accounts can still persist non-canonical locale identifiers');
+assert(plugin.includes('$this->canonicalUserLocale($locale),')
+  && resellerService.includes('$user->locale = $locale;')
+  && resellerService.indexOf('$user->locale = $locale;') < resellerService.indexOf('$user->saveOrFail();'),
+  'Telegram reseller accounts can still persist non-canonical locale identifiers outside the creation transaction');
 for (const canonicalLocale of ['vi-VN', 'en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-RU']) {
   assert(plugin.includes(`'${canonicalLocale}'`), `Telegram canonical user-locale map is missing ${canonicalLocale}`);
 }
@@ -125,5 +129,11 @@ assert(!plugin.includes("foreach (['vi-VN', 'en-US', 'zh-CN'] as $locale)"),
   'Telegram reply buttons are still limited to the old three-locale list');
 assert(!plugin.includes("'zh' => sprintf"), 'Payment notifications still contain a hardcoded Chinese branch');
 assert(!plugin.includes("'vi' => \"📮"), 'Ticket notifications still contain hardcoded locale branches');
+assert(telegramService.includes('preg_replace_callback('),
+  'Telegram Markdown transport must escape only raw underscores');
+assert(telegramService.includes("'/(?<!\\\\\\\\)_/'"),
+  'Telegram Markdown transport must preserve caller-escaped underscores');
+assert(!telegramService.includes("str_replace('_', '\\_', $text)"),
+  'Telegram Markdown transport still double-escapes already safe underscores');
 
 console.log(`Telegram bot covers ${expectedLocales.length} locales, ${Object.keys(reference.messages).length} messages, ${Object.keys(reference.commands).length} commands and ${Object.keys(reference.periods).length} billing periods with placeholder parity.`);

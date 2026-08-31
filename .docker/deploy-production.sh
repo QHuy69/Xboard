@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-image="${1:?usage: deploy-production.sh <immutable-image-tag-or-digest>}"
+image="${1:?usage: deploy-production.sh <immutable-image-tag-or-digest> [compose-file] [expected-git-revision]}"
 compose_file="${2:-compose.production.yaml}"
+expected_revision_prefix="${3:-}"
 
 if [[ ! "$image" =~ @sha256:[0-9a-f]{64}$ && ! "$image" =~ :[0-9a-f]{7,40}$ ]]; then
   echo "Refusing mutable image reference: $image" >&2
@@ -10,16 +11,89 @@ if [[ ! "$image" =~ @sha256:[0-9a-f]{64}$ && ! "$image" =~ :[0-9a-f]{7,40}$ ]]; 
   exit 2
 fi
 
+if [ -z "$expected_revision_prefix" ] && [[ "$image" =~ :([0-9a-f]{7,40})$ ]]; then
+  expected_revision_prefix="${BASH_REMATCH[1]}"
+fi
+if [ -n "$expected_revision_prefix" ] && ! [[ "$expected_revision_prefix" =~ ^[0-9a-f]{7,40}$ ]]; then
+  echo "Invalid expected Git revision: $expected_revision_prefix" >&2
+  exit 2
+fi
+if [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] && [ -z "$expected_revision_prefix" ]; then
+  echo "Digest deployments require the intended Git revision as the third argument." >&2
+  exit 2
+fi
+if [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] && ! [[ "$expected_revision_prefix" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Digest deployments require the complete 40-character Git revision." >&2
+  exit 2
+fi
+
 test -f "$compose_file"
+mkdir -p .docker
+exec 9>".docker/deploy-production.lock"
+if ! flock -n 9; then
+  echo "Another Xboard deployment is already running; refusing concurrent mutation." >&2
+  exit 75
+fi
 current_container="$(docker ps \
   --filter 'label=com.docker.compose.project=xboard' \
   --filter 'label=com.docker.compose.service=xboard' \
   --format '{{.ID}}' | head -n 1)"
+existing_container="$(docker ps -a \
+  --filter 'label=com.docker.compose.project=xboard' \
+  --filter 'label=com.docker.compose.service=xboard' \
+  --format '{{.ID}}' | head -n 1)"
+if [ -n "$existing_container" ] && [ -z "$current_container" ]; then
+  echo "An existing Xboard container is stopped; refusing a deployment without a live rollback baseline." >&2
+  exit 1
+fi
 previous_image=""
 previous_image_id=""
 rollback_image=""
 backup_name=""
 timestamp=""
+persistent_backup_path=""
+failed_state_dir=""
+
+create_persistent_backup() {
+  local member
+  umask 077
+  test -f .env
+  test -d storage/theme
+  test -d plugins
+  mkdir -p .docker/deploy-backups
+  persistent_backup_path=".docker/deploy-backups/persistent-${timestamp}.tar"
+  test ! -e "$persistent_backup_path"
+  tar --numeric-owner --acls --xattrs -cpf "$persistent_backup_path" -- \
+    .env storage/theme plugins "$compose_file"
+  test "$(stat -c '%a' "$persistent_backup_path")" = 600
+  for member in .env storage/theme plugins; do
+    tar -tf "$persistent_backup_path" | grep -Eq "^${member}(/|$)" || {
+      echo "Persistent backup is missing $member." >&2
+      return 1
+    }
+  done
+  echo "Persistent configuration backup created: $persistent_backup_path"
+}
+
+restore_persistent_backup() {
+  test -n "$persistent_backup_path"
+  test -f "$persistent_backup_path"
+  failed_state_dir=".docker/deploy-failed-${timestamp}"
+  test ! -e "$failed_state_dir"
+  mkdir -m 700 "$failed_state_dir"
+
+  # Preserve the failed release for diagnosis; no persistent data is deleted.
+  test -f .env && mv .env "$failed_state_dir/env"
+  test -d storage/theme && mv storage/theme "$failed_state_dir/theme"
+  test -d plugins && mv plugins "$failed_state_dir/plugins"
+
+  tar --numeric-owner --acls --xattrs -xpf "$persistent_backup_path" -- \
+    .env storage/theme plugins
+  test -f .env
+  test -d storage/theme
+  test -d plugins
+  echo "Persistent configuration restored; failed state retained at $failed_state_dir" >&2
+}
 
 verify_coinpayments_checkout_schema() {
   local target_container="$1"
@@ -104,6 +178,7 @@ verify_coinpayments_checkout_schema() {
 
 if [ -n "$current_container" ]; then
   timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
+  create_persistent_backup
   previous_image_id="$(docker inspect --format '{{.Image}}' "$current_container")"
   rollback_image="xboard-local-rollback:${timestamp}"
   docker image tag "$previous_image_id" "$rollback_image"
@@ -131,6 +206,8 @@ rollback() {
 
   echo "Stopping the failed release before restoring the pre-deploy database backup." >&2
   XBOARD_IMAGE="$image" docker compose -f "$compose_file" stop -t 90 xboard
+
+  restore_persistent_backup
 
   XBOARD_IMAGE="$previous_image" docker compose -f "$compose_file" run --rm --no-deps \
     --entrypoint /bin/sh \
@@ -198,7 +275,7 @@ post_deploy_checks() {
   local container_id="$1"
   local expected_revision_prefix="$2"
   local started_at="$3"
-  local health actual asset_revision_short migration_status integrity dashboard_html override_css luck_entry_js node_route_asset node_route_js dashboard_icon_marker dashboard_platform_glyph orders_route_asset traffic_route_asset invite_route_asset portable_route_asset orders_route_js traffic_route_js invite_route_js invite_icon_marker route_platform_glyph admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found admin_favicon_svg_path admin_favicon_png_path admin_favicon_svg admin_favicon_url last_heartbeat
+  local health actual asset_revision_short migration_status integrity dashboard_html override_css luck_entry_js node_route_asset node_route_js dashboard_icon_marker dashboard_platform_glyph orders_route_asset traffic_route_asset invite_route_asset portable_route_asset orders_route_js traffic_route_js invite_route_js invite_icon_marker route_platform_glyph admin_html admin_js_path admin_css_path admin_asset_path admin_asset_file admin_asset_version admin_js_file admin_css_file admin_css_marker_found admin_favicon_svg_path admin_favicon_png_path admin_favicon_svg admin_favicon_url last_heartbeat telegram_plugin_state
   local -a admin_js_paths admin_css_paths admin_locale_paths
 
   health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$container_id")" || return 1
@@ -226,8 +303,8 @@ post_deploy_checks() {
   curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
   dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
   admin_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006)" || return 1
-  grep -q 'luck-overrides.css?v=26' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck CSS v24." >&2
+  grep -q 'luck-overrides.css?v=27' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck CSS v27." >&2
     return 1
   }
   if grep -Fq 'document.body.appendChild(overlay)' <<<"$dashboard_html"; then
@@ -242,8 +319,58 @@ post_deploy_checks() {
     echo "The deployed dashboard did not publish Luck i18n v61." >&2
     return 1
   }
+  for dashboard_platform_marker in \
+    "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
+    "target.searchParams.set('platform', platform);" \
+    "target.hash = 'platform-' + platform;"; do
+    grep -Fq "$dashboard_platform_marker" <<<"$dashboard_html" || {
+      echo "The deployed Luck dashboard is missing platform marker: $dashboard_platform_marker" >&2
+      return 1
+    }
+  done
+  for resource_controller_marker in \
+    "\$request->query('platform', '')" \
+    "\$items->where('platform', \$selectedPlatform)" \
+    "'empty_platform' =>"; do
+    docker exec "$container_id" grep -aFq "$resource_controller_marker" \
+      '/www/app/Http/Controllers/ResourcePortalController.php' || {
+        echo "The deployed Resources controller is missing marker: $resource_controller_marker" >&2
+        return 1
+      }
+  done
+  for resource_view_marker in \
+    'data-selected-platform="{{ $selectedPlatform }}"' \
+    "target.scrollIntoView({ block: 'start' });" \
+    "window.addEventListener('pageshow', reveal);"; do
+    docker exec "$container_id" grep -aFq "$resource_view_marker" \
+      '/www/resources/views/resources/portal.blade.php' || {
+        echo "The deployed Resources portal is missing marker: $resource_view_marker" >&2
+        return 1
+      }
+  done
+  for resource_platform in windows macos linux android ios; do
+    resource_html="$(curl --fail --silent --show-error \
+      --header 'Host: resources.zaoguang-vpn.com' \
+      "http://127.0.0.1:7001/?platform=${resource_platform}&lang=en-US")" || return 1
+    grep -Fq '<html lang="en-US" dir="ltr">' <<<"$resource_html" || return 1
+    grep -Fq "id=\"platform-${resource_platform}\" data-selected-platform=\"${resource_platform}\"" <<<"$resource_html" || {
+      echo "The deployed Resources runtime did not select ${resource_platform}." >&2
+      return 1
+    }
+  done
+  resource_rtl_html="$(curl --fail --silent --show-error \
+    --header 'Host: resources.zaoguang-vpn.com' \
+    'http://127.0.0.1:7001/?platform=linux&lang=fa-IR')" || return 1
+  grep -Fq '<html lang="fa-IR" dir="rtl">' <<<"$resource_rtl_html" || return 1
+  resource_invalid_html="$(curl --fail --silent --show-error \
+    --header 'Host: resources.zaoguang-vpn.com' \
+    'http://127.0.0.1:7001/?platform=freebsd&lang=en-US')" || return 1
+  grep -Fq 'id="apps" data-selected-platform=""' <<<"$resource_invalid_html" || {
+    echo "The deployed Resources runtime accepted an unsupported platform." >&2
+    return 1
+  }
   for asset_url in \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=26' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=27' \
     'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
@@ -255,7 +382,7 @@ post_deploy_checks() {
   done
 
   override_css="$(curl --fail --silent --show-error \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=26')" || return 1
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=27')" || return 1
   grep -Fq '.subscription-dialog-overlay' <<<"$override_css" || {
     echo "The deployed Luck CSS is missing the subscription viewport rule." >&2
     return 1
@@ -453,6 +580,11 @@ post_deploy_checks() {
     return 1
   }
   docker exec "$container_id" grep -aFq 'viewBox:"0 0 30 20"' "$admin_js_file" || return 1
+  docker exec "$container_id" grep -aFq 'name:"is_reseller"' "$admin_js_file" || {
+    echo "The deployed admin bundle is missing the reseller role switch." >&2
+    return 1
+  }
+  docker exec "$container_id" grep -aFq 'edit.form.is_reseller' "$admin_js_file" || return 1
   admin_css_marker_found=false
   for admin_css_path in "${admin_css_paths[@]}"; do
     admin_css_file="/www/public${admin_css_path%%\?*}"
@@ -488,12 +620,23 @@ post_deploy_checks() {
   grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_08_30_000004_create_order_payment_checkouts.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_08_31_000005_add_coinpayments_checkout_snapshot.*Ran' <<<"$migration_status" || return 1
+  grep -q '2026_08_31_120000_add_is_reseller_to_users.*Ran' <<<"$migration_status" || return 1
+  grep -q '2026_09_01_000001_add_unique_telegram_id_to_users.*Ran' <<<"$migration_status" || return 1
   if grep -q 'Pending' <<<"$migration_status"; then
     echo "Post-deploy migration status still contains Pending entries." >&2
     printf '%s\n' "$migration_status" >&2
     return 1
   fi
   verify_coinpayments_checkout_schema "$container_id" || return 1
+  telegram_plugin_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite \
+    "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")" || return 1
+  case "$telegram_plugin_state" in
+    '2.2.0:0'|'2.2.0:1') ;;
+    *)
+      echo "Deployed Telegram plugin state is $telegram_plugin_state; expected version 2.2.0 with a valid admin-controlled enabled state." >&2
+      return 1
+      ;;
+  esac
 
   integrity="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')" || return 1
   if [ "$integrity" != "ok" ]; then
@@ -522,17 +665,18 @@ post_deploy_checks() {
 XBOARD_IMAGE="$image" docker compose -f "$compose_file" config --quiet
 XBOARD_IMAGE="$image" docker compose -f "$compose_file" pull xboard
 
-if [[ "$image" =~ :([0-9a-f]{7,40})$ ]]; then
-  expected_tag="${BASH_REMATCH[1]}"
-  pulled_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
-  case "$pulled_revision" in
-    "$expected_tag"*) ;;
-    *)
-      echo "Image revision mismatch: expected $expected_tag, got $pulled_revision" >&2
-      exit 1
-      ;;
-  esac
+pulled_revision="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")"
+if ! [[ "$pulled_revision" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Pulled image has no valid immutable revision label: $pulled_revision" >&2
+  exit 1
 fi
+case "$pulled_revision" in
+  "$expected_revision_prefix"*) ;;
+  *)
+    echo "Image revision mismatch: expected $expected_revision_prefix, got $pulled_revision" >&2
+    exit 1
+    ;;
+esac
 
 if ! XBOARD_IMAGE="$image" docker compose -f "$compose_file" up -d --wait --wait-timeout 120 xboard; then
   echo "New container did not become healthy." >&2
@@ -552,11 +696,6 @@ if ! container_started_at="$(docker inspect --format '{{.State.StartedAt}}' "$ne
   echo "Could not resolve the new container start time." >&2
   rollback
   exit 1
-fi
-
-expected_revision_prefix=""
-if [[ "$image" =~ :([0-9a-f]{7,40})$ ]]; then
-  expected_revision_prefix="${BASH_REMATCH[1]}"
 fi
 
 if ! post_deploy_checks "$new_container" "$expected_revision_prefix" "$new_container_started_epoch"; then
