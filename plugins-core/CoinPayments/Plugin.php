@@ -272,9 +272,15 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         }
         $rate = (float) $rateValue;
 
-        $amount = number_format(((int) $order['total_amount'] / 100) * $rate, 8, '.', '');
-        if ((float) $amount <= 0) {
-            throw new ApiException(__('CoinPayments invoice amount is invalid.'));
+        try {
+            $amount = CoinPaymentsCheckoutSnapshot::expectedAmount(
+                (int) $order['total_amount'],
+                null,
+                $rate,
+                $invoiceCurrencyId
+            );
+        } catch (\Throwable $exception) {
+            throw new ApiException(__('CoinPayments invoice amount is too small for the configured invoice currency.'));
         }
 
         $user = User::find((int) $order['user_id']);
@@ -586,7 +592,8 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                 $expectedAmount = CoinPaymentsCheckoutSnapshot::expectedAmount(
                     (int) $checkout->base_amount,
                     isset($checkout->handling_amount) ? (int) $checkout->handling_amount : null,
-                    $rateValue
+                    $rateValue,
+                    $expectedCurrencyId
                 );
             } catch (\Throwable $exception) {
                 throw new ApiException(__('CoinPayments invoice amount could not be verified.'), 400);

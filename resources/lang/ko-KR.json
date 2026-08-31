@@ -199,6 +199,7 @@
     "CoinPayments invoice currency ID is not configured.": "CoinPayments 송장 통화 ID가 구성되지 않았습니다.",
     "CoinPayments CNY exchange rate is not configured.": "CoinPayments CNY 환율이 구성되지 않았습니다.",
     "CoinPayments invoice amount is invalid.": "CoinPayments 송장 금액이 잘못되었습니다.",
+    "CoinPayments invoice amount is too small for the configured invoice currency.": "설정된 CoinPayments 청구 통화에 비해 금액이 너무 작습니다.",
     "CoinPayments buyer email is invalid.": "CoinPayments 구매자 이메일이 잘못되었습니다.",
     "CoinPayments API URL is invalid.": "CoinPayments API URL이 잘못되었습니다.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments가 송장(HTTP :status)을 생성할 수 없습니다.",

@@ -204,6 +204,7 @@
     "CoinPayments invoice currency ID is not configured.": "Chưa cấu hình ID đơn vị tiền hóa đơn CoinPayments.",
     "CoinPayments CNY exchange rate is not configured.": "Chưa cấu hình tỷ giá CNY của CoinPayments.",
     "CoinPayments invoice amount is invalid.": "Số tiền hóa đơn CoinPayments không hợp lệ.",
+    "CoinPayments invoice amount is too small for the configured invoice currency.": "Số tiền quá nhỏ đối với loại tiền hóa đơn đã cấu hình trên CoinPayments.",
     "CoinPayments buyer email is invalid.": "Email người thanh toán CoinPayments không hợp lệ.",
     "CoinPayments API URL is invalid.": "URL API CoinPayments không hợp lệ.",
     "CoinPayments could not create the invoice (HTTP :status).": "Không thể tạo hóa đơn CoinPayments (HTTP :status).",

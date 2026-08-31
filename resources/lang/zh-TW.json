@@ -202,6 +202,7 @@
     "CoinPayments invoice currency ID is not configured.": "未配置 CoinPayments 發票貨幣 ID。",
     "CoinPayments CNY exchange rate is not configured.": "CoinPayments CNY 匯率未配置。",
     "CoinPayments invoice amount is invalid.": "CoinPayments 發票金額無效。",
+    "CoinPayments invoice amount is too small for the configured invoice currency.": "金額太小，無法使用已設定的 CoinPayments 發票幣別。",
     "CoinPayments buyer email is invalid.": "CoinPayments 買家電子郵件無效。",
     "CoinPayments API URL is invalid.": "CoinPayments API URL 無效。",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments 無法建立發票 (HTTP :status)。",

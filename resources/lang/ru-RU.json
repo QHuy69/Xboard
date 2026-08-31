@@ -199,6 +199,7 @@
     "CoinPayments invoice currency ID is not configured.": "Идентификатор валюты счета CoinPayments не настроен.",
     "CoinPayments CNY exchange rate is not configured.": "Курс обмена CNY в CoinPayments не настроен.",
     "CoinPayments invoice amount is invalid.": "Сумма счета CoinPayments недействительна.",
+    "CoinPayments invoice amount is too small for the configured invoice currency.": "Сумма слишком мала для настроенной валюты счета CoinPayments.",
     "CoinPayments buyer email is invalid.": "Адрес электронной почты покупателя CoinPayments недействителен.",
     "CoinPayments API URL is invalid.": "URL-адрес API CoinPayments недействителен.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments не удалось создать счет (HTTP :status).",

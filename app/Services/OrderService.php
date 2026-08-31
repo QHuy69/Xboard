@@ -567,11 +567,16 @@ class OrderService
                     + $freshPayment->handling_fee_fixed
                 );
             }
-            $expectedAmount = CoinPaymentsCheckoutSnapshot::expectedAmount(
-                (int) $order->total_amount,
-                $handlingAmount,
-                $configurationSnapshot['coinpayments_cny_invoice_rate']
-            );
+            try {
+                $expectedAmount = CoinPaymentsCheckoutSnapshot::expectedAmount(
+                    (int) $order->total_amount,
+                    $handlingAmount,
+                    $configurationSnapshot['coinpayments_cny_invoice_rate'],
+                    $configurationSnapshot['coinpayments_invoice_currency_id']
+                );
+            } catch (\UnexpectedValueException $exception) {
+                throw new ApiException(__('CoinPayments invoice amount is too small for the configured invoice currency.'), 400);
+            }
             $claimToken = bin2hex(random_bytes(16));
             $now = time();
             $values = [

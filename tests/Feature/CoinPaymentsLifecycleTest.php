@@ -94,7 +94,7 @@ class CoinPaymentsLifecycleTest extends TestCase
         $this->assertSame('ready', $checkout->state);
         $this->assertSame('provider-invoice-1', $checkout->provider_invoice_id);
         $this->assertSame($expiresAt, (int) $checkout->provider_expires_at);
-        $this->assertSame('0.14000000', $checkout->expected_amount);
+        $this->assertSame('0.14', $checkout->expected_amount);
         $this->assertStringNotContainsString('original-payment-secret', (string) $checkout->config_snapshot);
         $snapshot = CoinPaymentsCheckoutSnapshot::decrypt((string) $checkout->config_snapshot);
         $this->assertSame('original-payment-secret', $snapshot['coinpayments_client_secret']);
@@ -547,6 +547,76 @@ class CoinPaymentsLifecycleTest extends TestCase
         $this->assertNull(DB::table('v2_order_payment_checkout')
             ->where('order_id', $order->id)
             ->value('provider_invoice_id'));
+    }
+
+    public function test_usdt_trc20_invoice_keeps_a_small_non_zero_amount_at_six_decimals(): void
+    {
+        $user = $this->makeUser();
+        $order = $this->makeOrder($user);
+        $order->total_amount = 2;
+        $order->saveOrFail();
+        $payment = $this->makePayment();
+        $config = $payment->config;
+        $config['coinpayments_invoice_currency_id'] = CoinPaymentsCheckoutSnapshot::USDT_TRC20_CURRENCY_ID;
+        $config['coinpayments_payment_currency'] = CoinPaymentsCheckoutSnapshot::USDT_TRC20_CURRENCY_ID;
+        $config['coinpayments_cny_invoice_rate'] = '0.14285714';
+        $payment->config = $config;
+        $payment->saveOrFail();
+        $expiresAt = time() + 3600;
+        Http::fake([
+            'https://a-api.coinpayments.net/*' => Http::response([
+                'invoices' => [[
+                    'id' => 'provider-small-usdt-invoice',
+                    'checkoutLink' => 'https://checkout.coinpayments.net/invoices/provider-small-usdt-invoice',
+                    'payment' => ['expires' => gmdate(DATE_ATOM, $expiresAt)],
+                ]],
+            ], 200),
+        ]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/user/order/checkout', [
+            'trade_no' => $order->trade_no,
+            'method' => $payment->id,
+        ]);
+
+        $response->assertOk();
+        Http::assertSent(function ($request): bool {
+            return data_get($request->data(), 'currency') === CoinPaymentsCheckoutSnapshot::USDT_TRC20_CURRENCY_ID
+                && data_get($request->data(), 'payment.paymentCurrency') === CoinPaymentsCheckoutSnapshot::USDT_TRC20_CURRENCY_ID
+                && data_get($request->data(), 'amount.total') === '0.002857'
+                && data_get($request->data(), 'items.0.amount') === '0.002857';
+        });
+        $this->assertSame('0.002857', DB::table('v2_order_payment_checkout')
+            ->where('order_id', $order->id)
+            ->value('expected_amount'));
+    }
+
+    public function test_tiny_amount_that_rounds_to_zero_is_rejected_before_provider_request(): void
+    {
+        $user = $this->makeUser();
+        $order = $this->makeOrder($user);
+        $order->total_amount = 2;
+        $order->saveOrFail();
+        $payment = $this->makePayment();
+        $config = $payment->config;
+        $config['coinpayments_invoice_currency_id'] = CoinPaymentsCheckoutSnapshot::USD_CURRENCY_ID;
+        $config['coinpayments_cny_invoice_rate'] = '0.14285714';
+        $payment->config = $config;
+        $payment->saveOrFail();
+        Http::fake();
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/user/order/checkout', [
+            'trade_no' => $order->trade_no,
+            'method' => $payment->id,
+        ]);
+
+        $response->assertStatus(400)->assertJson([
+            'status' => 'fail',
+            'message' => 'CoinPayments invoice amount is too small for the configured invoice currency.',
+        ]);
+        Http::assertNothingSent();
+        $this->assertDatabaseMissing('v2_order_payment_checkout', ['order_id' => $order->id]);
     }
 
     public function test_corrupted_non_null_snapshot_fails_closed(): void

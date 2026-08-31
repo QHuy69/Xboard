@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Crypt;
 final class CoinPaymentsCheckoutSnapshot
 {
     public const VERSION = 1;
+    public const USD_CURRENCY_ID = '5057';
+    public const USDT_TRC20_CURRENCY_ID = '9:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
     /** @var list<string> */
     private const REQUIRED_STRING_KEYS = [
@@ -81,7 +83,12 @@ final class CoinPaymentsCheckoutSnapshot
         }
     }
 
-    public static function expectedAmount(int $baseAmount, ?int $handlingAmount, mixed $rateValue): string
+    public static function expectedAmount(
+        int $baseAmount,
+        ?int $handlingAmount,
+        mixed $rateValue,
+        string $invoiceCurrencyId = ''
+    ): string
     {
         if (!is_scalar($rateValue) || !is_numeric($rateValue) || (float) $rateValue <= 0) {
             throw new \UnexpectedValueException('CoinPayments exchange rate is invalid.');
@@ -89,7 +96,7 @@ final class CoinPaymentsCheckoutSnapshot
 
         $amount = number_format(
             (($baseAmount + (int) ($handlingAmount ?? 0)) / 100) * (float) $rateValue,
-            8,
+            self::invoiceCurrencyDecimals($invoiceCurrencyId),
             '.',
             ''
         );
@@ -98,5 +105,14 @@ final class CoinPaymentsCheckoutSnapshot
         }
 
         return $amount;
+    }
+
+    public static function invoiceCurrencyDecimals(string $currencyId): int
+    {
+        return match (trim($currencyId)) {
+            self::USD_CURRENCY_ID => 2,
+            self::USDT_TRC20_CURRENCY_ID => 6,
+            default => 8,
+        };
     }
 }

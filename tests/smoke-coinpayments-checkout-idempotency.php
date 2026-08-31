@@ -190,7 +190,7 @@ try {
             'data' => 'https://checkout.coinpayments.net/invoice-one',
             'provider_invoice_id' => 'smoke-provider-invoice-one',
             'provider_expires_at' => time() + 3600,
-            'expected_amount' => '1.03000000',
+            'expected_amount' => '1.03',
         ]
     );
 

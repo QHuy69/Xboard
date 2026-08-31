@@ -199,6 +199,7 @@
     "CoinPayments invoice currency ID is not configured.": "شناسه ارز فاکتور CoinPayments پیکربندی نشده است.",
     "CoinPayments CNY exchange rate is not configured.": "نرخ ارز CoinPayments CNY پیکربندی نشده است.",
     "CoinPayments invoice amount is invalid.": "مبلغ فاکتور CoinPayments نامعتبر است.",
+    "CoinPayments invoice amount is too small for the configured invoice currency.": "مبلغ برای ارز فاکتور تنظیم‌شده در CoinPayments بسیار کم است.",
     "CoinPayments buyer email is invalid.": "ایمیل خریدار CoinPayments نامعتبر است.",
     "CoinPayments API URL is invalid.": "URL API CoinPayments نامعتبر است.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments نتوانست فاکتور را ایجاد کند (HTTP :status).",
