@@ -516,6 +516,39 @@ class CoinPaymentsLifecycleTest extends TestCase
             ->value('response_data'));
     }
 
+    public function test_provider_validation_detail_is_surfaced_and_checkout_can_be_retried(): void
+    {
+        $user = $this->makeUser();
+        $order = $this->makeOrder($user);
+        $payment = $this->makePayment();
+        Http::fake([
+            'https://a-api.coinpayments.net/*' => Http::response([
+                'title' => 'Invoice validation failed',
+                'errors' => [
+                    'amount' => ['Amount is below the conversion limit.'],
+                ],
+            ], 400),
+        ]);
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/user/order/checkout', [
+            'trade_no' => $order->trade_no,
+            'method' => $payment->id,
+        ]);
+
+        $response->assertStatus(400)->assertJson([
+            'status' => 'fail',
+            'message' => 'CoinPayments could not create the invoice (HTTP 400). '
+                . 'Provider response: Invoice validation failed; Amount is below the conversion limit.',
+        ]);
+        $this->assertSame('failed', DB::table('v2_order_payment_checkout')
+            ->where('order_id', $order->id)
+            ->value('state'));
+        $this->assertNull(DB::table('v2_order_payment_checkout')
+            ->where('order_id', $order->id)
+            ->value('provider_invoice_id'));
+    }
+
     public function test_corrupted_non_null_snapshot_fails_closed(): void
     {
         [, $order, $payment] = $this->createReadyCheckout();

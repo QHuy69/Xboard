@@ -202,6 +202,7 @@
     "CoinPayments buyer email is invalid.": "Адрес электронной почты покупателя CoinPayments недействителен.",
     "CoinPayments API URL is invalid.": "URL-адрес API CoinPayments недействителен.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments не удалось создать счет (HTTP :status).",
+    "Provider response: :detail": "Ответ CoinPayments: :detail",
     "CoinPayments returned an invalid checkout link.": "CoinPayments вернул неверную ссылку для оформления заказа.",
     "CoinPayments webhook authentication failed.": "Аутентификация вебхука CoinPayments не удалась.",
     "CoinPayments webhook timestamp is stale.": "Временная метка веб-перехватчика CoinPayments устарела.",

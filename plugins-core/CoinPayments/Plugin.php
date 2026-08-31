@@ -15,6 +15,7 @@ use DateTimeZone;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /** CoinPayments Invoice API v2 integration. */
 class Plugin extends AbstractPlugin implements PaymentInterface
@@ -354,9 +355,24 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         }
 
         if (!$response->successful()) {
-            throw new ApiException(__('CoinPayments could not create the invoice (HTTP :status).', [
+            $providerDetail = $this->providerErrorDetail($response->json());
+            Log::warning('CoinPayments invoice creation rejected', [
+                'trade_no' => (string) $order['trade_no'],
+                'http_status' => $response->status(),
+                'invoice_currency_id' => $invoiceCurrencyId,
+                'payment_currency_id' => $paymentCurrency !== '' ? $paymentCurrency : null,
+                'amount' => $amount,
+                'provider_detail' => $providerDetail,
+            ]);
+
+            $message = __('CoinPayments could not create the invoice (HTTP :status).', [
                 'status' => $response->status(),
-            ]), $response->serverError() ? 503 : 400);
+            ]);
+            if ($providerDetail !== '') {
+                $message .= ' ' . __('Provider response: :detail', ['detail' => $providerDetail]);
+            }
+
+            throw new ApiException($message, $response->serverError() ? 503 : 400);
         }
 
         $invoice = data_get($response->json(), 'invoices.0');
@@ -659,6 +675,41 @@ class Plugin extends AbstractPlugin implements PaymentInterface
         return is_string($value) || is_int($value)
             ? trim((string) $value)
             : '';
+    }
+
+    private function providerErrorDetail(mixed $payload): string
+    {
+        if (!is_array($payload)) {
+            return '';
+        }
+
+        $messages = [];
+        $collect = static function (mixed $value, ?string $key = null) use (&$collect, &$messages): void {
+            if (count($messages) >= 4) {
+                return;
+            }
+            if (is_array($value)) {
+                foreach ($value as $nestedKey => $nestedValue) {
+                    $nextKey = in_array($key, ['error', 'errors'], true)
+                        ? $key
+                        : (is_string($nestedKey) ? strtolower($nestedKey) : $key);
+                    $collect($nestedValue, $nextKey);
+                }
+                return;
+            }
+            if (!in_array($key, ['message', 'detail', 'title', 'error', 'errors'], true)
+                || (!is_string($value) && !is_int($value))) {
+                return;
+            }
+
+            $message = trim(preg_replace('/\s+/u', ' ', (string) $value) ?? '');
+            if ($message !== '' && !in_array($message, $messages, true)) {
+                $messages[] = mb_substr($message, 0, 240);
+            }
+        };
+        $collect($payload);
+
+        return implode('; ', $messages);
     }
 
     public static function signature(string $method, string $url, string $clientId, string $timestamp, string $payload, string $secret): string

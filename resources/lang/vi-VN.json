@@ -207,6 +207,7 @@
     "CoinPayments buyer email is invalid.": "Email người thanh toán CoinPayments không hợp lệ.",
     "CoinPayments API URL is invalid.": "URL API CoinPayments không hợp lệ.",
     "CoinPayments could not create the invoice (HTTP :status).": "Không thể tạo hóa đơn CoinPayments (HTTP :status).",
+    "Provider response: :detail": "Phản hồi từ CoinPayments: :detail",
     "CoinPayments returned an invalid checkout link.": "CoinPayments trả về liên kết thanh toán không hợp lệ.",
     "CoinPayments webhook authentication failed.": "Xác thực webhook CoinPayments thất bại.",
     "CoinPayments webhook timestamp is stale.": "Dấu thời gian webhook CoinPayments đã hết hạn.",

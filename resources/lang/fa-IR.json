@@ -202,6 +202,7 @@
     "CoinPayments buyer email is invalid.": "ایمیل خریدار CoinPayments نامعتبر است.",
     "CoinPayments API URL is invalid.": "URL API CoinPayments نامعتبر است.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments نتوانست فاکتور را ایجاد کند (HTTP :status).",
+    "Provider response: :detail": "پاسخ CoinPayments: :detail",
     "CoinPayments returned an invalid checkout link.": "CoinPayments یک پیوند پرداخت نامعتبر را برگرداند.",
     "CoinPayments webhook authentication failed.": "احراز هویت وب هوک CoinPayments انجام نشد.",
     "CoinPayments webhook timestamp is stale.": "مهر زمانی وب هوک CoinPayments قدیمی است.",

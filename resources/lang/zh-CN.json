@@ -205,6 +205,7 @@
     "CoinPayments buyer email is invalid.": "CoinPayments 买家电子邮件无效。",
     "CoinPayments API URL is invalid.": "CoinPayments API URL 无效。",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments 无法创建发票 (HTTP :status)。",
+    "Provider response: :detail": "CoinPayments 响应：:detail",
     "CoinPayments returned an invalid checkout link.": "CoinPayments 返回了无效的结帐链接。",
     "CoinPayments webhook authentication failed.": "CoinPayments Webhook 身份验证失败。",
     "CoinPayments webhook timestamp is stale.": "CoinPayments webhook 时间戳已过时。",

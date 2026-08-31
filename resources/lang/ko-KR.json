@@ -202,6 +202,7 @@
     "CoinPayments buyer email is invalid.": "CoinPayments 구매자 이메일이 잘못되었습니다.",
     "CoinPayments API URL is invalid.": "CoinPayments API URL이 잘못되었습니다.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments가 송장(HTTP :status)을 생성할 수 없습니다.",
+    "Provider response: :detail": "CoinPayments 응답: :detail",
     "CoinPayments returned an invalid checkout link.": "CoinPayments가 잘못된 결제 링크를 반환했습니다.",
     "CoinPayments webhook authentication failed.": "CoinPayments 웹훅 인증에 실패했습니다.",
     "CoinPayments webhook timestamp is stale.": "CoinPayments 웹훅 타임스탬프가 오래되었습니다.",

@@ -202,6 +202,7 @@
     "CoinPayments buyer email is invalid.": "CoinPayments buyer email is invalid.",
     "CoinPayments API URL is invalid.": "CoinPayments API URL is invalid.",
     "CoinPayments could not create the invoice (HTTP :status).": "CoinPayments could not create the invoice (HTTP :status).",
+    "Provider response: :detail": "Provider response: :detail",
     "CoinPayments returned an invalid checkout link.": "CoinPayments returned an invalid checkout link.",
     "CoinPayments webhook authentication failed.": "CoinPayments webhook authentication failed.",
     "CoinPayments webhook timestamp is stale.": "CoinPayments webhook timestamp is stale.",
