@@ -12,21 +12,24 @@ use Illuminate\Queue\SerializesModels;
 class SendTelegramJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    protected $telegramId;
+    protected string $telegramId;
     protected $text;
 
-    public $tries = 3;
-    public $timeout = 10;
+    // Telegram has no idempotency key for sendMessage. Retrying a queued job
+    // after an ambiguous timeout can deliver the same notification twice.
+    public $tries = 1;
+    // Allow the single HTTP attempt to finish before the worker terminates it.
+    public $timeout = 40;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(int $telegramId, string $text)
+    public function __construct(int|string $telegramId, string $text)
     {
         $this->onQueue('send_telegram');
-        $this->telegramId = $telegramId;
+        $this->telegramId = (string) $telegramId;
         $this->text = $text;
     }
 

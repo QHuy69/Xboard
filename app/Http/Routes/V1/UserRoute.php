@@ -71,6 +71,7 @@ class UserRoute
             $router->get('/gift-card/types', [GiftCardController::class, 'types']);
             // Telegram
             $router->get('/telegram/getBotInfo', [TelegramController::class, 'getBotInfo']);
+            $router->post('/telegram/unbind', [TelegramController::class, 'unbind']);
             // Comm
             $router->get('/comm/config', [CommController::class, 'config']);
             $router->Post('/comm/getStripePublicKey', [CommController::class, 'getStripePublicKey']);

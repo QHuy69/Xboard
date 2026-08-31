@@ -38,16 +38,44 @@ class TicketService
         }
     }
 
-    public function replyByAdmin($ticketId, $message, $userId): void
+    public function replyByAdmin($ticketId, $message, $userId, ?string $expectedSubject = null): void
     {
-        $ticket = Ticket::where('id', $ticketId)->first();
-        if (!$ticket) {
-            throw new ApiException(__('Ticket does not exist'));
-        }
-        $ticketMessage = $this->reply($ticket, $message, $userId);
-        if (!$ticketMessage) {
-            throw new ApiException(__('Ticket reply failed'));
-        }
+        // Closing a ticket and posting an administrator reply must serialize on
+        // the same row. Re-check both status and (for Telegram support) subject
+        // only after the lock is held, then persist the message atomically with
+        // the ticket's reply metadata.
+        [$ticket, $ticketMessage] = DB::transaction(function () use (
+            $ticketId,
+            $message,
+            $userId,
+            $expectedSubject
+        ): array {
+            $query = Ticket::query()
+                ->whereKey($ticketId)
+                ->where('status', Ticket::STATUS_OPENING);
+            if ($expectedSubject !== null) {
+                $query->where('subject', $expectedSubject);
+            }
+
+            $ticket = $query->lockForUpdate()->first();
+            if (!$ticket) {
+                throw new ApiException(__('Ticket does not exist or has been closed'));
+            }
+
+            $ticketMessage = TicketMessage::query()->create([
+                'user_id' => $userId,
+                'ticket_id' => $ticket->id,
+                'message' => $message,
+            ]);
+            $ticket->reply_status = Ticket::REPLY_STATUS_REPLIED;
+            $ticket->last_reply_user_id = $userId;
+            if (!$ticketMessage || !$ticket->save()) {
+                throw new ApiException(__('Ticket reply failed'));
+            }
+
+            return [$ticket, $ticketMessage];
+        });
+
         HookManager::call('ticket.reply.admin.after', [$ticket, $ticketMessage]);
         $this->sendEmailNotify($ticket, $ticketMessage);
     }

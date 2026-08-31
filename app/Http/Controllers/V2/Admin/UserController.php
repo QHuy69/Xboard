@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V2\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UserFetch;
 use App\Http\Requests\Admin\UserGenerate;
 use App\Http\Requests\Admin\UserSendMail;
 use App\Http\Requests\Admin\UserUpdate;
@@ -27,11 +28,16 @@ class UserController extends Controller
 {
     use QueryOperators;
 
+    private const USER_UPDATE_SUCCEEDED = 'updated';
+    private const USER_UPDATE_USER_MISSING = 'user_missing';
+    private const USER_UPDATE_REFERRER_MISSING = 'referrer_missing';
+    private const USER_UPDATE_REFERRAL_CYCLE = 'referral_cycle';
+
     public function resetSecret(Request $request)
     {
         $user = User::find($request->input('id'));
         if (!$user)
-            return $this->fail([400202, 'Người dùng không tồn tại']);
+            return $this->fail([400202, __('The user does not exist')]);
         $user->token = Helper::guid();
         $user->uuid = Helper::guid(true);
         $result = $user->save();
@@ -80,7 +86,7 @@ class UserController extends Controller
     // Build one filter query condition.
     private function buildFilterQuery(Builder|QueryBuilder $query, string $field, mixed $value): void
     {
-        // 处理关联查询
+        // Handle relationship filters.
         if (str_contains($field, '.')) {
             if (!method_exists($query, 'whereHas')) {
                 return;
@@ -99,13 +105,13 @@ class UserController extends Controller
             return;
         }
 
-        // 处理数组值的 'in' 操作
+        // Handle array values with an IN query.
         if (is_array($value)) {
             $query->whereIn($field === 'group_ids' ? 'group_id' : $field, $value);
             return;
         }
 
-        // 处理基于运算符的过滤
+        // Handle operator-based filters.
         if (!is_string($value) || !str_contains($value, ':')) {
             $query->where($field, 'like', "%{$value}%");
             return;
@@ -113,14 +119,14 @@ class UserController extends Controller
 
         [$operator, $filterValue] = explode(':', $value, 2);
 
-        // 转换数字字符串为适当的类型
+        // Convert numeric strings to the appropriate type.
         if (is_numeric($filterValue)) {
             $filterValue = strpos($filterValue, '.') !== false
                 ? (float) $filterValue
                 : (int) $filterValue;
         }
 
-        // 处理计算字段
+        // Handle calculated fields.
         $queryField = match ($field) {
             'total_used' => DB::raw('(u + d)'),
             default => $field
@@ -178,7 +184,7 @@ class UserController extends Controller
     }
 
     // Fetch paginated user list (filters + sorting).
-    public function fetch(Request $request)
+    public function fetch(UserFetch $request)
     {
         $current = $request->input('current', 1);
         $pageSize = $request->input('pageSize', 10);
@@ -209,6 +215,9 @@ class UserController extends Controller
         $user = $user->toArray();
         $user['balance'] = $user['balance'] / 100;
         $user['commission_balance'] = $user['commission_balance'] / 100;
+        // Keep the role field stable for old records and JSON clients even
+        // when a database driver returns booleans as 0/1 integers.
+        $user['is_reseller'] = (bool) ($user['is_reseller'] ?? false);
         $user['subscribe_url'] = Helper::getSubscribeUrl($user['token']);
         return HookManager::filter('admin.user.transform', $user, $model);
     }
@@ -218,7 +227,7 @@ class UserController extends Controller
         $request->validate([
             'id' => 'required|numeric'
         ], [
-            'id.required' => 'ID người dùng không được để trống'
+            'id.required' => __('User ID is required')
         ]);
         $user = User::find($request->input('id'))->load('invite_user');
         $user = HookManager::filter('admin.user.detail', $user, $request);
@@ -231,33 +240,49 @@ class UserController extends Controller
 
         $user = User::find($request->input('id'));
         if (!$user) {
-            return $this->fail([400202, 'Người dùng không tồn tại']);
+            return $this->fail([400202, __('The user does not exist')]);
         }
         if (isset($params['email'])) {
             if (User::byEmail($params['email'])->first() && $user->email !== $params['email']) {
-                return $this->fail([400201, 'Email này đã được sử dụng']);
+                return $this->fail([400201, __('Email already exists')]);
             }
         }
-        // 处理密码
+        // Handle password changes.
         if (isset($params['password'])) {
             $params['password'] = password_hash($params['password'], PASSWORD_DEFAULT);
             $params['password_algo'] = NULL;
         } else {
             unset($params['password']);
         }
-        // 处理订阅计划
+        // Handle subscription plan changes.
         if (isset($params['plan_id'])) {
             $plan = Plan::find($params['plan_id']);
             if (!$plan) {
-                return $this->fail([400202, 'Gói đăng ký không tồn tại']);
+                return $this->fail([400202, __('Subscription plan does not exist')]);
             }
             $params['group_id'] = $plan->group_id;
         }
-        // 处理邀请用户
-        if ($request->input('invite_user_email') && $inviteUser = User::byEmail($request->input('invite_user_email'))->first()) {
-            $params['invite_user_id'] = $inviteUser->id;
-        } else {
-            $params['invite_user_id'] = null;
+        // invite_user_email is an admin form helper, not a v2_user column.
+        // Read its validated presence before removing it from the persistence
+        // payload so omitted values preserve the current referral owner while
+        // an explicit blank value still clears it.
+        $hasInviteUserEmail = array_key_exists('invite_user_email', $params);
+        $inviteUserEmail = $params['invite_user_email'] ?? null;
+        unset($params['invite_user_email']);
+
+        if ($hasInviteUserEmail) {
+            if (blank($inviteUserEmail)) {
+                $params['invite_user_id'] = null;
+            } else {
+                $inviteUser = User::byEmail($inviteUserEmail)->first();
+                if (!$inviteUser) {
+                    return $this->fail([400202, __('The referrer does not exist')]);
+                }
+                if ($this->referralWouldCreateCycle($user, $inviteUser)) {
+                    return $this->fail([400203, __('The referral relationship would create a cycle')]);
+                }
+                $params['invite_user_id'] = $inviteUser->id;
+            }
         }
 
         if (isset($params['banned']) && (int) $params['banned'] === 1) {
@@ -273,17 +298,33 @@ class UserController extends Controller
 
         $params = HookManager::filter('admin.user.update.params', $params, $request, $user);
 
-        HookManager::call('admin.user.update.before', [
-            'user' => $user,
-            'params' => $params,
-            'request' => $request,
-        ]);
-
         try {
-            $user->update($params);
+            if (array_key_exists('invite_user_id', $params) && $params['invite_user_id'] !== null) {
+                $updateResult = $this->updateWithReferralLocks($user, $params, $request);
+            } else {
+                // Clearing an edge cannot create a cycle, and unrelated user
+                // edits should not hold graph locks or a longer transaction.
+                HookManager::call('admin.user.update.before', [
+                    'user' => $user,
+                    'params' => $params,
+                    'request' => $request,
+                ]);
+                $user->update($params);
+                $updateResult = self::USER_UPDATE_SUCCEEDED;
+            }
         } catch (\Exception $e) {
             Log::error($e);
-            return $this->fail([500, 'Lưu thay đổi thất bại']);
+            return $this->fail([500, __('Failed to save user information')]);
+        }
+
+        if ($updateResult === self::USER_UPDATE_USER_MISSING) {
+            return $this->fail([400202, __('The user does not exist')]);
+        }
+        if ($updateResult === self::USER_UPDATE_REFERRER_MISSING) {
+            return $this->fail([400202, __('The referrer does not exist')]);
+        }
+        if ($updateResult === self::USER_UPDATE_REFERRAL_CYCLE) {
+            return $this->fail([400203, __('The referral relationship would create a cycle')]);
         }
 
         HookManager::call('admin.user.update.after', [
@@ -295,11 +336,146 @@ class UserController extends Controller
         return $this->success(true);
     }
 
+    /**
+     * Reject self-referrals, newly introduced ancestor cycles and an already
+     * corrupt cyclic chain without relying on database-specific recursive SQL.
+     */
+    private function referralWouldCreateCycle(User $user, User $inviteUser): bool
+    {
+        $targetId = (int) $user->getKey();
+        $visited = [];
+        $current = $inviteUser;
+
+        while ($current) {
+            $currentId = (int) $current->getKey();
+            if ($currentId === $targetId || isset($visited[$currentId])) {
+                return true;
+            }
+
+            $visited[$currentId] = true;
+            $nextId = (int) ($current->invite_user_id ?? 0);
+            if ($nextId <= 0) {
+                return false;
+            }
+
+            $current = User::query()
+                ->select(['id', 'invite_user_id'])
+                ->find($nextId);
+        }
+
+        return false;
+    }
+
+    /**
+     * Serialize referral-owner changes with the smallest useful lock set.
+     *
+     * The target and its requested direct referrer are locked together in a
+     * stable ID order. Each ancestor is then locked before its parent pointer
+     * is read. Concurrent reciprocal (or longer) updates therefore either see
+     * the committed edge or deadlock and retry the complete transaction.
+     */
+    private function updateWithReferralLocks(User $user, array $params, UserUpdate $request): string
+    {
+        return DB::transaction(function () use ($user, $params, $request): string {
+            $targetId = (int) $user->getKey();
+            $inviteUserId = filter_var(
+                $params['invite_user_id'],
+                FILTER_VALIDATE_INT,
+                ['options' => ['min_range' => 1]]
+            );
+            if ($inviteUserId === false) {
+                return self::USER_UPDATE_REFERRER_MISSING;
+            }
+            $inviteUserId = (int) $inviteUserId;
+
+            $lockIds = [$targetId, $inviteUserId];
+            $lockIds = array_values(array_unique($lockIds));
+            sort($lockIds, SORT_NUMERIC);
+
+            $lockedUsers = collect();
+            foreach ($lockIds as $lockId) {
+                $lockedRow = User::query()
+                    ->whereKey($lockId)
+                    ->lockForUpdate()
+                    ->first();
+                if ($lockedRow) {
+                    $lockedUsers->put((int) $lockedRow->getKey(), $lockedRow);
+                }
+            }
+
+            /** @var User|null $lockedUser */
+            $lockedUser = $lockedUsers->get($targetId);
+            if (!$lockedUser) {
+                return self::USER_UPDATE_USER_MISSING;
+            }
+
+            /** @var User|null $lockedInviteUser */
+            $lockedInviteUser = $lockedUsers->get($inviteUserId);
+            if (!$lockedInviteUser) {
+                return self::USER_UPDATE_REFERRER_MISSING;
+            }
+
+            if ($this->lockedReferralWouldCreateCycle($lockedUser, $lockedInviteUser, $lockedUsers)) {
+                return self::USER_UPDATE_REFERRAL_CYCLE;
+            }
+
+            // Invoke the existing hook only after every referral row needed by
+            // the invariant has been locked. Referral-lock deadlock retries
+            // therefore happen before the hook, which still precedes update.
+            HookManager::call('admin.user.update.before', [
+                'user' => $user,
+                'params' => $params,
+                'request' => $request,
+            ]);
+
+            $lockedUser->update($params);
+
+            return self::USER_UPDATE_SUCCEEDED;
+        }, 3);
+    }
+
+    /**
+     * Walk a referral chain while holding a row lock on every value read.
+     */
+    private function lockedReferralWouldCreateCycle(User $user, User $inviteUser, $lockedUsers): bool
+    {
+        $targetId = (int) $user->getKey();
+        $visited = [];
+        $current = $inviteUser;
+
+        while ($current) {
+            $currentId = (int) $current->getKey();
+            if ($currentId === $targetId || isset($visited[$currentId])) {
+                return true;
+            }
+
+            $visited[$currentId] = true;
+            $nextId = (int) ($current->invite_user_id ?? 0);
+            if ($nextId <= 0) {
+                return false;
+            }
+
+            $current = $lockedUsers->get($nextId);
+            if (!$current) {
+                $current = User::query()
+                    ->select(['id', 'invite_user_id'])
+                    ->whereKey($nextId)
+                    ->lockForUpdate()
+                    ->first();
+                if ($current) {
+                    $lockedUsers->put($nextId, $current);
+                }
+            }
+        }
+
+        return false;
+    }
+
     // Export users to CSV.
     public function dumpCSV(Request $request)
     {
         ini_set('memory_limit', '-1');
-        gc_enable(); // 启用垃圾回收
+        gc_enable(); // Enable garbage collection.
 
         $scopeInfo = $this->resolveScope($request);
         $scope = $scopeInfo['scope'];
@@ -307,11 +483,11 @@ class UserController extends Controller
 
         if ($scope === 'selected') {
             if (empty($userIds)) {
-                return $this->fail([422, 'user_ids不能为空']);
+                return $this->fail([422, __('Selected user IDs cannot be empty')]);
             }
         }
 
-        // 优化查询：使用with预加载plan关系，避免N+1问题
+        // Eager-load the plan relationship to avoid N+1 queries.
         $query = User::query()
             ->with('plan:id,name')
             ->orderBy('id', 'asc')
@@ -336,25 +512,25 @@ class UserController extends Controller
         $filename = 'users_' . date('Y-m-d_His') . '.csv';
 
         return response()->streamDownload(function () use ($query) {
-            // 打开输出流
+            // Open the output stream.
             $output = fopen('php://output', 'w');
 
-            // 添加BOM标记，确保Excel正确显示中文
+            // Add a UTF-8 BOM so Excel displays every locale correctly.
             fprintf($output, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
-            // 写入CSV头部
+            // Write localized CSV headers.
             fputcsv($output, [
-                '邮箱',
-                '余额',
-                '推广佣金',
-                '总流量',
-                '剩余流量',
-                '套餐到期时间',
-                '订阅计划',
-                '订阅地址'
+                __('Email'),
+                __('Balance'),
+                __('Referral commission'),
+                __('Total traffic'),
+                __('Remaining traffic'),
+                __('Subscription expires at'),
+                __('Subscription plan'),
+                __('Subscription Link')
             ]);
 
-            // 分批处理数据以减少内存使用
+            // Process records in chunks to reduce memory use.
             $query->chunk(500, function ($users) use ($output) {
                 foreach ($users as $user) {
                     try {
@@ -364,21 +540,21 @@ class UserController extends Controller
                             number_format($user->commission_balance / 100, 2),
                             Helper::trafficConvert($user->transfer_enable),
                             Helper::trafficConvert($user->transfer_enable - ($user->u + $user->d)),
-                            $user->expired_at ? date('Y-m-d H:i:s', $user->expired_at) : '长期有效',
-                            $user->plan ? $user->plan->name : '无订阅',
+                            $user->expired_at ? date('Y-m-d H:i:s', $user->expired_at) : __('Never expires'),
+                            $user->plan ? $user->plan->name : __('No subscription'),
                             Helper::getSubscribeUrl($user->token)
                         ];
                         fputcsv($output, $row);
                     } catch (\Exception $e) {
-                        Log::error('CSV导出错误: ' . $e->getMessage(), [
+                        Log::error('CSV export failed', [
                             'user_id' => $user->id,
                             'email' => $user->email
                         ]);
-                        continue; // 继续处理下一条记录
+                        continue; // Continue with the next record.
                     }
                 }
 
-                // 清理内存
+                // Release cyclic references between chunks.
                 gc_collect_cycles();
             });
 
@@ -401,7 +577,7 @@ class UserController extends Controller
             $email = $request->input('email_prefix') . '@' . $request->input('email_suffix');
 
             if (User::byEmail($email)->exists()) {
-                return $this->fail([400201, '邮箱已存在于系统中']);
+                return $this->fail([400201, __('Email already exists')]);
             }
 
             $userService = app(UserService::class);
@@ -413,7 +589,7 @@ class UserController extends Controller
             ]);
 
             if (!$user->save()) {
-                return $this->fail([500, '生成失败']);
+                return $this->fail([500, __('User generation failed')]);
             }
             return $this->success(true);
         }
@@ -451,10 +627,10 @@ class UserController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->fail([500, '生成失败']);
+            return $this->fail([500, __('User generation failed')]);
         }
 
-        // 判断是否导出 CSV
+        // Export CSV when requested.
         if ($request->input('download_csv')) {
             $headers = [
                 'Content-Type' => 'text/csv',
@@ -462,10 +638,10 @@ class UserController extends Controller
             ];
             $callback = function () use ($users, $request) {
                 $handle = fopen('php://output', 'w');
-                fputcsv($handle, ['账号', '密码', '过期时间', 'UUID', '创建时间', '订阅地址']);
+                fputcsv($handle, [__('Account'), __('Password'), __('Expires at'), 'UUID', __('Created at'), __('Subscription Link')]);
                 foreach ($users as $user) {
                     $user = $user->refresh();
-                    $expireDate = $user['expired_at'] === NULL ? '长期有效' : date('Y-m-d H:i:s', $user['expired_at']);
+                    $expireDate = $user['expired_at'] === NULL ? __('Never expires') : date('Y-m-d H:i:s', $user['expired_at']);
                     $createDate = date('Y-m-d H:i:s', $user['created_at']);
                     $password = $request->input('password') ?? $user['email'];
                     $subscribeUrl = Helper::getSubscribeUrl($user['token']);
@@ -476,12 +652,12 @@ class UserController extends Controller
             return response()->streamDownload($callback, 'users.csv', $headers);
         }
 
-        // 默认返回 JSON
+        // Return JSON by default.
         $data = collect($users)->map(function ($user) use ($request) {
             return [
                 'email' => $user['email'],
                 'password' => $request->input('password') ?? $user['email'],
-                'expired_at' => $user['expired_at'] === NULL ? '长期有效' : date('Y-m-d H:i:s', $user['expired_at']),
+                'expired_at' => $user['expired_at'] === NULL ? __('Never expires') : date('Y-m-d H:i:s', $user['expired_at']),
                 'uuid' => $user['uuid'],
                 'created_at' => date('Y-m-d H:i:s', $user['created_at']),
                 'subscribe_url' => Helper::getSubscribeUrl($user['token']),
@@ -489,7 +665,7 @@ class UserController extends Controller
         });
         return response()->json([
             'code' => 0,
-            'message' => '批量生成成功',
+            'message' => __('Batch user generation succeeded'),
             'data' => $data,
         ]);
     }
@@ -506,7 +682,7 @@ class UserController extends Controller
         for ($i = 1; $i <= $generateCount; $i++) {
             $email = $emailPrefix . '_' . $i . '@' . $emailSuffix;
             if (User::where('email', $email)->exists()) {
-                return $this->fail([400201, '邮箱 ' . $email . ' 已存在于系统中']);
+                return $this->fail([400201, __('Email :email already exists', ['email' => $email])]);
             }
         }
 
@@ -532,10 +708,10 @@ class UserController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->fail([500, '生成失败']);
+            return $this->fail([500, __('User generation failed')]);
         }
 
-        // 判断是否导出 CSV
+        // Export CSV when requested.
         if ($request->input('download_csv')) {
             $headers = [
                 'Content-Type' => 'text/csv',
@@ -543,10 +719,10 @@ class UserController extends Controller
             ];
             $callback = function () use ($users, $request) {
                 $handle = fopen('php://output', 'w');
-                fputcsv($handle, ['账号', '密码', '过期时间', 'UUID', '创建时间', '订阅地址']);
+                fputcsv($handle, [__('Account'), __('Password'), __('Expires at'), 'UUID', __('Created at'), __('Subscription Link')]);
                 foreach ($users as $user) {
                     $user = $user->refresh();
-                    $expireDate = $user['expired_at'] === NULL ? '长期有效' : date('Y-m-d H:i:s', $user['expired_at']);
+                    $expireDate = $user['expired_at'] === NULL ? __('Never expires') : date('Y-m-d H:i:s', $user['expired_at']);
                     $createDate = date('Y-m-d H:i:s', $user['created_at']);
                     $password = $request->input('password') ?? $user['email'];
                     $subscribeUrl = Helper::getSubscribeUrl($user['token']);
@@ -557,12 +733,12 @@ class UserController extends Controller
             return response()->streamDownload($callback, 'users.csv', $headers);
         }
 
-        // 默认返回 JSON
+        // Return JSON by default.
         $data = collect($users)->map(function ($user) use ($request) {
             return [
                 'email' => $user['email'],
                 'password' => $request->input('password') ?? $user['email'],
-                'expired_at' => $user['expired_at'] === NULL ? '长期有效' : date('Y-m-d H:i:s', $user['expired_at']),
+                'expired_at' => $user['expired_at'] === NULL ? __('Never expires') : date('Y-m-d H:i:s', $user['expired_at']),
                 'uuid' => $user['uuid'],
                 'created_at' => date('Y-m-d H:i:s', $user['created_at']),
                 'subscribe_url' => Helper::getSubscribeUrl($user['token']),
@@ -570,7 +746,7 @@ class UserController extends Controller
         });
         return response()->json([
             'code' => 0,
-            'message' => '批量生成成功',
+            'message' => __('Batch user generation succeeded'),
             'data' => $data,
         ]);
     }
@@ -584,7 +760,7 @@ class UserController extends Controller
 
         if ($scope === 'selected') {
             if (empty($userIds)) {
-                return $this->fail([422, 'user_ids不能为空']);
+                return $this->fail([422, __('Selected user IDs cannot be empty')]);
             }
         }
 
@@ -654,7 +830,7 @@ class UserController extends Controller
 
         if ($scope === 'selected') {
             if (empty($userIds)) {
-                return $this->fail([422, 'user_ids不能为空']);
+                return $this->fail([422, __('Selected user IDs cannot be empty')]);
             }
         }
 
@@ -677,7 +853,7 @@ class UserController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error($e);
-            return $this->fail([500, '处理失败']);
+            return $this->fail([500, __('User processing failed')]);
         }
         // Full refresh not implemented.
         return $this->success(true);
@@ -689,8 +865,8 @@ class UserController extends Controller
         $request->validate([
             'id' => 'required|exists:App\Models\User,id'
         ], [
-            'id.required' => '用户ID不能为空',
-            'id.exists' => '用户不存在'
+            'id.required' => __('User ID is required'),
+            'id.exists' => __('The user does not exist')
         ]);
         $user = User::find($request->input('id'));
         HookManager::call('admin.user.destroy.before', [
@@ -716,7 +892,7 @@ class UserController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);
-            return $this->fail([500, '删除失败']);
+            return $this->fail([500, __('User deletion failed')]);
         }
     }
 }

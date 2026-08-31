@@ -226,10 +226,18 @@ class OrderService
     public function setVipDiscount(User $user)
     {
         $order = $this->order;
-        if ($user->discount) {
-            $order->discount_amount = $order->discount_amount + ($order->total_amount * ($user->discount / 100));
-        }
-        $order->total_amount = $order->total_amount - $order->discount_amount;
+        $baseAmount = max(0, (int) $order->total_amount);
+        $couponDiscount = max(0, min($baseAmount, (int) ($order->discount_amount ?? 0)));
+
+        // Preserve XBoard's additive coupon + VIP semantics, but clamp their
+        // combined value to the original price. A 100% reseller coupon plus a
+        // VIP percentage must never make the order negative or create credit.
+        $vipPercent = max(0, min(100, (int) ($user->discount ?? 0)));
+        $vipDiscount = intdiv($baseAmount * $vipPercent, 100);
+        $combinedDiscount = min($baseAmount, $couponDiscount + $vipDiscount);
+
+        $order->discount_amount = $combinedDiscount;
+        $order->total_amount = max(0, $baseAmount - $combinedDiscount);
     }
 
     public function setInvite(User $user): void

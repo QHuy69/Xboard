@@ -1471,6 +1471,688 @@ html[dir="rtl"] .luck-language-picker select {
   grid-column: 1 / -1 !important;
 }
 
+/* One-click Telegram access is the first action inside the dashboard's
+   existing subscription-link section. It is injected idempotently after the
+   section heading so the generated Vue route remains the single owner of the
+   rest of that block. */
+.luck-telegram-card-parking[hidden],
+.luck-telegram-card[hidden] {
+  display: none !important;
+}
+
+.luck-telegram-card {
+  box-sizing: border-box;
+  display: grid;
+  container: luck-telegram-card / inline-size;
+  width: 100%;
+  min-width: 0;
+  padding: clamp(17px, 1.7vw, 23px);
+  gap: 14px;
+  color: #25334d;
+  background:
+    radial-gradient(circle at 100% 0, rgba(42, 171, 238, .13), transparent 42%),
+    linear-gradient(145deg, rgba(255, 255, 255, .98), rgba(246, 250, 255, .96));
+  border: 1px solid rgba(117, 139, 174, .2);
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(37, 51, 77, .09);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.subscription-cards-section > .luck-telegram-card--subscription {
+  margin-block: 14px 18px;
+}
+
+.luck-telegram-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.luck-telegram-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: linear-gradient(145deg, #35b8f0, #218bd5);
+  border-radius: 14px;
+  box-shadow: 0 7px 16px rgba(33, 139, 213, .24);
+}
+
+.luck-telegram-icon svg,
+.luck-telegram-primary svg,
+.luck-telegram-refresh svg {
+  display: block;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.luck-telegram-heading {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
+  gap: 5px;
+}
+
+.luck-telegram-heading h2 {
+  min-width: 0;
+  margin: 0;
+  color: inherit;
+  font-size: clamp(16px, 1.2vw, 19px);
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+.luck-telegram-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 4px 9px;
+  color: #64748b;
+  background: #eef2f7;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: normal;
+}
+
+.luck-telegram-card[data-state="linked"] .luck-telegram-status {
+  color: #11734b;
+  background: #e1f7ec;
+}
+
+.luck-telegram-card[data-state="unlinked"] .luck-telegram-status {
+  color: #9a5a07;
+  background: #fff3d7;
+}
+
+.luck-telegram-card[data-state="error"] .luck-telegram-status,
+.luck-telegram-card[data-state="unavailable"] .luck-telegram-status {
+  color: #a13a43;
+  background: #fdebed;
+}
+
+.luck-telegram-refresh,
+.luck-telegram-primary {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease;
+}
+
+.luck-telegram-refresh {
+  gap: 7px;
+  padding: 9px 11px;
+  color: #475569;
+  background: rgba(238, 242, 247, .9);
+  border: 1px solid rgba(117, 139, 174, .2);
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.luck-telegram-refresh svg {
+  width: 17px;
+  height: 17px;
+}
+
+.luck-telegram-refresh:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
+.luck-telegram-description,
+.luck-telegram-reseller-note,
+.luck-telegram-footnote,
+.luck-telegram-unavailable {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+
+.luck-telegram-description {
+  color: #53627a;
+  font-size: 14px;
+}
+
+.luck-telegram-reseller-note {
+  padding: 10px 12px;
+  color: #245b45;
+  background: rgba(225, 247, 236, .76);
+  border-inline-start: 3px solid #39ad79;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.luck-telegram-actions {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.luck-telegram-primary {
+  width: 100%;
+  gap: 9px;
+  padding: 11px 16px;
+  color: #fff !important;
+  background: linear-gradient(135deg, #2aabee, #2487ca);
+  border-radius: 13px;
+  box-shadow: 0 8px 18px rgba(36, 135, 202, .22);
+  text-align: center;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: normal;
+}
+
+.luck-telegram-primary:hover,
+.luck-telegram-refresh:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.luck-telegram-primary:hover {
+  box-shadow: 0 11px 23px rgba(36, 135, 202, .28);
+}
+
+.luck-telegram-primary:focus-visible,
+.luck-telegram-refresh:focus-visible {
+  outline: 3px solid rgba(42, 171, 238, .3);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luck-telegram-primary,
+  .luck-telegram-refresh {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .luck-telegram-card,
+  .luck-telegram-icon,
+  .luck-telegram-status,
+  .luck-telegram-primary,
+  .luck-telegram-refresh,
+  .luck-telegram-unavailable {
+    forced-color-adjust: auto;
+    border: 1px solid CanvasText;
+  }
+}
+
+.luck-telegram-unavailable {
+  width: 100%;
+  padding: 11px 13px;
+  color: #7b4550;
+  background: rgba(253, 235, 237, .72);
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.luck-telegram-footnote {
+  color: #7b879a;
+  font-size: 12px;
+  text-align: center;
+}
+
+html[dir="rtl"] .luck-telegram-card {
+  direction: rtl;
+  text-align: start;
+}
+
+html:is(.dark, [data-theme="dark"]) .luck-telegram-card,
+body:is(.dark, .dark-mode, [data-theme="dark"]) .luck-telegram-card {
+  color: #e6edf7;
+  background:
+    radial-gradient(circle at 100% 0, rgba(42, 171, 238, .15), transparent 42%),
+    linear-gradient(145deg, rgba(24, 35, 52, .98), rgba(20, 30, 45, .98));
+  border-color: rgba(148, 163, 184, .2);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .24);
+}
+
+html:is(.dark, [data-theme="dark"]) .luck-telegram-description,
+body:is(.dark, .dark-mode, [data-theme="dark"]) .luck-telegram-description {
+  color: #bdc8d8;
+}
+
+html:is(.dark, [data-theme="dark"]) .luck-telegram-refresh,
+body:is(.dark, .dark-mode, [data-theme="dark"]) .luck-telegram-refresh {
+  color: #dce6f3;
+  background: rgba(51, 65, 85, .82);
+  border-color: rgba(148, 163, 184, .2);
+}
+
+html:is(.dark, [data-theme="dark"]) .luck-telegram-footnote,
+body:is(.dark, .dark-mode, [data-theme="dark"]) .luck-telegram-footnote {
+  color: #9eacc0;
+}
+
+@container luck-telegram-card (max-width: 390px) {
+  .luck-telegram-header {
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 9px;
+  }
+
+  .luck-telegram-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .luck-telegram-refresh {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .luck-telegram-refresh span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+@container luck-telegram-card (min-width: 700px) {
+  .luck-telegram-card--subscription {
+    grid-template-columns: minmax(320px, 1.35fr) minmax(220px, .85fr);
+    grid-template-areas:
+      "telegram-header telegram-actions"
+      "telegram-description telegram-actions"
+      "telegram-reseller telegram-footnote";
+    align-items: center;
+    column-gap: clamp(14px, 2vw, 24px);
+    row-gap: 8px;
+  }
+
+  .luck-telegram-card--subscription .luck-telegram-header {
+    grid-area: telegram-header;
+  }
+
+  .luck-telegram-card--subscription .luck-telegram-description {
+    grid-area: telegram-description;
+  }
+
+  .luck-telegram-card--subscription .luck-telegram-reseller-note {
+    grid-area: telegram-reseller;
+  }
+
+  .luck-telegram-card--subscription .luck-telegram-actions {
+    grid-area: telegram-actions;
+  }
+
+  .luck-telegram-card--subscription .luck-telegram-footnote {
+    grid-area: telegram-footnote;
+  }
+}
+
+@media (max-width: 390px) {
+  .luck-telegram-card {
+    padding: 15px 13px;
+    border-radius: 16px;
+  }
+}
+
+/* Approved compact Telegram treatment: share the subscription title row and
+   mirror the Download apps box geometry (32px box padding plus a 40px control
+   row and a 16px title-to-cards gap). The generated six-card grid is not
+   wrapped or modified. */
+.subscription-container[data-v-3709f5eb] {
+  padding: 32px !important;
+}
+
+.subscription-cards-section[data-v-3709f5eb] {
+  container: luck-subscription-section / inline-size;
+  margin-top: 0 !important;
+}
+
+.subscription-cards-section[data-v-3709f5eb] > .luck-subscription-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  margin-bottom: 16px;
+}
+
+.luck-subscription-header > .section-title[data-v-3709f5eb] {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin: 0 !important;
+  line-height: 1.35 !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+  white-space: nowrap;
+}
+
+.subscription-cards-section[data-v-3709f5eb] > .luck-subscription-header + .subscription-grid[data-v-3709f5eb] {
+  margin-top: 0 !important;
+}
+
+.luck-subscription-header > .luck-telegram-card--subscription {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 540px;
+  gap: 9px;
+  width: auto;
+  max-width: 540px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 4px 6px 4px 8px;
+  color: #334155;
+  background: rgba(248, 253, 248, .97);
+  border: 1px solid rgba(136, 193, 82, .28);
+  border-radius: 999px;
+  box-shadow: 0 5px 16px rgba(51, 65, 85, .065);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.luck-subscription-header .luck-telegram-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  background: linear-gradient(135deg, #2aabee, #229ed9);
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(34, 158, 217, .22);
+}
+
+.luck-subscription-header .luck-telegram-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.luck-subscription-header .luck-telegram-heading {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  gap: 1px;
+  line-height: 1.15;
+}
+
+.luck-subscription-header .luck-telegram-heading h2 {
+  overflow: hidden;
+  width: 100%;
+  margin: 0;
+  color: #263449;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.luck-subscription-header .luck-telegram-description {
+  overflow: hidden;
+  width: 100%;
+  margin: 0;
+  color: #718096;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.luck-subscription-header .luck-telegram-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 142px;
+  min-height: 0;
+  padding: 4px 7px;
+  overflow: hidden;
+  color: #8a5b12;
+  background: #fff8e8;
+  border: 1px solid #f4dda7;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.luck-subscription-header .luck-telegram-status::before {
+  content: '';
+  flex: 0 0 5px;
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.luck-subscription-header .luck-telegram-card[data-state="linked"] .luck-telegram-status {
+  color: #2e6b23;
+  background: #eff9e9;
+  border-color: #cce7bc;
+}
+
+.luck-subscription-header .luck-telegram-card[data-state="loading"] .luck-telegram-status {
+  color: #526375;
+  background: #f1f5f9;
+  border-color: #dce4ec;
+}
+
+.luck-subscription-header .luck-telegram-card[data-state="error"] .luck-telegram-status,
+.luck-subscription-header .luck-telegram-card[data-state="unavailable"] .luck-telegram-status {
+  color: #9a3d48;
+  background: #fff1f2;
+  border-color: #f5cbd1;
+}
+
+.luck-subscription-header .luck-telegram-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.luck-subscription-header .luck-telegram-primary,
+.luck-subscription-header .luck-telegram-refresh {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 30px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.luck-subscription-header .luck-telegram-primary {
+  width: auto;
+  padding: 0 11px;
+  color: #fff !important;
+  background: linear-gradient(135deg, #88c152, #65aa46);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 4px 11px rgba(101, 170, 70, .2);
+  overflow-wrap: normal;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.luck-subscription-header .luck-telegram-primary svg {
+  display: none;
+}
+
+.luck-subscription-header .luck-telegram-refresh {
+  position: relative;
+  width: 30px;
+  padding: 0;
+  color: #64748b;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+}
+
+.luck-subscription-header .luck-telegram-refresh svg {
+  width: 14px;
+  height: 14px;
+}
+
+.luck-subscription-header .luck-telegram-refresh > span,
+.luck-subscription-header .luck-telegram-reseller-note,
+.luck-subscription-header .luck-telegram-footnote {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.luck-subscription-header .luck-telegram-unavailable {
+  overflow: hidden;
+  width: auto;
+  max-width: 150px;
+  padding: 6px 9px;
+  color: #8c4650;
+  background: #fff1f2;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.luck-subscription-header .luck-telegram-primary:hover,
+.luck-subscription-header .luck-telegram-refresh:hover:not(:disabled) {
+  filter: brightness(1.035);
+  transform: translateY(-1px);
+}
+
+.luck-subscription-header .luck-telegram-primary:focus-visible,
+.luck-subscription-header .luck-telegram-refresh:focus-visible {
+  outline: 3px solid rgba(34, 158, 217, .25);
+  outline-offset: 2px;
+}
+
+html[dir="rtl"] .luck-subscription-header,
+html[dir="rtl"] .luck-subscription-header .luck-telegram-card {
+  direction: rtl;
+  text-align: start;
+}
+
+html[dir="rtl"] .luck-subscription-header .luck-telegram-heading {
+  align-items: flex-start;
+}
+
+@container luck-subscription-section (max-width: 720px) {
+  .subscription-cards-section[data-v-3709f5eb] > .luck-subscription-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .luck-subscription-header > .luck-telegram-card--subscription {
+    flex: none;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: none;
+    border-radius: 14px;
+  }
+}
+
+@container luck-subscription-section (max-width: 560px) {
+  .luck-subscription-header > .luck-telegram-card--subscription {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) 30px;
+    gap: 8px;
+    padding: 9px;
+  }
+
+  .luck-subscription-header .luck-telegram-icon {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .luck-subscription-header .luck-telegram-heading {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .luck-subscription-header .luck-telegram-refresh {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .luck-subscription-header .luck-telegram-status {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .luck-subscription-header .luck-telegram-actions {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    width: 100%;
+  }
+
+  .luck-subscription-header .luck-telegram-primary,
+  .luck-subscription-header .luck-telegram-unavailable {
+    width: 100%;
+    max-width: none;
+  }
+}
+
 /* The stock layout assigns `grid-area: left-bottom` to the client/download
    section. Once the parent is converted from its original named-area layout
    to this responsive grid, that stale name creates a second implicit column
@@ -1561,6 +2243,70 @@ html[dir="rtl"] .luck-language-picker select {
     clip-path: inset(50%) !important;
     white-space: nowrap !important;
     border: 0 !important;
+  }
+}
+
+/* The dashboard exposes the same five deterministic OS choices as the
+   Resources portal. These rules keep all five on one row when the real Luck
+   column is wide, then reduce columns from the section width rather than from
+   the browser viewport. */
+.clients-section.luck-download-section[data-v-3709f5eb] > .platform-cards[data-v-3709f5eb] {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  align-items: stretch;
+}
+
+.platform-card.macos[data-v-3709f5eb] {
+  color: #334155;
+  background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+}
+
+.platform-card.linux[data-v-3709f5eb] {
+  color: #8a4b12;
+  background: linear-gradient(135deg, #fff8e7 0%, #f6c970 100%);
+}
+
+.platform-card.macos[data-v-3709f5eb]:hover,
+.platform-card.linux[data-v-3709f5eb]:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 16px 48px rgba(51, 65, 85, .24);
+}
+
+.platform-card.macos.active[data-v-3709f5eb],
+.platform-card.linux.active[data-v-3709f5eb] {
+  position: relative;
+  transform: translateY(-4px) scale(1.02);
+  border: 3px solid #ffd700;
+  box-shadow: 0 12px 40px rgba(100, 116, 139, .3);
+}
+
+.platform-card[data-luck-platform][data-v-3709f5eb]:focus-visible {
+  outline: 3px solid rgba(42, 171, 238, .38);
+  outline-offset: 3px;
+}
+
+.platform-card[data-luck-platform][data-v-3709f5eb] .platform-name,
+.platform-card[data-luck-platform][data-v-3709f5eb] .platform-desc {
+  max-width: 100%;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+  writing-mode: horizontal-tb !important;
+}
+
+@container luck-download-section (max-width: 900px) {
+  .clients-section.luck-download-section[data-v-3709f5eb] > .platform-cards[data-v-3709f5eb] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@container luck-download-section (max-width: 640px) {
+  .clients-section.luck-download-section[data-v-3709f5eb] > .platform-cards[data-v-3709f5eb] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@container luck-download-section (max-width: 420px) {
+  .clients-section.luck-download-section[data-v-3709f5eb] > .platform-cards[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

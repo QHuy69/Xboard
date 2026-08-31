@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0f766e">
   <title>Quản trị kho tải · {{ $appName }}</title>
   <style>
-    :root{--ink:#16302e;--muted:#687b79;--line:#d8e6e3;--brand:#0d9f8c;--danger:#d54848;--soft:#eff8f7}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#f1f6f5}button,input,textarea,select{font:inherit}.wrap{width:min(1040px,calc(100% - 28px));margin:36px auto}.panel{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 48px rgba(35,79,74,.1);overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line)}.panel-head h1{font-size:22px;margin:0}.links{display:flex;gap:8px}.btn,.link{border:0;border-radius:11px;padding:10px 15px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.btn-primary{background:var(--brand);color:#fff}.btn-soft,.link{background:var(--soft);color:#176d64}.btn-danger{background:#fff0f0;color:var(--danger)}.content{padding:26px}.login{max-width:430px;margin:65px auto}.login h2{margin:0 0 8px}.login p{color:var(--muted);margin:0 0 24px;line-height:1.55}.field{display:grid;gap:7px;margin-bottom:15px}.field label{font-size:13px;font-weight:750}.field input,.field textarea,.field select{width:100%;border:1px solid #cddcda;border-radius:11px;padding:11px 12px;background:#fff;color:var(--ink);outline:none}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(13,159,140,.12)}.field textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:28px 0 14px}.toolbar h2{font-size:18px;margin:0}.app-row{border:1px solid var(--line);border-radius:17px;padding:18px;margin-bottom:14px;background:#fbfdfd}.app-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.app-row-head strong{font-size:15px}.row-actions{display:flex;gap:6px}.icon-btn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer}.icon-btn.remove{color:var(--danger)}.app-grid{display:grid;grid-template-columns:1.25fr .8fr .65fr;gap:12px}.app-grid .wide{grid-column:1/-1}.toggle{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700}.toggle input{width:18px;height:18px;accent-color:var(--brand)}.footer-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;margin:24px -26px -26px;padding:16px 26px;border-top:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px)}.status{min-height:22px;margin-top:12px;font-size:14px;color:var(--muted)}.status.ok{color:#087b52}.status.error{color:#c43737}.hidden{display:none!important}
-    @media(max-width:700px){.wrap{width:min(100% - 16px,1040px);margin:8px auto}.panel{border-radius:16px}.panel-head,.content{padding:17px}.panel-head{align-items:flex-start}.panel-head h1{font-size:19px}.links{flex-direction:column}.grid,.app-grid{grid-template-columns:1fr}.app-grid .wide{grid-column:auto}.footer-actions{margin:20px -17px -17px;padding:14px 17px}.login{margin:35px auto}.toolbar{align-items:flex-start}}
+    :root{--ink:#16302e;--muted:#687b79;--line:#d8e6e3;--brand:#0d9f8c;--danger:#d54848;--soft:#eff8f7}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#f1f6f5}button,input,textarea,select{font:inherit}.wrap{width:min(1040px,calc(100% - 28px));margin:36px auto}.panel{background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 48px rgba(35,79,74,.1);overflow:hidden}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 26px;border-bottom:1px solid var(--line)}.panel-head h1{font-size:22px;margin:0}.links{display:flex;gap:8px}.btn,.link{border:0;border-radius:11px;padding:10px 15px;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.btn-primary{background:var(--brand);color:#fff}.btn-soft,.link{background:var(--soft);color:#176d64}.btn-danger{background:#fff0f0;color:var(--danger)}.content{padding:26px}.login{max-width:430px;margin:65px auto}.login h2{margin:0 0 8px}.login p{color:var(--muted);margin:0 0 24px;line-height:1.55}.field{display:grid;gap:7px;margin-bottom:15px}.field label{font-size:13px;font-weight:750}.field input,.field textarea,.field select{width:100%;border:1px solid #cddcda;border-radius:11px;padding:11px 12px;background:#fff;color:var(--ink);outline:none}.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(13,159,140,.12)}.field textarea{min-height:90px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.locale-editor{display:grid;grid-template-columns:minmax(210px,300px) 1fr;gap:18px;align-items:center;margin-bottom:22px;padding:16px 18px;border:1px solid #bfe1dc;border-radius:15px;background:var(--soft)}.locale-editor .field{margin:0}.locale-editor p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}.locale-editor strong{color:var(--ink)}.locale-mark,.shared-badge{display:inline-flex;margin-left:5px;padding:2px 7px;border-radius:999px;font-size:10px;line-height:1.4;vertical-align:middle}.locale-mark{background:#e4f4f1;color:#087568}.shared-badge{background:#edf0f2;color:#61706e}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:28px 0 14px}.toolbar h2{font-size:18px;margin:0}.app-row{border:1px solid var(--line);border-radius:17px;padding:18px;margin-bottom:14px;background:#fbfdfd}.app-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.app-row-head strong{font-size:15px}.row-actions{display:flex;gap:6px}.icon-btn{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer}.icon-btn.remove{color:var(--danger)}.app-grid{display:grid;grid-template-columns:1.25fr .8fr .65fr;gap:12px}.app-grid .wide{grid-column:1/-1}.toggle{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700}.toggle input{width:18px;height:18px;accent-color:var(--brand)}.footer-actions{position:sticky;bottom:0;display:flex;justify-content:flex-end;gap:10px;margin:24px -26px -26px;padding:16px 26px;border-top:1px solid var(--line);background:rgba(255,255,255,.94);backdrop-filter:blur(8px)}.status{min-height:22px;margin-top:12px;font-size:14px;color:var(--muted)}.status.ok{color:#087b52}.status.error{color:#c43737}.hidden{display:none!important}
+    @media(max-width:700px){.wrap{width:min(100% - 16px,1040px);margin:8px auto}.panel{border-radius:16px}.panel-head,.content{padding:17px}.panel-head{align-items:flex-start}.panel-head h1{font-size:19px}.links{flex-direction:column}.grid,.app-grid,.locale-editor{grid-template-columns:1fr}.app-grid .wide{grid-column:auto}.footer-actions{margin:20px -17px -17px;padding:14px 17px}.login{margin:35px auto}.toolbar{align-items:flex-start}}
   </style>
 </head>
 <body>
@@ -29,12 +29,23 @@
         </form>
 
         <form id="editor" class="hidden">
-          <div class="grid">
-            <div class="field"><label for="title">Tiêu đề trang</label><input id="title" required maxlength="120"></div>
-            <div class="field"><label for="support_url">Liên kết hỗ trợ</label><input id="support_url" type="url" placeholder="https://..."></div>
+          <div class="locale-editor">
+            <div class="field">
+              <label for="content-locale">Ngôn ngữ nội dung</label>
+              <select id="content-locale">
+                @foreach ($portalLocales as $localeCode => $localeName)
+                  <option value="{{ $localeCode }}">{{ $localeName }} ({{ $localeCode }})</option>
+                @endforeach
+              </select>
+            </div>
+            <p>Bạn đang sửa tiêu đề, mô tả và tên ứng dụng bằng <strong id="current-locale-name">Tiếng Việt</strong>. Liên kết tải, phiên bản, trạng thái và thứ tự được dùng chung cho mọi ngôn ngữ.</p>
           </div>
-          <div class="field"><label for="subtitle">Mô tả đầu trang</label><textarea id="subtitle" maxlength="500"></textarea></div>
-          <div class="field"><label for="notice">Thông báo an toàn</label><textarea id="notice" maxlength="1000"></textarea></div>
+          <div class="grid">
+            <div class="field"><label for="title">Tiêu đề trang <span class="locale-mark" data-locale-label></span></label><input id="title" required maxlength="120"></div>
+            <div class="field"><label for="support_url">Liên kết hỗ trợ <span class="shared-badge">Dùng chung</span></label><input id="support_url" type="url" placeholder="https://..."></div>
+          </div>
+          <div class="field"><label for="subtitle">Mô tả đầu trang <span class="locale-mark" data-locale-label></span></label><textarea id="subtitle" maxlength="500"></textarea></div>
+          <div class="field"><label for="notice">Thông báo an toàn <span class="locale-mark" data-locale-label></span></label><textarea id="notice" maxlength="1000"></textarea></div>
 
           <div class="toolbar"><h2>Danh sách ứng dụng</h2><button id="add-app" class="btn btn-soft" type="button">+ Thêm ứng dụng</button></div>
           <div id="apps"></div>
@@ -50,11 +61,17 @@
       var apiBase = @json('/api/v2/' . $securePath . '/resource-portal');
       var loginUrl = '/api/v2/passport/auth/login';
       var tokenKey = 'zaoguang_resource_admin';
+      var localeOptions = @json($portalLocales);
+      var supportedLocales = Object.keys(localeOptions);
+      var newAppTranslations = @json($newAppTranslations);
+      var localizedPage = {};
+      var currentLocale = 'vi-VN';
       var apps = [];
       var loginForm = document.getElementById('login-form');
       var editor = document.getElementById('editor');
       var logout = document.getElementById('logout');
       var appsRoot = document.getElementById('apps');
+      var localeSelect = document.getElementById('content-locale');
 
       function token() { return sessionStorage.getItem(tokenKey) || ''; }
       function status(id, message, type) { var node = document.getElementById(id); node.textContent = message || ''; node.className = 'status ' + (type || ''); }
@@ -74,15 +91,17 @@
       function renderApps() {
         if (!apps.length) appsRoot.innerHTML = '<div class="status">Chưa có ứng dụng. Nhấn “Thêm ứng dụng” để tạo.</div>';
         else appsRoot.innerHTML = apps.map(function (app, index) {
+          var translation = app.translations && app.translations[currentLocale] ? app.translations[currentLocale] : {name:app.name || '',description:app.description || ''};
+          var localeName = escapeHtml(localeOptions[currentLocale] || currentLocale);
           return '<section class="app-row" data-index="' + index + '">' +
             '<div class="app-row-head"><strong>Ứng dụng ' + (index + 1) + '</strong><div class="row-actions">' +
             '<button class="icon-btn" type="button" data-action="up" title="Đưa lên">↑</button><button class="icon-btn" type="button" data-action="down" title="Đưa xuống">↓</button><button class="icon-btn remove" type="button" data-action="remove" title="Xóa">×</button></div></div>' +
-            '<div class="app-grid"><div class="field"><label>Tên ứng dụng</label><input data-key="name" maxlength="100" required value="' + escapeHtml(app.name) + '"></div>' +
-            '<div class="field"><label>Nền tảng</label><select data-key="platform">' + platformOptions(app.platform) + '</select></div>' +
-            '<div class="field"><label>Phiên bản</label><input data-key="version" maxlength="50" value="' + escapeHtml(app.version) + '"></div>' +
-            '<div class="field wide"><label>Liên kết tải xuống</label><input data-key="download_url" type="url" placeholder="https://..." value="' + escapeHtml(app.download_url) + '"></div>' +
-            '<div class="field wide"><label>Mô tả ngắn</label><textarea data-key="description" maxlength="300">' + escapeHtml(app.description) + '</textarea></div>' +
-            '<label class="toggle wide"><input data-key="enabled" type="checkbox"' + (app.enabled ? ' checked' : '') + '> Hiển thị ứng dụng này</label></div></section>';
+            '<div class="app-grid"><div class="field"><label>Tên ứng dụng <span class="locale-mark">' + localeName + '</span></label><input data-i18n-key="name" maxlength="100" required value="' + escapeHtml(translation.name) + '"></div>' +
+            '<div class="field"><label>Nền tảng <span class="shared-badge">Dùng chung</span></label><select data-key="platform">' + platformOptions(app.platform) + '</select></div>' +
+            '<div class="field"><label>Phiên bản <span class="shared-badge">Dùng chung</span></label><input data-key="version" maxlength="50" value="' + escapeHtml(app.version) + '"></div>' +
+            '<div class="field wide"><label>Liên kết tải xuống <span class="shared-badge">Dùng chung</span></label><input data-key="download_url" type="url" placeholder="https://..." value="' + escapeHtml(app.download_url) + '"></div>' +
+            '<div class="field wide"><label>Mô tả ngắn <span class="locale-mark">' + localeName + '</span></label><textarea data-i18n-key="description" maxlength="300">' + escapeHtml(translation.description) + '</textarea></div>' +
+            '<label class="toggle wide"><input data-key="enabled" type="checkbox"' + (app.enabled ? ' checked' : '') + '> Hiển thị ứng dụng này <span class="shared-badge">Dùng chung</span></label></div></section>';
         }).join('');
       }
       function syncApps() {
@@ -91,15 +110,35 @@
           Array.prototype.forEach.call(row.querySelectorAll('[data-key]'), function (field) {
             apps[index][field.dataset.key] = field.type === 'checkbox' ? field.checked : field.value;
           });
+          if (!apps[index].translations) apps[index].translations = {};
+          if (!apps[index].translations[currentLocale]) apps[index].translations[currentLocale] = {name:'',description:''};
+          Array.prototype.forEach.call(row.querySelectorAll('[data-i18n-key]'), function (field) {
+            apps[index].translations[currentLocale][field.dataset.i18nKey] = field.value;
+          });
+        });
+      }
+      function syncLocalizedPage() {
+        localizedPage[currentLocale] = {
+          title:document.getElementById('title').value,
+          subtitle:document.getElementById('subtitle').value,
+          notice:document.getElementById('notice').value
+        };
+      }
+      function renderLocalizedPage() {
+        var content = localizedPage[currentLocale] || localizedPage['vi-VN'] || {title:'',subtitle:'',notice:''};
+        document.getElementById('title').value = content.title || '';
+        document.getElementById('subtitle').value = content.subtitle || '';
+        document.getElementById('notice').value = content.notice || '';
+        document.getElementById('current-locale-name').textContent = localeOptions[currentLocale] || currentLocale;
+        Array.prototype.forEach.call(document.querySelectorAll('[data-locale-label]'), function (node) {
+          node.textContent = localeOptions[currentLocale] || currentLocale;
         });
       }
       function showEditor(config) {
-        document.getElementById('title').value = config.title || '';
-        document.getElementById('subtitle').value = config.subtitle || '';
-        document.getElementById('notice').value = config.notice || '';
+        localizedPage = config.locales || {'vi-VN':{title:config.title || '',subtitle:config.subtitle || '',notice:config.notice || ''}};
         document.getElementById('support_url').value = config.support_url || '';
         apps = Array.isArray(config.apps) ? config.apps : [];
-        renderApps(); loginForm.classList.add('hidden'); editor.classList.remove('hidden'); logout.classList.remove('hidden');
+        renderLocalizedPage(); renderApps(); loginForm.classList.add('hidden'); editor.classList.remove('hidden'); logout.classList.remove('hidden');
       }
       async function load() {
         try { showEditor(await adminFetch('/fetch')); }
@@ -115,7 +154,15 @@
         } catch (error) { status('login-status', error.message, 'error'); }
       });
       logout.addEventListener('click', function () { sessionStorage.removeItem(tokenKey); location.reload(); });
-      document.getElementById('add-app').addEventListener('click', function () { syncApps(); apps.push({name:'Ứng dụng mới',platform:'windows',version:'',download_url:'',description:'',enabled:true,sort:apps.length}); renderApps(); });
+      localeSelect.addEventListener('change', function () {
+        syncLocalizedPage(); syncApps(); currentLocale = localeSelect.value; renderLocalizedPage(); renderApps(); status('save-status', 'Đang chỉnh ' + (localeOptions[currentLocale] || currentLocale) + '.');
+      });
+      document.getElementById('add-app').addEventListener('click', function () {
+        syncLocalizedPage(); syncApps();
+        var translations = JSON.parse(JSON.stringify(newAppTranslations));
+        apps.push({name:translations['vi-VN'].name,platform:'other',version:'',download_url:'',description:'',translations:translations,enabled:true,sort:apps.length});
+        renderApps();
+      });
       appsRoot.addEventListener('click', function (event) {
         var button = event.target.closest('[data-action]'); if (!button) return; syncApps(); var row = button.closest('.app-row'); var index = Number(row.dataset.index); var action = button.dataset.action;
         if (action === 'remove') apps.splice(index, 1);
@@ -124,8 +171,9 @@
         renderApps();
       });
       editor.addEventListener('submit', async function (event) {
-        event.preventDefault(); syncApps(); status('save-status', 'Đang lưu...');
-        var payload = {title:document.getElementById('title').value,subtitle:document.getElementById('subtitle').value,notice:document.getElementById('notice').value,support_url:document.getElementById('support_url').value,apps:apps.map(function(app,index){return Object.assign({},app,{enabled:!!app.enabled,sort:index});})};
+        event.preventDefault(); syncLocalizedPage(); syncApps(); status('save-status', 'Đang lưu...');
+        var viContent = localizedPage['vi-VN'] || localizedPage[currentLocale];
+        var payload = {title:viContent.title,subtitle:viContent.subtitle,notice:viContent.notice,locales:localizedPage,support_url:document.getElementById('support_url').value,apps:apps.map(function(app,index){var viTranslation=(app.translations && app.translations['vi-VN']) || {name:app.name,description:app.description};return Object.assign({},app,{name:viTranslation.name,description:viTranslation.description,enabled:!!app.enabled,sort:index});})};
         try { showEditor(await adminFetch('/save',{method:'POST',body:JSON.stringify(payload)})); status('save-status', 'Đã lưu thành công.', 'ok'); }
         catch (error) { status('save-status', error.message, 'error'); }
       });

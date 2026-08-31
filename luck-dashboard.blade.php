@@ -27,7 +27,7 @@
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BbO9A4Tv.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/BXdzbR5Q.css?v=1">
   <link rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/CrZoyNRZ.css?v=1">
-  <link id="luck-overrides-stylesheet" rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=26">
+  <link id="luck-overrides-stylesheet" rel="stylesheet" crossorigin href="/theme/{{$theme}}/assets/luck-overrides.css?v=27">
   <script>
     /* Never change routes in response to a global module/preload event. Some
        mobile WebKit builds emit those events for optional preloads even after
@@ -57,13 +57,38 @@
 <body>
   <div id="app"></div>
   <div class="luck-shell-actions">
-    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.zaoguang-vpn.com') }}" target="_blank" rel="noopener noreferrer" aria-label="Tải ứng dụng" title="Tải ứng dụng" hidden>
+    <a id="luck-app-download" class="luck-app-download" href="{{ env('LUCK_RESOURCES_URL', 'https://resources.zaoguang-vpn.com') }}" rel="noopener noreferrer" aria-label="Tải ứng dụng" title="Tải ứng dụng" hidden>
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 18v2h14v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="luck-app-download-label">Tải ứng dụng</span>
     </a>
     <button id="luck-donate-banner" class="luck-donate-banner" type="button" aria-haspopup="dialog" hidden>
       <span class="luck-donate-banner-label">Ủng hộ</span>
     </button>
+  </div>
+  <div id="luck-telegram-card-parking" class="luck-telegram-card-parking" hidden aria-hidden="true">
+  <section id="luck-telegram-card" class="luck-telegram-card" hidden aria-labelledby="luck-telegram-title" aria-busy="true" data-state="loading">
+    <span class="luck-telegram-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="m20.4 4.2-3 14.1c-.2 1-1 1.3-1.8.8l-4.6-3.4-2.2 2.1c-.2.3-.5.5-.9.5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L5.6 12.3 1 10.8c-1-.3-1-1 .2-1.4l18-6.9c.8-.3 1.5.2 1.2 1.7Z" fill="currentColor"/></svg>
+    </span>
+    <div class="luck-telegram-heading">
+      <h2 id="luck-telegram-title">Telegram</h2>
+      <span id="luck-telegram-description" class="luck-telegram-description">Nhận thông báo tài khoản</span>
+    </div>
+    <span id="luck-telegram-status" class="luck-telegram-status" role="status" aria-live="polite">Đang kiểm tra</span>
+    <div class="luck-telegram-actions">
+      <a id="luck-telegram-primary" class="luck-telegram-primary" href="#" target="_blank" rel="noopener noreferrer" hidden>
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="m20.4 4.2-3 14.1c-.2 1-1 1.3-1.8.8l-4.6-3.4-2.2 2.1c-.2.3-.5.5-.9.5l.3-4.7 8.6-7.8c.4-.3-.1-.5-.6-.2L5.6 12.3 1 10.8c-1-.3-1-1 .2-1.4l18-6.9c.8-.3 1.5.2 1.2 1.7Z" fill="currentColor"/></svg>
+        <span>Liên kết bằng Telegram</span>
+      </a>
+      <span id="luck-telegram-unavailable" class="luck-telegram-unavailable" hidden>Bot Telegram hiện chưa khả dụng.</span>
+    </div>
+    <button id="luck-telegram-refresh" class="luck-telegram-refresh" type="button" aria-label="Làm mới trạng thái Telegram" title="Làm mới trạng thái Telegram">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Làm mới</span>
+    </button>
+    <span id="luck-telegram-reseller-note" class="luck-telegram-reseller-note" hidden>Công cụ quản lý khách hàng và gói dịch vụ cũng đã được bật cho tài khoản cộng tác viên của bạn.</span>
+    <span id="luck-telegram-footnote" class="luck-telegram-footnote">Không cần nhập lệnh hoặc sao chép liên kết thủ công.</span>
+  </section>
   </div>
   <div id="luck-donate-modal" class="luck-donate-modal" hidden role="dialog" aria-modal="true" aria-labelledby="luck-donate-title">
     <div class="luck-donate-modal-card">
@@ -145,6 +170,21 @@
         'fa': 'دانلود برنامه', 'fa-IR': 'دانلود برنامه', 'ru': 'Скачать приложение',
         'ru-RU': 'Скачать приложение', 'ar': 'تنزيل التطبيق', 'ar-SA': 'تنزيل التطبيق'
       };
+      var platformCopyByLocale = {
+        'vi-VN': { group: 'Chọn hệ điều hành', macos: 'Máy Mac', linux: 'Máy tính Linux' },
+        'en-US': { group: 'Choose an operating system', macos: 'Mac computer', linux: 'Linux computer' },
+        'zh-CN': { group: '选择操作系统', macos: 'Mac 电脑', linux: 'Linux 电脑' },
+        'zh-TW': { group: '選擇作業系統', macos: 'Mac 電腦', linux: 'Linux 電腦' },
+        'ja-JP': { group: 'OS を選択', macos: 'Mac コンピュータ', linux: 'Linux コンピュータ' },
+        'ko-KR': { group: '운영 체제 선택', macos: 'Mac 컴퓨터', linux: 'Linux 컴퓨터' },
+        'fa-IR': { group: 'انتخاب سیستم‌عامل', macos: 'رایانه Mac', linux: 'رایانه Linux' },
+        'ru-RU': { group: 'Выберите операционную систему', macos: 'Компьютер Mac', linux: 'Компьютер Linux' }
+      };
+      var platformLocaleAliases = { vi: 'vi-VN', en: 'en-US', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', fa: 'fa-IR', ru: 'ru-RU' };
+      var platformLocale = platformCopyByLocale[lang] ? lang :
+        (platformLocaleAliases[String(lang).split('-')[0].toLowerCase()] || 'vi-VN');
+      var platformCopy = platformCopyByLocale[platformLocale];
+      var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];
       var copy = {
         'vi-VN': {
           title: 'Bạn đang sử dụng gói chống lag mùa đứt cáp',
@@ -201,6 +241,8 @@
       banner.setAttribute('aria-label', label);
       var downloadLabel = download && download.querySelector('.luck-app-download-label');
       var localizedDownloadLabel = downloadLabels[lang] || downloadLabels[String(lang).split('-')[0]] || downloadLabels['vi-VN'];
+      var resourcesBaseHref = download ? download.getAttribute('href') : '';
+      var selectedDownloadPlatform = '';
       if (downloadLabel) downloadLabel.textContent = localizedDownloadLabel;
       if (download) {
         download.setAttribute('aria-label', localizedDownloadLabel);
@@ -382,6 +424,130 @@
           }
         });
       };
+      var platformName = function (platform) {
+        if (platform === 'macos') return 'macOS';
+        if (platform === 'ios') return 'iOS';
+        return platform.charAt(0).toUpperCase() + platform.slice(1);
+      };
+      var platformDescription = function (platform) {
+        if (platform === 'macos') return platformCopy.macos;
+        if (platform === 'linux') return platformCopy.linux;
+        return '';
+      };
+      var scopePlatformTree = function (root) {
+        root.setAttribute('data-v-3709f5eb', '');
+        root.querySelectorAll('*').forEach(function (node) {
+          node.setAttribute('data-v-3709f5eb', '');
+        });
+      };
+      var createPlatformCard = function (platform) {
+        var card = document.createElement('div');
+        var icon = platform === 'macos'
+          ? '<svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.7 12.7c0-2.6 2.1-3.8 2.2-3.9a4.7 4.7 0 0 0-3.7-2c-1.6-.2-3 .9-3.8.9-.8 0-2-1-3.3-1-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.5 1.3-.1 1.8-.8 3.4-.8 1.5 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5a11 11 0 0 0 1.4-2.9 4.4 4.4 0 0 1-3-3.8ZM14.2 5.1A4.5 4.5 0 0 0 15.3 2a4.6 4.6 0 0 0-3 1.5 4.2 4.2 0 0 0-1.1 3c1.1.1 2.2-.5 3-1.4Z"/></svg>'
+          : '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="m7 9 3 3-3 3m6 0h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        card.className = 'platform-card ' + platform + ' luck-added-platform';
+        card.innerHTML = '<div class="platform-icon">' + icon + '</div>' +
+          '<div class="platform-name">' + platformName(platform) + '</div>' +
+          '<div class="platform-desc">' + platformDescription(platform) + '</div>';
+        scopePlatformTree(card);
+        return card;
+      };
+      var savedDownloadPlatform = function () {
+        try {
+          var saved = sessionStorage.getItem('luck_download_platform') || '';
+          return PLATFORM_ORDER.indexOf(saved) !== -1 ? saved : '';
+        } catch (ignore) {
+          return '';
+        }
+      };
+      var updateDownloadHref = function (platform) {
+        if (!download || PLATFORM_ORDER.indexOf(platform) === -1 || !resourcesBaseHref) return;
+        try {
+          var target = new URL(resourcesBaseHref, window.location.href);
+          target.searchParams.set('platform', platform);
+          target.searchParams.set('lang', platformLocale);
+          target.hash = 'platform-' + platform;
+          download.setAttribute('href', target.toString());
+          download.removeAttribute('target');
+          download.dataset.luckPlatform = platform;
+          var accessibleLabel = localizedDownloadLabel + ': ' + platformName(platform);
+          download.setAttribute('aria-label', accessibleLabel);
+          download.setAttribute('title', accessibleLabel);
+        } catch (ignore) {
+          download.setAttribute('href', resourcesBaseHref);
+        }
+      };
+      var selectDownloadPlatform = function (platform, focus) {
+        if (PLATFORM_ORDER.indexOf(platform) === -1) return;
+        selectedDownloadPlatform = platform;
+        try { sessionStorage.setItem('luck_download_platform', platform); } catch (ignore) {}
+        document.querySelectorAll('.luck-download-section .platform-card[data-luck-platform]').forEach(function (card) {
+          var selected = card.dataset.luckPlatform === platform;
+          card.classList.toggle('active', selected);
+          card.setAttribute('aria-selected', selected ? 'true' : 'false');
+          card.setAttribute('tabindex', selected ? '0' : '-1');
+          if (selected && focus) card.focus();
+        });
+        updateDownloadHref(platform);
+      };
+      var bindPlatformCard = function (card, platform) {
+        card.dataset.luckPlatform = platform;
+        card.setAttribute('role', 'option');
+        var description = card.querySelector('.platform-desc');
+        card.setAttribute('aria-label', platformName(platform) +
+          (description && description.textContent ? ': ' + description.textContent.trim() : ''));
+        if (card.dataset.luckPlatformBound === '1') return;
+        card.dataset.luckPlatformBound = '1';
+        card.addEventListener('click', function () {
+          selectDownloadPlatform(platform, false);
+          window.setTimeout(function () { selectDownloadPlatform(platform, false); }, 0);
+        });
+        card.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            card.click();
+            return;
+          }
+          var currentIndex = PLATFORM_ORDER.indexOf(platform);
+          var nextIndex = currentIndex;
+          if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % PLATFORM_ORDER.length;
+          else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (currentIndex + PLATFORM_ORDER.length - 1) % PLATFORM_ORDER.length;
+          else if (event.key === 'Home') nextIndex = 0;
+          else if (event.key === 'End') nextIndex = PLATFORM_ORDER.length - 1;
+          else return;
+          event.preventDefault();
+          selectDownloadPlatform(PLATFORM_ORDER[nextIndex], true);
+        });
+      };
+      var syncDownloadPlatforms = function (platformCards) {
+        if (!platformCards) return;
+        platformCards.setAttribute('role', 'listbox');
+        platformCards.setAttribute('aria-label', platformCopy.group);
+        var cards = {};
+        Array.prototype.forEach.call(platformCards.children, function (card) {
+          PLATFORM_ORDER.forEach(function (platform) {
+            if (!cards[platform] && card.classList && card.classList.contains(platform)) cards[platform] = card;
+          });
+        });
+        ['macos', 'linux'].forEach(function (platform) {
+          if (!cards[platform]) cards[platform] = createPlatformCard(platform);
+        });
+        PLATFORM_ORDER.forEach(function (platform, index) {
+          var card = cards[platform];
+          if (!card) return;
+          var current = platformCards.children[index] || null;
+          if (current !== card) platformCards.insertBefore(card, current);
+          bindPlatformCard(card, platform);
+        });
+        if (!selectedDownloadPlatform) {
+          selectedDownloadPlatform = savedDownloadPlatform();
+          if (!selectedDownloadPlatform) {
+            var active = platformCards.querySelector('.platform-card.active[data-luck-platform]');
+            selectedDownloadPlatform = active ? active.dataset.luckPlatform : 'windows';
+          }
+        }
+        selectDownloadPlatform(selectedDownloadPlatform, false);
+      };
       var syncDownloadPlacement = function () {
         if (!download) return;
         var path = window.location.pathname.replace(/\/+$/, '') || '/';
@@ -397,6 +563,7 @@
         downloadSection.classList.add('luck-download-section');
         var toolbar = downloadSection.querySelector('.luck-download-toolbar');
         var platformCards = downloadSection.querySelector('.platform-cards');
+        syncDownloadPlatforms(platformCards);
         if (!toolbar) {
           toolbar = document.createElement('div');
           toolbar.className = 'luck-download-toolbar';
@@ -440,6 +607,331 @@
         syncDownloadPlacement();
         checkEligibility(true);
       }, 0);
+    }());
+  </script>
+  <script>
+    (function () {
+      var card = document.getElementById('luck-telegram-card');
+      var status = document.getElementById('luck-telegram-status');
+      var description = document.getElementById('luck-telegram-description');
+      var resellerNote = document.getElementById('luck-telegram-reseller-note');
+      var primary = document.getElementById('luck-telegram-primary');
+      var primaryLabel = primary && primary.querySelector('span');
+      var unavailable = document.getElementById('luck-telegram-unavailable');
+      var footnote = document.getElementById('luck-telegram-footnote');
+      var refresh = document.getElementById('luck-telegram-refresh');
+      var refreshLabel = refresh && refresh.querySelector('span');
+      var app = document.getElementById('app');
+      var parking = document.getElementById('luck-telegram-card-parking');
+      if (!card || !status || !primary || !refresh || !parking || card.dataset.bound === '1') return;
+      card.dataset.bound = '1';
+
+      var ENDPOINT = '/api/v1/user/telegram/getBotInfo';
+      var copyByLocale = {
+        'vi-VN': {
+          loading: 'Đang kiểm tra', linked: 'Đã liên kết', unlinked: 'Chưa liên kết', unavailable: 'Chưa khả dụng', error: 'Không thể tải',
+          description: 'Nhận thông báo tài khoản',
+          reseller: 'Công cụ quản lý khách hàng và gói dịch vụ cũng đã được bật cho tài khoản cộng tác viên của bạn.',
+          link: 'Liên kết ngay', open: 'Mở Telegram', refresh: 'Làm mới',
+          refreshAria: 'Làm mới trạng thái Telegram', unavailableMessage: 'Bot Telegram hiện chưa khả dụng.',
+          footnote: 'Không cần nhập lệnh hoặc sao chép liên kết thủ công.'
+        },
+        'en-US': {
+          loading: 'Checking', linked: 'Connected', unlinked: 'Not connected', unavailable: 'Unavailable', error: 'Could not load',
+          description: 'Account notifications',
+          reseller: 'Customer and plan management tools are also enabled for your reseller account.',
+          link: 'Connect now', open: 'Open Telegram', refresh: 'Refresh',
+          refreshAria: 'Refresh Telegram status', unavailableMessage: 'The Telegram bot is currently unavailable.',
+          footnote: 'No commands or manual link copying required.'
+        },
+        'zh-CN': {
+          loading: '正在检查', linked: '已关联', unlinked: '未关联', unavailable: '暂不可用', error: '加载失败',
+          description: '接收账户通知',
+          reseller: '您的合作伙伴账户还可使用客户与套餐管理工具。',
+          link: '立即关联', open: '打开 Telegram', refresh: '刷新',
+          refreshAria: '刷新 Telegram 状态', unavailableMessage: 'Telegram 机器人目前不可用。',
+          footnote: '无需输入命令或手动复制链接。'
+        },
+        'zh-TW': {
+          loading: '正在檢查', linked: '已連結', unlinked: '未連結', unavailable: '暫時無法使用', error: '載入失敗',
+          description: '接收帳戶通知',
+          reseller: '您的合作夥伴帳戶亦已啟用客戶與方案管理工具。',
+          link: '立即連結', open: '開啟 Telegram', refresh: '重新整理',
+          refreshAria: '重新整理 Telegram 狀態', unavailableMessage: 'Telegram 機器人目前無法使用。',
+          footnote: '無需輸入指令或手動複製連結。'
+        },
+        'ja-JP': {
+          loading: '確認中', linked: '連携済み', unlinked: '未連携', unavailable: '利用できません', error: '読み込めません',
+          description: 'アカウント通知を受信',
+          reseller: '代理店アカウントでは、顧客とプランの管理ツールも利用できます。',
+          link: '今すぐ連携', open: 'Telegram を開く', refresh: '更新',
+          refreshAria: 'Telegram の状態を更新', unavailableMessage: 'Telegram ボットは現在利用できません。',
+          footnote: 'コマンド入力やリンクの手動コピーは不要です。'
+        },
+        'ko-KR': {
+          loading: '확인 중', linked: '연결됨', unlinked: '연결되지 않음', unavailable: '사용할 수 없음', error: '불러올 수 없음',
+          description: '계정 알림 받기',
+          reseller: '리셀러 계정에는 고객 및 요금제 관리 도구도 활성화됩니다.',
+          link: '지금 연결', open: 'Telegram 열기', refresh: '새로고침',
+          refreshAria: 'Telegram 상태 새로고침', unavailableMessage: '현재 Telegram 봇을 사용할 수 없습니다.',
+          footnote: '명령어 입력이나 링크 수동 복사가 필요하지 않습니다.'
+        },
+        'fa-IR': {
+          loading: 'در حال بررسی', linked: 'متصل', unlinked: 'متصل نشده', unavailable: 'در دسترس نیست', error: 'بارگذاری نشد',
+          description: 'دریافت اعلان‌های حساب',
+          reseller: 'ابزارهای مدیریت مشتری و طرح نیز برای حساب همکار فروش شما فعال است.',
+          link: 'اتصال اکنون', open: 'باز کردن تلگرام', refresh: 'تازه‌سازی',
+          refreshAria: 'تازه‌سازی وضعیت تلگرام', unavailableMessage: 'ربات تلگرام در حال حاضر در دسترس نیست.',
+          footnote: 'نیازی به وارد کردن دستور یا کپی دستی پیوند نیست.'
+        },
+        'ru-RU': {
+          loading: 'Проверяем', linked: 'Подключено', unlinked: 'Не подключено', unavailable: 'Недоступно', error: 'Не удалось загрузить',
+          description: 'Уведомления об аккаунте',
+          reseller: 'Для вашего партнёрского аккаунта также доступны инструменты управления клиентами и тарифами.',
+          link: 'Подключить', open: 'Открыть Telegram', refresh: 'Обновить',
+          refreshAria: 'Обновить статус Telegram', unavailableMessage: 'Telegram-бот сейчас недоступен.',
+          footnote: 'Вводить команды или копировать ссылку вручную не нужно.'
+        }
+      };
+
+      var localeAliases = { vi: 'vi-VN', en: 'en-US', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', fa: 'fa-IR', ru: 'ru-RU' };
+      var currentCopy = copyByLocale['vi-VN'];
+      var activeRequest = 0;
+      var lastRequestKey = '';
+      var refreshTimer = 0;
+      var bindingRefreshTimer = 0;
+      var placementObserver = null;
+
+      var selectedLocale = function () {
+        var locale = String((window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || document.documentElement.lang || 'vi-VN');
+        return copyByLocale[locale] ? locale : (localeAliases[locale.split('-')[0].toLowerCase()] || 'vi-VN');
+      };
+      var normalizeToken = function () {
+        try {
+          var token = localStorage.getItem('v2board_token') || '';
+          if (token.charAt(0) === '"') token = JSON.parse(token);
+          return typeof token === 'string' ? token.trim() : '';
+        } catch (ignore) {
+          return '';
+        }
+      };
+      var isDashboardRoute = function () {
+        return (window.location.pathname.replace(/\/+$/, '') || '/') === '/dashboard';
+      };
+      var cardIsMounted = function () {
+        var header = card.parentElement;
+        return !!(header && header.classList.contains('luck-subscription-header') &&
+          header.parentElement && header.parentElement.classList.contains('subscription-cards-section'));
+      };
+      var safeTelegramUrl = function (value) {
+        try {
+          var url = new URL(String(value || ''));
+          var host = url.hostname.toLowerCase();
+          if (url.protocol !== 'https:' || host !== 't.me' || url.username || url.password || url.port) return '';
+          return url.toString();
+        } catch (ignore) {
+          return '';
+        }
+      };
+      var setText = function (node, value) { if (node) node.textContent = value; };
+      var clearBindingRefresh = function () {
+        window.clearTimeout(bindingRefreshTimer);
+        bindingRefreshTimer = 0;
+      };
+      var scheduleBindingRefresh = function (expiresIn) {
+        clearBindingRefresh();
+        expiresIn = Number(expiresIn);
+        if (!isFinite(expiresIn) || expiresIn <= 0) return;
+        var delay = Math.min(Math.max(30, expiresIn - 30) * 1000, 2147483647);
+        bindingRefreshTimer = window.setTimeout(function () {
+          bindingRefreshTimer = 0;
+          if (!card.hidden) loadBotInfo(true);
+        }, delay);
+      };
+      var applyCopy = function () {
+        currentCopy = copyByLocale[selectedLocale()];
+        setText(description, currentCopy.description);
+        setText(resellerNote, currentCopy.reseller);
+        setText(refreshLabel, currentCopy.refresh);
+        setText(unavailable, currentCopy.unavailableMessage);
+        setText(footnote, currentCopy.footnote);
+        refresh.setAttribute('aria-label', currentCopy.refreshAria);
+        refresh.setAttribute('title', currentCopy.refreshAria);
+      };
+      var setState = function (name, statusText) {
+        card.dataset.state = name;
+        card.setAttribute('aria-busy', name === 'loading' ? 'true' : 'false');
+        refresh.disabled = name === 'loading';
+        setText(status, statusText);
+      };
+      var beginLoading = function () {
+        primary.hidden = true;
+        primary.removeAttribute('href');
+        unavailable.hidden = true;
+        resellerNote.hidden = true;
+        setState('loading', currentCopy.loading);
+      };
+      var showUnavailable = function (stateName, statusText) {
+        primary.hidden = true;
+        primary.removeAttribute('href');
+        unavailable.hidden = false;
+        resellerNote.hidden = true;
+        setState(stateName, statusText);
+      };
+      var renderBotInfo = function (data) {
+        data = data && typeof data === 'object' ? data : {};
+        if (data.enabled === false) {
+          showUnavailable('unavailable', currentCopy.unavailable);
+          return;
+        }
+        var bindUrl = safeTelegramUrl(data.bind_url);
+        var linked = data.linked === true;
+        resellerNote.hidden = !(data.capabilities && data.capabilities.reseller === true);
+        if (!bindUrl) {
+          showUnavailable('unavailable', linked ? currentCopy.linked : currentCopy.unavailable);
+          return;
+        }
+        unavailable.hidden = true;
+        primary.href = bindUrl;
+        primary.hidden = false;
+        setText(primaryLabel, linked ? currentCopy.open : currentCopy.link);
+        setState(linked ? 'linked' : 'unlinked', linked ? currentCopy.linked : currentCopy.unlinked);
+        scheduleBindingRefresh(data.binding_expires_in);
+      };
+      var loadBotInfo = function (force) {
+        var token = normalizeToken();
+        if (!token || !isDashboardRoute() || card.hidden || !cardIsMounted()) {
+          parkCard();
+          return;
+        }
+        var requestKey = token + '|' + selectedLocale();
+        if (!force && requestKey === lastRequestKey) return;
+        lastRequestKey = requestKey;
+        var requestId = ++activeRequest;
+        clearBindingRefresh();
+        applyCopy();
+        beginLoading();
+        fetch(ENDPOINT, {
+          method: 'GET', credentials: 'same-origin', cache: 'no-store',
+          headers: { 'Accept': 'application/json', 'Authorization': token }
+        }).then(function (response) {
+          if (response.status === 401 || response.status === 403) {
+            parkCard();
+            return null;
+          }
+          if (!response.ok) throw new Error('Telegram status request failed');
+          return response.json();
+        }).then(function (payload) {
+          if (requestId !== activeRequest) return;
+          renderBotInfo(payload && payload.data);
+        }).catch(function () {
+          if (requestId !== activeRequest) return;
+          lastRequestKey = '';
+          showUnavailable('error', currentCopy.error);
+        });
+      };
+      var observeApp = function () {
+        if (placementObserver && app) {
+          placementObserver.observe(app, { childList: true, subtree: true });
+        }
+      };
+      var moveCard = function (parent, beforeNode) {
+        if (!parent) return;
+        if (placementObserver) placementObserver.disconnect();
+        parent.insertBefore(card, beforeNode || null);
+        observeApp();
+      };
+      var parkCard = function () {
+        activeRequest += 1;
+        lastRequestKey = '';
+        clearBindingRefresh();
+        card.hidden = true;
+        card.classList.remove('luck-telegram-card--subscription');
+        if (card.parentElement !== parking) moveCard(parking, null);
+      };
+      var firstVisible = function (selector) {
+        var nodes = document.querySelectorAll(selector);
+        for (var index = 0; index < nodes.length; index += 1) {
+          if (nodes[index].getClientRects().length > 0) return nodes[index];
+        }
+        return null;
+      };
+      var syncPlacement = function (force) {
+        if (!isDashboardRoute() || !normalizeToken()) {
+          parkCard();
+          return;
+        }
+        var subscriptionSection = firstVisible('.subscription-cards-section');
+        var sectionTitle = null;
+        var subscriptionGrid = null;
+        var header = null;
+        if (subscriptionSection) {
+          for (var index = 0; index < subscriptionSection.children.length; index += 1) {
+            if (subscriptionSection.children[index].classList.contains('section-title')) {
+              sectionTitle = subscriptionSection.children[index];
+            } else if (subscriptionSection.children[index].classList.contains('subscription-grid')) {
+              subscriptionGrid = subscriptionSection.children[index];
+            } else if (subscriptionSection.children[index].classList.contains('luck-subscription-header')) {
+              header = subscriptionSection.children[index];
+            }
+          }
+          if (header) {
+            for (var headerIndex = 0; headerIndex < header.children.length; headerIndex += 1) {
+              if (header.children[headerIndex].classList.contains('section-title')) {
+                sectionTitle = header.children[headerIndex];
+                break;
+              }
+            }
+          }
+        }
+        if (!subscriptionSection || !sectionTitle || !subscriptionGrid) {
+          parkCard();
+          return;
+        }
+        var placementIsCurrent = header && header.parentElement === subscriptionSection &&
+          header.nextElementSibling === subscriptionGrid && sectionTitle.parentElement === header &&
+          card.parentElement === header && card.previousElementSibling === sectionTitle;
+        if (!placementIsCurrent) {
+          if (placementObserver) placementObserver.disconnect();
+          if (!header) {
+            header = document.createElement('div');
+            header.className = 'luck-subscription-header';
+          }
+          subscriptionSection.insertBefore(header, subscriptionGrid);
+          if (sectionTitle.parentElement !== header) header.insertBefore(sectionTitle, header.firstChild);
+          if (card.parentElement !== header || card.previousElementSibling !== sectionTitle) {
+            header.insertBefore(card, sectionTitle.nextElementSibling);
+          }
+          observeApp();
+        }
+        card.classList.add('luck-telegram-card--subscription');
+        card.hidden = false;
+        applyCopy();
+        loadBotInfo(force === true);
+      };
+      var schedulePlacement = function () {
+        window.clearTimeout(refreshTimer);
+        refreshTimer = window.setTimeout(function () { syncPlacement(false); }, 100);
+      };
+
+      refresh.addEventListener('click', function () { loadBotInfo(true); });
+      if (app && window.MutationObserver) {
+        placementObserver = new MutationObserver(schedulePlacement);
+        observeApp();
+      }
+      window.addEventListener('popstate', schedulePlacement);
+      window.addEventListener('pageshow', function () { syncPlacement(true); });
+      window.addEventListener('focus', function () {
+        if (!card.hidden && card.dataset.state !== 'loading') {
+          window.setTimeout(function () {
+            if (!card.hidden && card.dataset.state !== 'loading') loadBotInfo(true);
+          }, 500);
+        }
+      });
+      window.addEventListener('storage', function (event) {
+        if (event.key === 'v2board_token') syncPlacement(true);
+      });
+      window.setTimeout(function () { syncPlacement(true); }, 0);
     }());
   </script>
   <div class="luck-language-picker" aria-label="{{ __('Language selector') }}">

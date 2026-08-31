@@ -12,27 +12,30 @@ use Illuminate\Support\Facades\Log;
 
 class TelegramService
 {
-    protected PendingRequest $http;
     protected string $apiUrl;
 
     public function __construct(?string $token = null)
     {
-        $botToken = admin_setting('telegram_bot_token', $token);
+        $botToken = (string) admin_setting('telegram_bot_token', $token);
         $this->apiUrl = "https://api.telegram.org/bot{$botToken}/";
-
-        $this->http = Http::timeout(30)
-            ->retry(3, 1000)
-            ->withHeaders([
-                'Accept' => 'application/json',
-            ]);
     }
 
-    public function sendMessage(int $chatId, string $text, string $parseMode = '', array $replyMarkup = []): void
+    public function sendMessage(int|string $chatId, string $text, string $parseMode = '', array $replyMarkup = []): void
     {
-        $text = $parseMode === 'markdown' ? str_replace('_', '\_', $text) : $text;
+        if ($parseMode === 'markdown') {
+            // Dynamic values are escaped by their caller before interpolation.
+            // Escape only raw underscores here so an existing `\_` never turns
+            // into `\\_`, which Telegram parses as a literal slash followed by
+            // an unescaped Markdown delimiter.
+            $text = preg_replace_callback(
+                '/(?<!\\\\)_/',
+                static fn (): string => '\_',
+                $text,
+            ) ?? $text;
+        }
 
         $params = [
-            'chat_id' => $chatId,
+            'chat_id' => (string) $chatId,
             'text' => $text,
             'parse_mode' => $parseMode ?: null,
         ];
@@ -42,7 +45,7 @@ class TelegramService
         $this->request('sendMessage', $params);
     }
 
-    public function sendDocument(int $chatId, string $filePath, string $caption = ''): object
+    public function sendDocument(int|string $chatId, string $filePath, string $caption = ''): object
     {
         if (!is_file($filePath) || !is_readable($filePath)) {
             throw new ApiException('Telegram document is not readable');
@@ -56,18 +59,17 @@ class TelegramService
                 ->withHeaders(['Accept' => 'application/json'])
                 ->attach('document', $handle, basename($filePath))
                 ->post($this->apiUrl . 'sendDocument', array_filter([
-                    'chat_id' => $chatId,
+                    'chat_id' => (string) $chatId,
                     'caption' => $caption,
                 ], static fn ($value) => $value !== ''));
 
             return $this->validateResponse($response, 'sendDocument');
         } catch (\Throwable $e) {
             Log::error('Telegram document upload failed', [
-                'chat_id' => $chatId,
                 'size' => filesize($filePath) ?: null,
-                'error' => $e->getMessage(),
+                'error_type' => $e::class,
             ]);
-            throw new ApiException("Telegram service error: {$e->getMessage()}");
+            throw new ApiException('Telegram document upload failed');
         } finally {
             fclose($handle);
         }
@@ -81,30 +83,30 @@ class TelegramService
         ], static fn ($value) => $value !== ''));
     }
 
-    public function approveChatJoinRequest(int $chatId, int $userId): void
+    public function approveChatJoinRequest(int|string $chatId, int|string $userId): void
     {
         $this->request('approveChatJoinRequest', [
-            'chat_id' => $chatId,
-            'user_id' => $userId,
+            'chat_id' => (string) $chatId,
+            'user_id' => (string) $userId,
         ]);
     }
 
-    public function declineChatJoinRequest(int $chatId, int $userId): void
+    public function declineChatJoinRequest(int|string $chatId, int|string $userId): void
     {
         $this->request('declineChatJoinRequest', [
-            'chat_id' => $chatId,
-            'user_id' => $userId,
+            'chat_id' => (string) $chatId,
+            'user_id' => (string) $userId,
         ]);
     }
 
     public function getMe(): object
     {
-        return $this->request('getMe');
+        return $this->request('getMe', retryable: true);
     }
 
     public function setWebhook(string $url): object
     {
-        $result = $this->request('setWebhook', ['url' => $url]);
+        $result = $this->request('setWebhook', ['url' => $url], retryable: true);
         return $result;
     }
 
@@ -122,7 +124,7 @@ class TelegramService
             $this->request('setMyCommands', [
                 'commands' => json_encode($commands),
                 'scope' => json_encode(['type' => 'default'])
-            ]);
+            ], retryable: true);
 
             $localizedCommands = HookManager::filter('telegram.bot.commands.localized', []);
             foreach ($localizedCommands as $languageCode => $languageCommands) {
@@ -133,18 +135,16 @@ class TelegramService
                     'commands' => json_encode($languageCommands, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                     'scope' => json_encode(['type' => 'default']),
                     'language_code' => (string) $languageCode,
-                ]);
+                ], retryable: true);
             }
 
             Log::info('Telegram Bot commands registered', [
                 'commands_count' => count($commands),
-                'commands' => $commands
             ]);
 
         } catch (\Exception $e) {
             Log::error('Telegram Bot command registration failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error_type' => $e::class,
             ]);
         }
     }
@@ -152,13 +152,13 @@ class TelegramService
     /** Get the currently registered command list. */
     public function getMyCommands(): object
     {
-        return $this->request('getMyCommands');
+        return $this->request('getMyCommands', retryable: true);
     }
 
     /** Delete all registered commands. */
     public function deleteMyCommands(): object
     {
-        return $this->request('deleteMyCommands');
+        return $this->request('deleteMyCommands', retryable: true);
     }
 
     public function sendMessageWithAdmin(string $message, bool $isStaff = false): void
@@ -186,22 +186,37 @@ class TelegramService
         }
     }
 
-    protected function request(string $method, array $params = []): object
+    protected function request(string $method, array $params = [], bool $retryable = false): object
     {
         try {
-            $response = $this->http->get($this->apiUrl . $method, $params);
+            // Never keep retry state on a shared PendingRequest. Mutating calls
+            // such as sendMessage must be attempted exactly once because a
+            // timeout can happen after Telegram accepted the message. Only
+            // read or replace-style idempotent methods opt into retries.
+            $response = $this->http($retryable)
+                ->post($this->apiUrl . $method, $params);
 
             return $this->validateResponse($response, $method);
 
         } catch (\Exception $e) {
             Log::error('Telegram API request failed', [
                 'method' => $method,
-                'params' => $params,
-                'error' => $e->getMessage(),
+                // Exception messages from the HTTP client may contain the bot
+                // token and the complete GET query. Keep only its class.
+                'error_type' => $e::class,
             ]);
 
-            throw new ApiException("Telegram service error: {$e->getMessage()}");
+            throw new ApiException('Telegram service request failed');
         }
+    }
+
+    protected function http(bool $retryable): PendingRequest
+    {
+        $request = Http::timeout(30)->withHeaders([
+            'Accept' => 'application/json',
+        ]);
+
+        return $retryable ? $request->retry(3, 1000) : $request;
     }
 
     protected function validateResponse(\Illuminate\Http\Client\Response $response, string $method): object
