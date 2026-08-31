@@ -10,11 +10,12 @@ use App\Services\Plugin\HookManager;
 use App\Services\TelegramService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class TelegramController extends Controller
 {
     private const UPDATE_DEDUPE_HOURS = 36;
+    private const UPDATE_RECEIPTS_TABLE = 'telegram_webhook_update_receipts';
     private const MAX_SIGNED_BIGINT = '9223372036854775807';
     private const MIN_SIGNED_BIGINT_MAGNITUDE = '9223372036854775808';
 
@@ -227,15 +228,26 @@ class TelegramController extends Controller
             return false;
         }
 
-        $key = 'telegram:webhook:update:'
-            . hash('sha256', $botToken)
-            . ':'
-            . $updateId;
+        $receiptHash = hash(
+            'sha256',
+            hash('sha256', $botToken, true) . "\0" . $updateId
+        );
+        $claimedAt = now();
 
-        // Cache::add is an atomic set-if-absent operation on every supported
-        // production cache backend. Keep claims long enough to cover delayed
-        // Telegram retries without retaining them indefinitely.
-        return Cache::add($key, true, now()->addHours(self::UPDATE_DEDUPE_HOURS));
+        // Keep the durable claim and retention cleanup in one transaction. A
+        // database or schema failure aborts the request before any bot side
+        // effect, allowing Telegram to retry after the dependency recovers.
+        return DB::transaction(function () use ($receiptHash, $claimedAt): bool {
+            DB::table(self::UPDATE_RECEIPTS_TABLE)
+                ->where('expires_at', '<=', $claimedAt)
+                ->delete();
+
+            return DB::table(self::UPDATE_RECEIPTS_TABLE)->insertOrIgnore([
+                'receipt_hash' => $receiptHash,
+                'created_at' => $claimedAt,
+                'expires_at' => $claimedAt->copy()->addHours(self::UPDATE_DEDUPE_HOURS),
+            ]) === 1;
+        }, 3);
     }
 
     private function actorId(mixed $value): ?string

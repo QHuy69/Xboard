@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 class TelegramResellerService
 {
     public const GENERATED_EMAIL_DOMAIN = 'bot.zaoguang.invalid';
+    private const OPERATION_RECEIPTS_TABLE = 'telegram_webhook_update_receipts';
+    private const OPERATION_RECEIPT_DAYS = 30;
 
     public function canManage(User $actor): bool
     {
@@ -104,11 +106,13 @@ class TelegramResellerService
         int $planId,
         string $period,
         string $couponCode,
+        string $operationNonce,
         string $locale = 'en-US',
     ): array {
-        $result = DB::transaction(function () use ($actor, $planId, $period, $couponCode, $locale): array {
+        $result = DB::transaction(function () use ($actor, $planId, $period, $couponCode, $operationNonce, $locale): array {
             $lockedActor = User::query()->whereKey($actor->id)->lockForUpdate()->first();
             $this->assertReseller($lockedActor);
+            $this->claimOperation('create', (int) $lockedActor->id, $operationNonce);
 
             $plan = $this->sellablePlan($planId, $period);
             $couponId = $this->validateFullDiscountCoupon($couponCode, $plan, $period, null);
@@ -126,7 +130,16 @@ class TelegramResellerService
             $user->locale = $locale;
             $user->saveOrFail();
 
-            $order = OrderService::createFromRequest($user, $plan, $period, $couponCode);
+            // A 100% reseller coupon is an entitlement, not a cash-out path.
+            // Never convert the customer's old plan into balance credit for a
+            // bot-created purchase, even when the global surplus feature is on.
+            $order = OrderService::createFromRequest(
+                $user,
+                $plan,
+                $period,
+                $couponCode,
+                allowSurplus: false,
+            );
             $this->assertZeroTotalCouponOrder($order, $couponId);
 
             if (!(new OrderService($order))->paid($this->paymentReference((int) $lockedActor->id))) {
@@ -164,10 +177,12 @@ class TelegramResellerService
         int $planId,
         string $period,
         string $couponCode,
+        string $operationNonce,
     ): array {
-        $result = DB::transaction(function () use ($actor, $customerId, $planId, $period, $couponCode): array {
+        $result = DB::transaction(function () use ($actor, $customerId, $planId, $period, $couponCode, $operationNonce): array {
             $lockedActor = User::query()->whereKey($actor->id)->lockForUpdate()->first();
             $this->assertReseller($lockedActor);
+            $this->claimOperation('purchase', (int) $lockedActor->id, $operationNonce);
             $customer = $this->ownedCustomer($lockedActor, $customerId, true);
             if (!$customer) {
                 throw new ApiException(__('The customer does not exist or is not owned by this reseller.'));
@@ -175,7 +190,13 @@ class TelegramResellerService
 
             $plan = $this->sellablePlan($planId, $period);
             $couponId = $this->validateFullDiscountCoupon($couponCode, $plan, $period, $customer);
-            $order = OrderService::createFromRequest($customer, $plan, $period, $couponCode);
+            $order = OrderService::createFromRequest(
+                $customer,
+                $plan,
+                $period,
+                $couponCode,
+                allowSurplus: false,
+            );
             $this->assertZeroTotalCouponOrder($order, $couponId);
 
             if (!(new OrderService($order))->paid($this->paymentReference((int) $lockedActor->id))) {
@@ -214,11 +235,12 @@ class TelegramResellerService
         return Helper::getSubscribeUrl($customer->token);
     }
 
-    public function resetSubscription(User $actor, int $customerId): ?string
+    public function resetSubscription(User $actor, int $customerId, string $operationNonce): ?string
     {
-        $customer = DB::transaction(function () use ($actor, $customerId): ?User {
+        $customer = DB::transaction(function () use ($actor, $customerId, $operationNonce): ?User {
             $lockedActor = User::query()->whereKey($actor->id)->lockForUpdate()->first();
             $this->assertReseller($lockedActor);
+            $this->claimOperation('reset', (int) $lockedActor->id, $operationNonce);
             $customer = $this->ownedCustomer($lockedActor, $customerId, true);
             if (!$customer) {
                 return null;
@@ -344,7 +366,10 @@ class TelegramResellerService
     {
         if ((int) $order->coupon_id !== $couponId
             || (int) $order->total_amount !== 0
-            || (float) $order->discount_amount <= 0) {
+            || (float) $order->discount_amount <= 0
+            || (int) ($order->surplus_amount ?? 0) !== 0
+            || (int) ($order->surplus_credit ?? 0) !== 0
+            || !empty($order->surplus_order_ids)) {
             throw new ApiException(__('The coupon did not fully discount this order.'));
         }
     }
@@ -365,6 +390,34 @@ class TelegramResellerService
     private function paymentReference(int $actorId): string
     {
         return 'telegram-reseller-' . $actorId . '-' . bin2hex(random_bytes(8));
+    }
+
+    /**
+     * Claim a destructive bot action in the same database transaction as its
+     * business mutation. Redis locks remain useful for UX/concurrency, while
+     * this receipt prevents replay after a cache restart or stale restore.
+     */
+    private function claimOperation(string $action, int $actorId, string $nonce): void
+    {
+        if (!in_array($action, ['create', 'purchase', 'reset'], true)
+            || preg_match('/^[a-f0-9]{16}$/', $nonce) !== 1) {
+            throw new ApiException(__('Invalid parameter'));
+        }
+
+        $now = now();
+        DB::table(self::OPERATION_RECEIPTS_TABLE)
+            ->where('expires_at', '<=', $now)
+            ->delete();
+
+        $receiptHash = hash('sha256', "telegram-reseller\0{$action}\0{$actorId}\0{$nonce}");
+        $claimed = DB::table(self::OPERATION_RECEIPTS_TABLE)->insertOrIgnore([
+            'receipt_hash' => $receiptHash,
+            'created_at' => $now,
+            'expires_at' => $now->copy()->addDays(self::OPERATION_RECEIPT_DAYS),
+        ]);
+        if ($claimed !== 1) {
+            throw new ApiException(__('Invalid parameter'));
+        }
     }
 
     private function audit(string $action, User $actor, User $customer, ?Order $order = null): void

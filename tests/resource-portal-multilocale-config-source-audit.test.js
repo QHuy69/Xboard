@@ -44,6 +44,8 @@ assert(manage.includes('locales:localizedPage'), 'save payload must include all 
 assert(manage.includes("app.translations['vi-VN']"), 'save payload must retain a legacy vi-VN app mirror');
 assert(manage.includes('Liên kết tải, phiên bản, trạng thái và thứ tự được dùng chung'), 'the editor must explain which values are shared');
 assert(portal.includes('<html lang="{{ $locale }}" dir="{{ $direction }}">'), 'public Resources must retain selected locale and direction');
+assert(portal.includes('@media(max-width:360px)') && portal.includes('@media(prefers-reduced-motion:reduce)'),
+  'Resources portal is missing narrow-foldable or reduced-motion layout guards');
 
 const scriptMatch = manage.match(/<script>([\s\S]*?)<\/script>/);
 assert(scriptMatch, 'Resources management script is missing');

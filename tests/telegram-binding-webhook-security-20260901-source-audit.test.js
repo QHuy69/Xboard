@@ -72,11 +72,17 @@ assert(
 
 const webhook = includesAll('app/Http/Controllers/V1/Guest/TelegramController.php', [
   'private const UPDATE_DEDUPE_HOURS = 36',
+  "private const UPDATE_RECEIPTS_TABLE = 'telegram_webhook_update_receipts'",
   "admin_setting('telegram_bot_enable', false)",
   "->where('code', 'telegram')",
   "->where('is_enabled', true)",
   'hash_equals($expectedToken, $providedToken)',
-  'return Cache::add($key, true, now()->addHours(self::UPDATE_DEDUPE_HOURS))',
+  "hash('sha256', $botToken, true) . \"\\0\" . $updateId",
+  'return DB::transaction(function () use ($receiptHash, $claimedAt): bool',
+  "->where('expires_at', '<=', $claimedAt)",
+  "'expires_at' => $claimedAt->copy()->addHours(self::UPDATE_DEDUPE_HOURS)",
+  '->insertOrIgnore([',
+  '}, 3);',
   "$this->formatChatJoinRequest($data)",
   "'chat_id' => $chatId",
   "'from_id' => $fromId",
@@ -90,6 +96,30 @@ assert(
   webhook.indexOf('if (!$this->claimUpdate(') < webhook.indexOf('$this->formatMessage($data)'),
   'atomic update-id claim must happen before any Telegram side effect'
 );
+const claimUpdate = webhook.slice(
+  webhook.indexOf('private function claimUpdate'),
+  webhook.indexOf('private function actorId')
+);
+assert(!claimUpdate.includes('Cache::'), 'Webhook replay protection must not depend on an evictable cache receipt');
+assert(!claimUpdate.includes('catch ('), 'Receipt database failures must propagate before Telegram side effects');
+
+const receiptMigration = includesAll('database/migrations/2026_09_01_000002_create_telegram_webhook_update_receipts.php', [
+  "private const TABLE = 'telegram_webhook_update_receipts'",
+  "$table->char('receipt_hash', 64)",
+  "$table->timestamp('created_at')",
+  "$table->timestamp('expires_at')",
+  "$table->unique('receipt_hash', self::UNIQUE_INDEX)",
+  "$table->index('expires_at', self::EXPIRY_INDEX)",
+  'Schema::dropIfExists(self::TABLE)'
+]);
+assert(!receiptMigration.includes('bot_token') && !receiptMigration.includes('update_id'),
+  'Durable receipts must not retain the bot credential or raw Telegram update id');
+
+includesAll('tests/Feature/TelegramBindingWebhookSecurity20260901Test.php', [
+  'Cache::flush();',
+  "$this->assertDatabaseCount('telegram_webhook_update_receipts', 1)",
+  'test_webhook_receipt_claim_prunes_expired_rows_but_keeps_live_receipts'
+]);
 
 const telegramService = read('app/Services/TelegramService.php');
 const sendTelegramJob = read('app/Jobs/SendTelegramJob.php');

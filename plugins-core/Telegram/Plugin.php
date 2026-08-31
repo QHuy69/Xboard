@@ -977,6 +977,7 @@ class Plugin extends AbstractPlugin
                     $planId,
                     $period,
                     $couponCode,
+                    $nonce,
                     $this->canonicalUserLocale($locale),
                 );
             } elseif (($currentState['mode'] ?? '') === 'purchase') {
@@ -986,6 +987,7 @@ class Plugin extends AbstractPlugin
                     $planId,
                     $period,
                     $couponCode,
+                    $nonce,
                 );
             } else {
                 $this->sendMessage($msg, $this->text('operation_expired', $locale));
@@ -1188,7 +1190,7 @@ class Plugin extends AbstractPlugin
             }
             $processingState = array_merge($currentState, ['step' => 'reset_processing']);
             $this->setResellerState($msg, $processingState);
-            $url = $this->resellerService->resetSubscription($actor, $customerId);
+            $url = $this->resellerService->resetSubscription($actor, $customerId, $nonce);
             if (!$url) {
                 $this->clearResellerState($msg);
                 $this->sendMessage($msg, $this->text('customer_not_found', $locale));

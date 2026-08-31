@@ -16,24 +16,34 @@ class TicketService
     public function reply($ticket, $message, $userId)
     {
         try {
-            DB::beginTransaction();
-            $ticketMessage = TicketMessage::create([
-                'user_id' => $userId,
-                'ticket_id' => $ticket->id,
-                'message' => $message
-            ]);
-            $isAdmin = $userId !== $ticket->user_id;
-            $ticket->reply_status = $isAdmin
-                ? Ticket::REPLY_STATUS_REPLIED
-                : Ticket::REPLY_STATUS_WAITING;
-            $ticket->last_reply_user_id = $userId;
-            if (!$ticketMessage || !$ticket->save()) {
-                throw new \Exception();
-            }
-            DB::commit();
-            return $ticketMessage;
-        } catch (\Exception $e) {
-            DB::rollback();
+            return DB::transaction(function () use ($ticket, $message, $userId): TicketMessage {
+                // Serialize user/Telegram replies with every close path that
+                // updates this row. The status and ownership checks must occur
+                // after the lock so a reply can never land after closure.
+                $lockedTicket = Ticket::query()
+                    ->whereKey($ticket->id)
+                    ->where('user_id', $ticket->user_id)
+                    ->where('status', Ticket::STATUS_OPENING)
+                    ->lockForUpdate()
+                    ->first();
+                if (!$lockedTicket || (int) $lockedTicket->user_id !== (int) $userId) {
+                    throw new ApiException(__('Ticket does not exist or has been closed'));
+                }
+
+                $ticketMessage = TicketMessage::query()->create([
+                    'user_id' => $userId,
+                    'ticket_id' => $lockedTicket->id,
+                    'message' => $message,
+                ]);
+                $lockedTicket->reply_status = Ticket::REPLY_STATUS_WAITING;
+                $lockedTicket->last_reply_user_id = $userId;
+                if (!$ticketMessage || !$lockedTicket->save()) {
+                    throw new ApiException(__('Ticket reply failed'));
+                }
+
+                return $ticketMessage;
+            }, 3);
+        } catch (\Throwable) {
             return false;
         }
     }

@@ -75,6 +75,7 @@ class OrderService
         Plan $plan,
         string $period,
         ?string $couponCode = null,
+        bool $allowSurplus = true,
     ): Order {
         $userService = app(UserService::class);
         $planService = new PlanService($plan);
@@ -82,7 +83,7 @@ class OrderService
         $planService->validatePurchase($user, $period);
         HookManager::call('order.create.before', [$user, $plan, $period, $couponCode]);
 
-        return DB::transaction(function () use ($user, $plan, $period, $couponCode, $userService) {
+        return DB::transaction(function () use ($user, $plan, $period, $couponCode, $allowSurplus, $userService) {
             $user = User::lockForUpdate()->find($user->id);
             if (!$user) {
                 throw new ApiException(__('The user does not exist'));
@@ -109,7 +110,7 @@ class OrderService
             }
 
             $orderService->setVipDiscount($user);
-            $orderService->setOrderType($user);
+            $orderService->setOrderType($user, $allowSurplus);
 
             if ($user->balance && $order->total_amount > 0) {
                 $orderService->handleUserBalance($user, $userService);
@@ -198,7 +199,7 @@ class OrderService
     }
 
 
-    public function setOrderType(User $user)
+    public function setOrderType(User $user, bool $allowSurplus = true)
     {
         $order = $this->order;
         if ($order->period === Plan::PERIOD_RESET_TRAFFIC) {
@@ -207,7 +208,7 @@ class OrderService
             if (!(int) admin_setting('plan_change_enable', 1))
                 throw new ApiException(__('Changing subscription plans is currently disabled. Please contact support.'));
             $order->type = Order::TYPE_UPGRADE;
-            if ((int) admin_setting('surplus_enable', 0)) {
+            if ($allowSurplus && (int) admin_setting('surplus_enable', 0)) {
                 $this->getSurplusValue($user, $order);
                 if ($order->surplus_amount >= $order->total_amount) {
                     $order->surplus_credit = (int) ($order->surplus_amount - $order->total_amount);

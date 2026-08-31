@@ -16,6 +16,7 @@ use App\Services\TicketService;
 use App\Utils\Helper;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
@@ -38,20 +39,37 @@ class TelegramBackendInvariant20260901Test extends TestCase
         parent::tearDown();
     }
 
-    public function test_reseller_full_coupon_stays_zero_for_customer_with_vip_discount(): void
+    public function test_reseller_full_coupon_cannot_cash_out_old_plan_surplus(): void
     {
-        admin_setting(['surplus_enable' => 0, 'plan_change_enable' => 1]);
+        admin_setting(['surplus_enable' => 1, 'plan_change_enable' => 1]);
         $actor = $this->makeUser('reseller-discount@example.test', [
             'is_reseller' => true,
         ]);
+        $oldPlan = $this->makePlan();
         $plan = $this->makePlan();
         $customer = $this->makeUser('reseller-customer@example.test', [
             'invite_user_id' => $actor->id,
-            'plan_id' => $plan->id,
-            'group_id' => $plan->group_id,
-            'expired_at' => time() + 86400,
+            'plan_id' => $oldPlan->id,
+            'group_id' => $oldPlan->group_id,
+            'expired_at' => time() + 2_592_000,
             'discount' => 20,
             'balance' => 700,
+        ]);
+        $oldOrder = Order::query()->create([
+            'user_id' => $customer->id,
+            'plan_id' => $oldPlan->id,
+            'type' => Order::TYPE_NEW_PURCHASE,
+            'period' => Plan::PERIOD_MONTHLY,
+            'trade_no' => 'telegram_old_' . bin2hex(random_bytes(6)),
+            'total_amount' => 1500,
+            'balance_amount' => 0,
+            'surplus_amount' => 0,
+            'surplus_credit' => 0,
+            'status' => Order::STATUS_COMPLETED,
+            'commission_status' => 0,
+            'commission_balance' => 0,
+            'created_at' => time() - 3600,
+            'updated_at' => time() - 3600,
         ]);
         $coupon = Coupon::query()->create([
             'code' => 'TELEGRAM-FULL-DISCOUNT',
@@ -67,20 +85,133 @@ class TelegramBackendInvariant20260901Test extends TestCase
             'ended_at' => time() + 3600,
         ]);
 
-        $result = app(TelegramResellerService::class)->purchaseForCustomer(
+        $resellerService = app(TelegramResellerService::class);
+        $operationNonce = 'a1b2c3d4e5f60718';
+        try {
+            $resellerService->purchaseForCustomer(
+                $actor,
+                (int) $customer->id,
+                (int) $plan->id,
+                Plan::PERIOD_MONTHLY,
+                'INVALID-COUPON',
+                $operationNonce,
+            );
+            $this->fail('A rejected purchase unexpectedly committed its operation receipt.');
+        } catch (ApiException) {
+            $this->assertSame(1, Order::query()->where('user_id', $customer->id)->count());
+        }
+
+        // The failed claim above must roll back with the business transaction,
+        // allowing the customer to correct the coupon without restarting.
+        $result = $resellerService->purchaseForCustomer(
             $actor,
             (int) $customer->id,
             (int) $plan->id,
             Plan::PERIOD_MONTHLY,
             (string) $coupon->code,
+            $operationNonce,
         );
 
         $order = $result['order']->fresh();
         $this->assertSame(0, (int) $order->total_amount);
         $this->assertSame(1500, (int) $order->discount_amount);
         $this->assertSame(0, (int) ($order->balance_amount ?? 0));
+        $this->assertSame(0, (int) ($order->surplus_amount ?? 0));
+        $this->assertSame(0, (int) ($order->surplus_credit ?? 0));
+        $this->assertEmpty($order->surplus_order_ids ?? []);
         $this->assertSame(700, (int) $customer->fresh()->balance);
+        $this->assertSame(Order::STATUS_COMPLETED, (int) $oldOrder->fresh()->status);
         $this->assertSame(Order::STATUS_COMPLETED, (int) $order->status);
+
+        $orderCount = Order::query()->where('user_id', $customer->id)->count();
+        try {
+            $resellerService->purchaseForCustomer(
+                $actor,
+                (int) $customer->id,
+                (int) $plan->id,
+                Plan::PERIOD_MONTHLY,
+                (string) $coupon->code,
+                $operationNonce,
+            );
+            $this->fail('A durable Telegram operation receipt allowed a replayed purchase.');
+        } catch (ApiException) {
+            $this->assertSame($orderCount, Order::query()->where('user_id', $customer->id)->count());
+        }
+    }
+
+    public function test_create_and_reset_receipts_prevent_replay_after_cache_loss(): void
+    {
+        admin_setting(['surplus_enable' => 1, 'plan_change_enable' => 1]);
+        $actor = $this->makeUser('reseller-durable-receipts@example.test', [
+            'is_reseller' => true,
+        ]);
+        $plan = $this->makePlan();
+        $coupon = Coupon::query()->create([
+            'code' => 'TELEGRAM-CREATE-FULL-DISCOUNT',
+            'name' => 'Telegram create full discount',
+            'type' => 2,
+            'value' => 100,
+            'show' => true,
+            'limit_use' => null,
+            'limit_use_with_user' => null,
+            'limit_plan_ids' => [$plan->id],
+            'limit_period' => [Plan::PERIOD_MONTHLY],
+            'started_at' => time() - 60,
+            'ended_at' => time() + 3600,
+        ]);
+        $resellerService = app(TelegramResellerService::class);
+        $createNonce = '1020304050607080';
+
+        $result = $resellerService->createCustomer(
+            $actor,
+            (int) $plan->id,
+            Plan::PERIOD_MONTHLY,
+            (string) $coupon->code,
+            $createNonce,
+            'vi-VN',
+        );
+        $customer = $result['user']->fresh();
+        $this->assertSame((int) $actor->id, (int) $customer->invite_user_id);
+        $this->assertSame('vi-VN', (string) $customer->locale);
+        $this->assertSame(Order::STATUS_COMPLETED, (int) $result['order']->fresh()->status);
+        $generatedCount = User::query()
+            ->where('email', 'like', '%@' . TelegramResellerService::GENERATED_EMAIL_DOMAIN)
+            ->count();
+
+        Cache::flush();
+        try {
+            $resellerService->createCustomer(
+                $actor,
+                (int) $plan->id,
+                Plan::PERIOD_MONTHLY,
+                (string) $coupon->code,
+                $createNonce,
+                'vi-VN',
+            );
+            $this->fail('A durable Telegram receipt allowed a replayed customer creation.');
+        } catch (ApiException) {
+            $this->assertSame(
+                $generatedCount,
+                User::query()
+                    ->where('email', 'like', '%@' . TelegramResellerService::GENERATED_EMAIL_DOMAIN)
+                    ->count(),
+            );
+        }
+
+        $tokenBeforeReset = (string) $customer->token;
+        $resetNonce = '8877665544332211';
+        $firstUrl = $resellerService->resetSubscription($actor, (int) $customer->id, $resetNonce);
+        $tokenAfterReset = (string) $customer->fresh()->token;
+        $this->assertNotSame($tokenBeforeReset, $tokenAfterReset);
+        $this->assertStringContainsString($tokenAfterReset, (string) $firstUrl);
+
+        Cache::flush();
+        try {
+            $resellerService->resetSubscription($actor, (int) $customer->id, $resetNonce);
+            $this->fail('A durable Telegram receipt allowed a replayed subscription reset.');
+        } catch (ApiException) {
+            $this->assertSame($tokenAfterReset, (string) $customer->fresh()->token);
+        }
     }
 
     public function test_regular_coupon_and_vip_discount_keep_additive_xboard_semantics(): void
@@ -147,6 +278,28 @@ class TelegramBackendInvariant20260901Test extends TestCase
             $this->assertNotSame('', trim($e->getMessage()));
         }
 
+        $this->assertSame(0, $ticket->messages()->count());
+    }
+
+    public function test_user_reply_rejects_a_closed_support_ticket_without_inserting_message(): void
+    {
+        $customer = $this->makeUser('closed-user-support@example.test');
+        $ticket = Ticket::query()->create([
+            'user_id' => $customer->id,
+            'subject' => 'Closed user ticket',
+            'level' => 0,
+            'status' => Ticket::STATUS_CLOSED,
+            'reply_status' => Ticket::REPLY_STATUS_WAITING,
+            'last_reply_user_id' => $customer->id,
+        ]);
+
+        $result = (new TicketService())->reply(
+            $ticket,
+            'This user reply must not be saved.',
+            (int) $customer->id,
+        );
+
+        $this->assertFalse($result);
         $this->assertSame(0, $ticket->messages()->count());
     }
 

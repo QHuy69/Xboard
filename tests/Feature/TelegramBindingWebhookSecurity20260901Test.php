@@ -11,6 +11,7 @@ use App\Utils\Helper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -226,9 +227,19 @@ class TelegramBindingWebhookSecurity20260901Test extends TestCase
         $url = '/api/v1/guest/telegram/webhook?access_token=' . md5(self::BOT_TOKEN);
 
         $this->postJson($url, $payload)->assertOk();
+        $this->assertDatabaseCount('telegram_webhook_update_receipts', 1);
+
+        // Dedupe authority must survive cache loss, eviction and a cache
+        // backend restart. The second delivery must still be acknowledged
+        // without invoking any Telegram hook again.
+        Cache::flush();
         $this->postJson($url, $payload)->assertOk();
 
         $this->assertSame(1, $calls);
+        $this->assertDatabaseCount('telegram_webhook_update_receipts', 1);
+        $receiptHash = (string) DB::table('telegram_webhook_update_receipts')
+            ->value('receipt_hash');
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $receiptHash);
         $this->assertNotNull($captured);
         $this->assertSame('4503599627370001', $captured->from_id);
         $this->assertSame('4503599627370001', $captured->chat_id);
@@ -242,6 +253,33 @@ class TelegramBindingWebhookSecurity20260901Test extends TestCase
             $invalid
         )->assertStatus(401);
         $this->assertSame(1, $calls);
+    }
+
+    public function test_webhook_receipt_claim_prunes_expired_rows_but_keeps_live_receipts(): void
+    {
+        DB::table('telegram_webhook_update_receipts')->insert([
+            [
+                'receipt_hash' => str_repeat('a', 64),
+                'created_at' => now()->subHours(40),
+                'expires_at' => now()->subMinute(),
+            ],
+            [
+                'receipt_hash' => str_repeat('b', 64),
+                'created_at' => now(),
+                'expires_at' => now()->addHour(),
+            ],
+        ]);
+
+        $url = '/api/v1/guest/telegram/webhook?access_token=' . md5(self::BOT_TOKEN);
+        $this->postJson($url, ['update_id' => 712347])->assertOk();
+
+        $this->assertDatabaseMissing('telegram_webhook_update_receipts', [
+            'receipt_hash' => str_repeat('a', 64),
+        ]);
+        $this->assertDatabaseHas('telegram_webhook_update_receipts', [
+            'receipt_hash' => str_repeat('b', 64),
+        ]);
+        $this->assertDatabaseCount('telegram_webhook_update_receipts', 2);
     }
 
     public function test_disabled_webhook_acknowledges_without_auth_or_side_effects(): void

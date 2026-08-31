@@ -176,7 +176,153 @@ verify_coinpayments_checkout_schema() {
   fi
 }
 
+verify_no_duplicate_telegram_ids() {
+  local target_container="$1"
+  local duplicate_count
+
+  duplicate_count="$(docker exec "$target_container" sqlite3 /www/.docker/.data/database.sqlite "
+    SELECT COUNT(*)
+    FROM (
+      SELECT telegram_id
+      FROM v2_user
+      WHERE telegram_id IS NOT NULL
+      GROUP BY telegram_id
+      HAVING COUNT(*) > 1
+    ) AS duplicate_telegram_ids;
+  ")" || return 1
+
+  case "$duplicate_count" in
+    ''|*[!0-9]*)
+      echo "Could not validate duplicate Telegram bindings before deployment (result=$duplicate_count)." >&2
+      return 1
+      ;;
+  esac
+  if [ "$duplicate_count" -ne 0 ]; then
+    echo "Refusing deployment before mutation: found $duplicate_count duplicate non-null telegram_id group(s)." >&2
+    return 1
+  fi
+}
+
+verify_telegram_persistence_schema() {
+  local target_container="$1"
+  local schema_state
+
+  schema_state="$(docker exec "$target_container" sqlite3 /www/.docker/.data/database.sqlite "
+    SELECT printf('%d:%d:%d:%d:%d:%d',
+      (
+        SELECT COUNT(*)
+        FROM (
+          SELECT telegram_id
+          FROM v2_user
+          WHERE telegram_id IS NOT NULL
+          GROUP BY telegram_id
+          HAVING COUNT(*) > 1
+        ) AS duplicate_telegram_ids
+      ),
+      (
+        SELECT CASE WHEN
+          COALESCE((
+            SELECT \"unique\"
+            FROM pragma_index_list('v2_user')
+            WHERE name = 'v2_user_telegram_id_unique'
+          ), -1) = 1
+          AND COALESCE((
+            SELECT origin
+            FROM pragma_index_list('v2_user')
+            WHERE name = 'v2_user_telegram_id_unique'
+          ), '') = 'c'
+          AND COALESCE((
+            SELECT partial
+            FROM pragma_index_list('v2_user')
+            WHERE name = 'v2_user_telegram_id_unique'
+          ), -1) = 0
+          AND COALESCE((
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('v2_user_telegram_id_unique')
+              ORDER BY seqno
+            )
+          ), '') = 'telegram_id'
+        THEN 1 ELSE 0 END
+      ),
+      (
+        SELECT COUNT(*)
+        FROM pragma_table_info('telegram_webhook_update_receipts')
+        WHERE
+          (name = 'id' AND upper(type) = 'INTEGER' AND \"notnull\" = 1 AND pk = 1)
+          OR (name = 'receipt_hash' AND upper(type) = 'VARCHAR' AND \"notnull\" = 1 AND pk = 0)
+          OR (name = 'created_at' AND upper(type) = 'DATETIME' AND \"notnull\" = 1 AND pk = 0)
+          OR (name = 'expires_at' AND upper(type) = 'DATETIME' AND \"notnull\" = 1 AND pk = 0)
+      ),
+      (SELECT COUNT(*) FROM pragma_table_info('telegram_webhook_update_receipts')),
+      (
+        SELECT CASE WHEN
+          COALESCE((
+            SELECT \"unique\"
+            FROM pragma_index_list('telegram_webhook_update_receipts')
+            WHERE name = 'telegram_webhook_receipt_hash_unique'
+          ), -1) = 1
+          AND COALESCE((
+            SELECT origin
+            FROM pragma_index_list('telegram_webhook_update_receipts')
+            WHERE name = 'telegram_webhook_receipt_hash_unique'
+          ), '') = 'c'
+          AND COALESCE((
+            SELECT partial
+            FROM pragma_index_list('telegram_webhook_update_receipts')
+            WHERE name = 'telegram_webhook_receipt_hash_unique'
+          ), -1) = 0
+          AND COALESCE((
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('telegram_webhook_receipt_hash_unique')
+              ORDER BY seqno
+            )
+          ), '') = 'receipt_hash'
+        THEN 1 ELSE 0 END
+      ),
+      (
+        SELECT CASE WHEN
+          COALESCE((
+            SELECT \"unique\"
+            FROM pragma_index_list('telegram_webhook_update_receipts')
+            WHERE name = 'telegram_webhook_receipt_expiry_idx'
+          ), -1) = 0
+          AND COALESCE((
+            SELECT origin
+            FROM pragma_index_list('telegram_webhook_update_receipts')
+            WHERE name = 'telegram_webhook_receipt_expiry_idx'
+          ), '') = 'c'
+          AND COALESCE((
+            SELECT partial
+            FROM pragma_index_list('telegram_webhook_update_receipts')
+            WHERE name = 'telegram_webhook_receipt_expiry_idx'
+          ), -1) = 0
+          AND COALESCE((
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('telegram_webhook_receipt_expiry_idx')
+              ORDER BY seqno
+            )
+          ), '') = 'expires_at'
+        THEN 1 ELSE 0 END
+      )
+    );
+  ")" || return 1
+
+  if [ "$schema_state" != '0:1:4:4:1:1' ]; then
+    echo "Telegram persistence schema gate failed (duplicates:user-index:receipt-columns:receipt-total:receipt-hash-index:receipt-expiry-index=$schema_state)." >&2
+    return 1
+  fi
+}
+
 if [ -n "$current_container" ]; then
+  # This must run before backups, image tags, compose pulls or container
+  # replacement so an unsafe legacy database fails without any mutation.
+  verify_no_duplicate_telegram_ids "$current_container"
   timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
   create_persistent_backup
   previous_image_id="$(docker inspect --format '{{.Image}}' "$current_container")"
@@ -622,12 +768,14 @@ post_deploy_checks() {
   grep -q '2026_08_31_000005_add_coinpayments_checkout_snapshot.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_08_31_120000_add_is_reseller_to_users.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_09_01_000001_add_unique_telegram_id_to_users.*Ran' <<<"$migration_status" || return 1
+  grep -q '2026_09_01_000002_.*Ran' <<<"$migration_status" || return 1
   if grep -q 'Pending' <<<"$migration_status"; then
     echo "Post-deploy migration status still contains Pending entries." >&2
     printf '%s\n' "$migration_status" >&2
     return 1
   fi
   verify_coinpayments_checkout_schema "$container_id" || return 1
+  verify_telegram_persistence_schema "$container_id" || return 1
   telegram_plugin_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite \
     "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")" || return 1
   case "$telegram_plugin_state" in

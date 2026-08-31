@@ -291,7 +291,7 @@ expectSource('plugins-core/Telegram/Plugin.php', [
     "'/nodes'",
     "'/setreportgroup'",
     "'/reseller'",
-    '(int) $coupon->value !== 100',
+    '(float) $coupon->value !== 100.0',
     "Log::notice('Telegram reseller created customer'",
     'if (!$actor || (!$actor->is_admin && !$actor->is_staff))',
     "listen('order.open.after'",

@@ -4,7 +4,12 @@ const fs = require('fs');
 const read = (file) => fs.readFileSync(file, 'utf8');
 const migrationName = '2026_09_01_000001_add_unique_telegram_id_to_users';
 const migration = read(`database/migrations/${migrationName}.php`);
+const receiptMigration = read('database/migrations/2026_09_01_000002_create_telegram_webhook_update_receipts.php');
 const orderService = read('app/Services/OrderService.php');
+const resellerService = read('app/Services/TelegramResellerService.php');
+const ticketService = read('app/Services/TicketService.php');
+const telegramPlugin = read('plugins-core/Telegram/Plugin.php');
+const featureTest = read('tests/Feature/TelegramBackendInvariant20260901Test.php');
 
 for (const marker of [
   "->whereNotNull('telegram_id')",
@@ -42,5 +47,44 @@ for (const marker of [
 }
 assert(!vip.includes('$order->total_amount - $order->discount_amount'),
   'VIP discount still subtracts an accumulated coupon discount twice.');
+
+assert(
+  orderService.includes('bool $allowSurplus = true') &&
+    orderService.includes("if ($allowSurplus && (int) admin_setting('surplus_enable', 0))") &&
+    (resellerService.match(/allowSurplus: false/g) || []).length === 2 &&
+    resellerService.includes('(int) ($order->surplus_credit ?? 0) !== 0') &&
+    resellerService.includes("$this->claimOperation('create'") &&
+    resellerService.includes("$this->claimOperation('purchase'") &&
+    resellerService.includes("$this->claimOperation('reset'") &&
+    resellerService.includes('insertOrIgnore(['),
+  'A 100% Telegram reseller purchase can still convert old-plan surplus into balance credit.'
+);
+
+assert(
+  resellerService.includes('string $operationNonce,') &&
+    resellerService.includes("$this->claimOperation('create', (int) $lockedActor->id, $operationNonce);") &&
+    resellerService.includes("$this->claimOperation('purchase', (int) $lockedActor->id, $operationNonce);") &&
+    resellerService.includes("$this->claimOperation('reset', (int) $lockedActor->id, $operationNonce);") &&
+    resellerService.includes('"telegram-reseller\\0{$action}\\0{$actorId}\\0{$nonce}"') &&
+    resellerService.includes('->insertOrIgnore([') &&
+    receiptMigration.includes("$table->unique('receipt_hash', self::UNIQUE_INDEX)") &&
+    (telegramPlugin.match(/\$couponCode,\s*\$nonce,/g) || []).length === 2 &&
+    telegramPlugin.includes('resetSubscription($actor, $customerId, $nonce)') &&
+    featureTest.includes("$operationNonce = 'a1b2c3d4e5f60718';") &&
+    (featureTest.match(/\$operationNonce,/g) || []).length >= 2 &&
+    featureTest.includes('A rejected purchase unexpectedly committed its operation receipt.') &&
+    featureTest.includes('A durable Telegram operation receipt allowed a replayed purchase.') &&
+    featureTest.includes('A durable Telegram receipt allowed a replayed customer creation.') &&
+    featureTest.includes('A durable Telegram receipt allowed a replayed subscription reset.') &&
+    (featureTest.match(/Cache::flush\(\);/g) || []).length >= 2,
+  'Telegram create, purchase or reset can lose its durable operation nonce between plugin, service, database and regression test.'
+);
+
+assert(
+  ticketService.includes("->where('status', Ticket::STATUS_OPENING)") &&
+    ticketService.includes('->lockForUpdate()') &&
+    ticketService.includes('(int) $lockedTicket->user_id !== (int) $userId'),
+  'User/Telegram ticket replies are not serialized against ticket closure.'
+);
 
 console.log('Telegram unique binding migration gates and non-negative coupon/VIP composition verified.');
