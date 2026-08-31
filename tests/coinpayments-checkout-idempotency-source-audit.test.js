@@ -76,7 +76,9 @@ for (const locale of ['en-US', 'vi-VN', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-
 
 expect(migration.includes("unique(['order_id', 'payment_id']"), 'Database does not enforce one checkout row per order/payment.');
 expect(migration.includes("Schema::dropIfExists('v2_order_payment_checkout')"), 'Checkout migration is not rollback-safe.');
-expect(plugin.includes("'poNumber' => (string) $order['trade_no']"), 'CoinPayments unique merchant PO number is missing.');
+expect(plugin.includes("'poNumber' => self::providerPoNumber((string) $order['trade_no'])"), 'CoinPayments bounded unique merchant PO number is missing.');
+expect(plugin.includes("return substr(hash('sha256', $tradeNo), 0, 16);"), 'CoinPayments PO number is not deterministically constrained to 16 characters.');
+expect(plugin.includes("'invoiceId' => (string) $order['trade_no']"), 'CoinPayments lost the full Xboard order reference.');
 expect(!plugin.includes('->retry('), 'Non-idempotent CoinPayments invoice POST still has an automatic retry.');
 expect(plugin.includes('catch (ConnectionException'), 'Ambiguous transport failure is not classified.');
 expect(plugin.includes('$response->serverError() ? 503 : 400'), 'Ambiguous 5xx and known 4xx responses are not separated.');
