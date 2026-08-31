@@ -1,3 +1,4 @@
+{{-- ZaoGuang VPN custom Luck integration layer. Copyright (c) 2026 ZaoGuang VPN. --}}
 @php
   $luckDonatePlanIds = collect(preg_split('/[,\s]+/', (string) env('LUCK_DONATE_PLAN_IDS', '1'), -1, PREG_SPLIT_NO_EMPTY))
     ->map(fn ($id) => (int) $id)
@@ -12,6 +13,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#3b82f6">
+  <meta name="author" content="ZaoGuang VPN">
+  <meta name="copyright" content="Copyright (c) 2026 ZaoGuang VPN">
   <link rel="icon" type="image/svg+xml" href="/theme/{{$theme}}/favicon.svg">
   <title>ZaoGuang Service</title>
   <link rel="modulepreload" crossorigin href="/theme/{{$theme}}/assets/DM1yaN1X-fresh.js">

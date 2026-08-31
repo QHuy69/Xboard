@@ -15,6 +15,50 @@
 }
 
 :7001 {
+	# BEGIN XBOARD THEME PROTECTION
+	route {
+		# These response headers protect the panel from clickjacking and MIME
+		# confusion without changing which upstream handles the request.
+		header {
+			Content-Security-Policy "frame-ancestors 'self'"
+			X-Frame-Options "SAMEORIGIN"
+			X-Content-Type-Options "nosniff"
+			Referrer-Policy "strict-origin-when-cross-origin"
+		}
+
+		# Browser theme resources are only intended to be embedded by this site.
+		# Requests without Sec-Fetch-Site are deliberately allowed for health
+		# checks and non-browser clients; browsers identify cross-site fetches.
+		@theme_cross_site {
+			path /theme/*
+			header Sec-Fetch-Site cross-site
+		}
+		respond @theme_cross_site 403
+
+		# Never expose theme directory endpoints or non-runtime/source artifacts.
+		# path and path_regexp match only the normalized URL path, so query strings
+		# cannot bypass these rules and URL-encoded path characters are normalized.
+		@theme_root path /theme
+		respond @theme_root 404
+
+		@theme_directory path_regexp theme_directory (?i)^/theme(?:/.*)?/$
+		respond @theme_directory 404
+
+		@theme_sensitive_source path_regexp theme_sensitive_source (?i)^/theme/(?:.*/)?(?:dashboard\.blade\.php|config\.json|index\.html|env[^/]*\.js|[^/]+\.(?:map|vue|ts|tsx|scss))$
+		respond @theme_sensitive_source 404
+
+		@theme_dotfile path_regexp theme_dotfile (?i)^/theme/(?:.*/)?\.[^/]+(?:/.*)?$
+		respond @theme_dotfile 404
+
+		@theme_assets path /theme/*
+		header @theme_assets {
+			Cross-Origin-Resource-Policy "same-origin"
+			X-Content-Type-Options "nosniff"
+			X-Robots-Tag "noindex, noarchive, nosnippet"
+		}
+	}
+	# END XBOARD THEME PROTECTION
+
 	@ws path /ws
 	reverse_proxy @ws ws-server:8076
 

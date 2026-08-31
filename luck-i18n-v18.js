@@ -1,3 +1,4 @@
+/* ZaoGuang VPN custom Luck integration layer. Copyright (c) 2026 ZaoGuang VPN. */
 /* Runtime translations for the pre-built Luck theme. */
 (function () {
   var brandTitle = 'ZaoGuang Service';

@@ -101,6 +101,13 @@ docker compose restart
 
 Issues and Pull Requests are welcome to help improve the project.
 
+## Licensing
+
+The upstream Xboard code remains available under the [MIT license](./LICENSE).
+The ZaoGuang-specific Luck integration and artwork are a separately identified
+customization layer governed by [CUSTOM-THEME-NOTICE.md](./CUSTOM-THEME-NOTICE.md).
+Third-party components keep their own licenses and copyright notices.
+
 ## 📈 Star History
 
 [![Stargazers over time](https://starchart.cc/cedar2025/Xboard.svg)](https://starchart.cc/cedar2025/Xboard)

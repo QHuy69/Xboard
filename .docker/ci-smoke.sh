@@ -85,10 +85,103 @@ if [ "$health" != healthy ]; then
 fi
 echo "[smoke] Container healthcheck passed"
 
+echo "[smoke] Validating packaged Caddy syntax"
+for packaged_caddyfile in /etc/caddy/Caddyfile /etc/caddy/Caddyfile.split; do
+  if ! docker exec "$container_name" caddy validate \
+    --config "$packaged_caddyfile" \
+    --adapter caddyfile >/dev/null; then
+    echo "Packaged Caddyfile is invalid: $packaged_caddyfile" >&2
+    docker logs "$container_name" >&2
+    exit 1
+  fi
+done
+
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/api/v1/guest/comm/config" >/dev/null
 curl --fail --silent --show-error "http://127.0.0.1:${host_port}/dashboard" >/dev/null
 admin_html="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/Huy2006")"
 echo "[smoke] Public HTTP endpoints passed"
+
+assert_http_status() {
+  local expected="$1"
+  local label="$2"
+  local actual
+  shift 2
+
+  actual="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "$@")"
+  if [ "$actual" != "$expected" ]; then
+    echo "$label returned HTTP $actual; expected $expected." >&2
+    return 1
+  fi
+}
+
+theme_asset_url="http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=24"
+assert_http_status 200 "Theme asset without browser metadata" "$theme_asset_url"
+assert_http_status 200 "Same-origin theme asset" \
+  --header 'Host: panel.example.test' \
+  --header 'Referer: https://panel.example.test/dashboard' \
+  --header 'Sec-Fetch-Site: same-origin' \
+  "$theme_asset_url"
+assert_http_status 403 "Cross-site theme asset" \
+  --header 'Host: panel.example.test' \
+  --header 'Referer: https://attacker.example/' \
+  --header 'Sec-Fetch-Site: cross-site' \
+  "$theme_asset_url"
+
+for blocked_theme_path in \
+  '/theme' \
+  '/theme/' \
+  '/theme/Luck/' \
+  '/theme/Luck/dashboard.blade.php' \
+  '/theme/Luck/config.json' \
+  '/theme/Luck/index.html' \
+  '/theme/Luck/env.production.js' \
+  '/theme/Luck/assets/source.vue' \
+  '/theme/Luck/assets/source.ts' \
+  '/theme/Luck/assets/source.tsx' \
+  '/theme/Luck/assets/source.scss' \
+  '/theme/Luck/.git/config'; do
+  assert_http_status 404 "Blocked theme source $blocked_theme_path" \
+    "http://127.0.0.1:${host_port}${blocked_theme_path}"
+done
+
+docker exec "$container_name" sh -eu -c \
+  'printf "%s\n" "theme source map sentinel" > /www/public/theme/Luck/assets/theme-protection-sentinel.js.map'
+assert_http_status 404 "Physical theme source map" \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/theme-protection-sentinel.js.map?cache=1"
+assert_http_status 404 "Encoded physical theme source map" \
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/theme-protection-sentinel%2ejs%2emap"
+
+dashboard_guard_headers="$smoke_dir/dashboard-theme-guard.headers"
+asset_guard_headers="$smoke_dir/asset-theme-guard.headers"
+curl --fail --silent --show-error --output /dev/null \
+  --dump-header "$dashboard_guard_headers" \
+  "http://127.0.0.1:${host_port}/dashboard"
+curl --fail --silent --show-error --output /dev/null \
+  --dump-header "$asset_guard_headers" \
+  "$theme_asset_url"
+tr -d '\r' < "$dashboard_guard_headers" > "${dashboard_guard_headers}.normalized"
+tr -d '\r' < "$asset_guard_headers" > "${asset_guard_headers}.normalized"
+grep -Eiq "^Content-Security-Policy:.*frame-ancestors[[:space:]]+'self'" "${dashboard_guard_headers}.normalized" || {
+  echo "Dashboard response is missing CSP frame-ancestors 'self'." >&2
+  exit 1
+}
+grep -Eiq '^X-Frame-Options:[[:space:]]*SAMEORIGIN[[:space:]]*$' "${dashboard_guard_headers}.normalized" || {
+  echo "Dashboard response is missing X-Frame-Options SAMEORIGIN." >&2
+  exit 1
+}
+grep -Eiq '^X-Content-Type-Options:[[:space:]]*nosniff[[:space:]]*$' "${dashboard_guard_headers}.normalized" || {
+  echo "Dashboard response is missing X-Content-Type-Options nosniff." >&2
+  exit 1
+}
+grep -Eiq '^Cross-Origin-Resource-Policy:[[:space:]]*same-origin[[:space:]]*$' "${asset_guard_headers}.normalized" || {
+  echo "Theme asset is missing Cross-Origin-Resource-Policy same-origin." >&2
+  exit 1
+}
+grep -Eiq '^X-Content-Type-Options:[[:space:]]*nosniff[[:space:]]*$' "${asset_guard_headers}.normalized" || {
+  echo "Theme asset is missing X-Content-Type-Options nosniff." >&2
+  exit 1
+}
+echo "[smoke] Theme source and cross-site guards passed"
 
 for luck_dashboard_template in \
   '/www/public/theme/Luck/dashboard.blade.php' \

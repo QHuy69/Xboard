@@ -169,8 +169,6 @@ jobs:
             BUILDKIT_INLINE_CACHE=1
             BUILDKIT_MULTI_PLATFORM=1
             CACHEBUST=${{ github.sha }}
-            REPO_URL=https://github.com/${{ github.repository }}
-            BRANCH_NAME=${{ github.ref_name }}
             SOURCE_SHA=${{ github.sha }}
             APP_VERSION=${{ steps.get_version.outputs.version }}
           provenance: false

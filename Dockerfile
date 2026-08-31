@@ -16,30 +16,32 @@ WORKDIR /www
 
 COPY .docker /
 
-# Preserve the maintained Luck shell/translation overrides before cloning the
-# upstream application. The clone intentionally replaces /www, so copying
-# these files into a temporary build directory makes them available below.
+# Keep a runtime-safe copy of maintained Luck assets outside /www. The
+# entrypoint restores these files after xboard:update refreshes a mounted theme.
 RUN mkdir -p /tmp/luck-custom
 COPY luck-i18n-v18.js luck-dashboard.blade.php luck-overrides.css luck-donate-qr.svg luck-clash.svg luck-flags.svg /tmp/luck-custom/
 
 # Add build arguments
 ARG CACHEBUST=1
-ARG REPO_URL=https://github.com/QHuy69/Xboard
-ARG BRANCH_NAME=custom-en
 ARG SOURCE_SHA=
 ARG APP_VERSION=1.0.0
 
-RUN echo "Cloning ${REPO_URL} at ${SOURCE_SHA:-${BRANCH_NAME}} with CACHEBUST: ${CACHEBUST}" && \
-    rm -rf ./* && \
-    rm -rf .git && \
-    git config --global --add safe.directory /www && \
-    git clone --filter=blob:none --no-checkout --depth 1 --branch "${BRANCH_NAME}" "${REPO_URL}" . && \
-    git fetch --depth 1 origin "${SOURCE_SHA:-${BRANCH_NAME}}" && \
-    git checkout --detach FETCH_HEAD && \
-    git submodule update --init --recursive --force
+# Build exactly the source checkout supplied by CI. GitHub Actions initializes
+# recursive submodules before this context is sent, so the admin distribution is
+# included without granting the image build any repository/network access.
+COPY . /www
 
-# Stamp the exact CI build version after the pinned checkout. Editing the
-# workflow checkout before this clone has no effect on the final image.
+# Defense in depth: .dockerignore keeps Git metadata out of the context, while
+# this cleanup guarantees it cannot survive in the image if another builder
+# supplies a context with nested worktree/submodule metadata.
+RUN echo "Building checkout ${SOURCE_SHA:-unknown} with CACHEBUST: ${CACHEBUST}" && \
+    find /www -name .git -prune -exec rm -rf {} \; && \
+    test -z "$(find /www -name .git -print -quit)" && \
+    test -s /www/composer.lock && \
+    test -s /www/public/assets/admin/index.html && \
+    test -n "$(find /www/public/assets/admin/assets -maxdepth 1 -type f -name 'index-*.js' -print -quit)"
+
+# Stamp the exact CI build version after copying the pinned checkout.
 RUN sed -i "s/'version' => '.*'/'version' => '${APP_VERSION}'/g" config/app.php
 
 # Keep custom Luck runtime files in the image's public tree. Static JS is
@@ -74,9 +76,8 @@ RUN mkdir -p /www/public/images && \
     test -s /www/public/images/favicon.png && \
     rm -f /tmp/admin-favicon.png.b64
 
-# Overlay the customized runtime files on top of the upstream checkout. The
-# image deliberately clones upstream for normal updates, but these files are
-# part of the maintained custom branch and must be present in every build.
+# Keep explicit copies for critical customized runtime files. They now come
+# from the exact checked-out build context rather than a second remote clone.
 COPY routes/web.php /www/routes/web.php
 COPY app/Console/Kernel.php /www/app/Console/Kernel.php
 COPY app/Providers/OctaneServiceProvider.php /www/app/Providers/OctaneServiceProvider.php
@@ -105,6 +106,7 @@ COPY tests/smoke-*.php /www/tests/
 
 COPY .docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY .docker/caddy/Caddyfile /etc/caddy/Caddyfile
+COPY .docker/caddy/Caddyfile.split /etc/caddy/Caddyfile.split
 COPY .docker/php/zz-xboard.ini /usr/local/etc/php/conf.d/zz-xboard.ini
 
 RUN find app config database/migrations plugins-core routes tests -type f -name '*.php' -print0 \
