@@ -89,6 +89,11 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             throw new \InvalidArgumentException(__('CoinPayments API base URL must be an official CoinPayments HTTPS endpoint.'));
         }
 
+        $configuredWebhookUrl = $this->getConfig('coinpayments_webhook_url', '');
+        if (!is_scalar($configuredWebhookUrl) && $configuredWebhookUrl !== null) {
+            throw new \InvalidArgumentException(__('CoinPayments webhook URL must be a valid HTTPS URL.'));
+        }
+
         $webhookUrl = $this->resolvedWebhookUrl();
         if ($webhookUrl !== ''
             && (!filter_var($webhookUrl, FILTER_VALIDATE_URL)
