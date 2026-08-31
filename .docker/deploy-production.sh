@@ -56,6 +56,7 @@ failed_state_dir=""
 
 create_persistent_backup() {
   local member
+  local archive_members
   umask 077
   test -f .env
   test -d storage/theme
@@ -66,8 +67,12 @@ create_persistent_backup() {
   tar --numeric-owner --acls --xattrs -cpf "$persistent_backup_path" -- \
     .env storage/theme plugins "$compose_file"
   test "$(stat -c '%a' "$persistent_backup_path")" = 600
+  archive_members="$(tar -tf "$persistent_backup_path")"
   for member in .env storage/theme plugins; do
-    tar -tf "$persistent_backup_path" | grep -Eq "^${member}(/|$)" || {
+    awk -v member="$member" '
+      $0 == member || index($0, member "/") == 1 { found = 1 }
+      END { exit(found ? 0 : 1) }
+    ' <<<"$archive_members" || {
       echo "Persistent backup is missing $member." >&2
       return 1
     }

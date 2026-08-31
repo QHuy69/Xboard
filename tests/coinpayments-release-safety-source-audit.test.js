@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -72,10 +73,23 @@ assert(
   deploy.includes('create_persistent_backup')
     && deploy.includes('tar --numeric-owner --acls --xattrs -cpf')
     && deploy.includes('test "$(stat -c \'%a\' "$persistent_backup_path")" = 600')
+    && deploy.includes('archive_members="$(tar -tf "$persistent_backup_path")"')
+    && deploy.includes('awk -v member="$member"')
+    && !deploy.includes('tar -tf "$persistent_backup_path" | grep -E')
     && deploy.includes('restore_persistent_backup')
     && deploy.includes('deploy-failed-${timestamp}')
     && deploy.includes('Persistent configuration restored'),
   'Production rollback does not preserve and restore .env, plugin, and theme state.',
+);
+
+const backupMemberHarness = spawnSync(
+  'bash',
+  ['tests/deploy-persistent-backup-member-validation.sh'],
+  { cwd: root, encoding: 'utf8' },
+);
+assert(
+  backupMemberHarness.status === 0,
+  `Persistent-backup member validator failed executable regression (status=${backupMemberHarness.status}, error=${backupMemberHarness.error || 'none'}): stdout=${backupMemberHarness.stdout} stderr=${backupMemberHarness.stderr}`,
 );
 
 console.log('CoinPayments release safety source audit passed.');
