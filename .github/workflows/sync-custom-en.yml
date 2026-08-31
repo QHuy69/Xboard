@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-xboard-custom-en
+  group: sync-xboard-zaoguang
   cancel-in-progress: false
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - name: Check out the customized branch
         uses: actions/checkout@v4
         with:
-          ref: custom-en
+          ref: zaoguang
           fetch-depth: 0
           submodules: recursive
 
@@ -45,4 +45,4 @@ jobs:
             git add public/assets/admin
             git commit -m "chore(admin): update translated admin assets"
           fi
-          git push origin HEAD:custom-en
+          git push origin HEAD:zaoguang
