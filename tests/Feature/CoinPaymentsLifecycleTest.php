@@ -115,7 +115,9 @@ class CoinPaymentsLifecycleTest extends TestCase
                 'name' => 'Unsafe switch',
                 'icon' => 'Coinbase',
                 'payment' => 'Coinbase',
-                'config' => [],
+                // Laravel's `required|array` rejects an empty array before
+                // the controller reaches the active-invoice gateway guard.
+                'config' => ['blocked_before_gateway_parse' => true],
             ]
         ));
         $this->assertSame(409, $gatewayChange->getStatusCode());
