@@ -313,7 +313,7 @@ class Plugin extends AbstractPlugin implements PaymentInterface
             'metadata' => ['integration' => 'XBoard CoinPayments v2'],
             // CoinPayments documents poNumber as unique per merchant. It is a
             // provider-side backstop in addition to XBoard's durable claim.
-            'poNumber' => (string) $order['trade_no'],
+            'poNumber' => self::providerPoNumber((string) $order['trade_no']),
             'webhooks' => [[
                 'notificationsUrl' => $notifyUrl,
                 'notifications' => [
@@ -716,6 +716,11 @@ class Plugin extends AbstractPlugin implements PaymentInterface
     {
         $canonical = "\xEF\xBB\xBF" . strtoupper($method) . $url . $clientId . $timestamp . $payload;
         return base64_encode(hash_hmac('sha256', $canonical, $secret, true));
+    }
+
+    public static function providerPoNumber(string $tradeNo): string
+    {
+        return substr(hash('sha256', $tradeNo), 0, 16);
     }
 
     private function requiredConfig(string $key, string $error): string

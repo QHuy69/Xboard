@@ -614,6 +614,9 @@ class CoinPaymentsLifecycleTest extends TestCase
         ]);
         Http::assertSent(function ($request) use ($order): bool {
             return $request->url() === 'https://a-api.coinpayments.net/api/v2/merchant/invoices'
+                && data_get($request->data(), 'poNumber') === CoinPaymentsPlugin::providerPoNumber($order->trade_no)
+                && strlen((string) data_get($request->data(), 'poNumber')) === 16
+                && data_get($request->data(), 'invoiceId') === $order->trade_no
                 && str_contains(
                     (string) data_get($request->data(), 'payment.successUrl'),
                     '/orders?trade_no=' . rawurlencode((string) $order->trade_no)
