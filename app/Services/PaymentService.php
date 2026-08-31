@@ -267,6 +267,13 @@ class PaymentService
         foreach ($form as $key => $field) {
             $type = (string) ($field['type'] ?? 'string');
             $storedValue = $this->config[$key] ?? $field['default'] ?? '';
+            // A plugin-declared string field must cross the admin API as a
+            // string even when an older payment row stored a numeric scalar.
+            // Otherwise the generated form's Zod schema rejects the value
+            // before it can be submitted back to this controller.
+            if ($type === 'string' && (is_int($storedValue) || is_float($storedValue))) {
+                $storedValue = (string) $storedValue;
+            }
             $isSensitive = $this->isSensitiveField((string) $key, $field);
             $placeholder = $field['placeholder']
                 ?? ($isSensitive && $this->hasNonBlankValue($storedValue)

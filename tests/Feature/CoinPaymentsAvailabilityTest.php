@@ -171,6 +171,8 @@ class CoinPaymentsAvailabilityTest extends TestCase
         $this->assertSame('', $form['coinpayments_client_id']['value'] ?? null);
         $this->assertSame('', $form['coinpayments_client_secret']['value'] ?? null);
         $this->assertFalse($form['coinpayments_client_secret']['has_value'] ?? true);
+        $this->assertSame('string', $form['coinpayments_webhook_max_age']['type'] ?? null);
+        $this->assertSame('300', $form['coinpayments_webhook_max_age']['value'] ?? null);
 
         try {
             $service->validateConfiguration();
@@ -244,6 +246,15 @@ class CoinPaymentsAvailabilityTest extends TestCase
         $this->assertSame('CoinPayments stable', $payment->name);
         $this->assertSame($originalConfig, $payment->config);
         (new PaymentService('CoinPayments', $payment->id))->validateConfiguration();
+    }
+
+    public function test_admin_form_stringifies_a_legacy_numeric_webhook_window(): void
+    {
+        $payment = $this->makePayment();
+        $form = (new PaymentService('CoinPayments', $payment->id))->form();
+
+        $this->assertSame('string', $form['coinpayments_webhook_max_age']['type'] ?? null);
+        $this->assertSame('300', $form['coinpayments_webhook_max_age']['value'] ?? null);
     }
 
     public function test_every_non_scalar_coinpayments_field_is_rejected(): void

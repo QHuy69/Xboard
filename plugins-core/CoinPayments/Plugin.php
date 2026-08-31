@@ -246,7 +246,12 @@ class Plugin extends AbstractPlugin implements PaymentInterface
                 'description' => 'Leave blank to use this site\'s main HTTPS domain. Set this only when CoinPayments must call a different public endpoint.',
             ],
             'coinpayments_webhook_max_age' => [
-                'label' => 'Webhook validity window (seconds)', 'type' => 'number', 'required' => false, 'default' => 300,
+                // The admin payment schema stores plugin form values as
+                // strings. Declaring this as a numeric input makes React Hook
+                // Form submit a number and Zod rejects it before the request
+                // can reach the backend ("expected string, received number").
+                // Backend validation still enforces the 60-900 integer range.
+                'label' => 'Webhook validity window (seconds)', 'type' => 'string', 'required' => false, 'default' => '300',
                 'description' => 'Webhook replay-protection window; 300 seconds is recommended.',
             ],
         ];
