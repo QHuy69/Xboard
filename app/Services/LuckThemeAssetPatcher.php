@@ -82,7 +82,7 @@ final class LuckThemeAssetPatcher
     /**
      * Point every subscription-dialog lazy import at one normalized physical
      * chunk. Persistent Luck volumes can contain an older generated payment
-     * suffix, so appending blindly would create payment-v3-payment-v4 chains.
+     * suffix, so appending blindly would create payment-v4-payment-v5 chains.
      */
     public static function rewriteSubscriptionDialogAssetImport(string $contents): string
     {
@@ -97,7 +97,7 @@ final class LuckThemeAssetPatcher
     {
         $name = preg_replace('/(?:-payment(?:-v\d+)?)+\.js$/', '.js', basename($assetName)) ?? basename($assetName);
 
-        return preg_replace('/\.js$/', '-payment-v4.js', $name) ?? $name;
+        return preg_replace('/\.js$/', '-payment-v5.js', $name) ?? $name;
     }
 
     /**
@@ -923,9 +923,249 @@ JS;
 
     public static function patchPaymentMessages(string $contents): string
     {
+        $coinPaymentsBridge = <<<'JS'
+        if (typeof window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__ !== "function") {
+          window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__ = function(checkoutUrl, tradeNo) {
+            const supportedHost = /^(?:[a-c]-)?checkout\.coinpayments\.net$/i;
+            let safeCheckoutUrl = null;
+            try {
+              const candidate = new URL(String(checkoutUrl || ""));
+              const safePort = candidate.port === "" || candidate.port === "443";
+              if (candidate.protocol === "https:" && supportedHost.test(candidate.hostname) && safePort && !candidate.username && !candidate.password) {
+                safeCheckoutUrl = candidate;
+              }
+            } catch (invalidCheckoutUrl) {
+              safeCheckoutUrl = null;
+            }
+
+            const language = String(document.documentElement.lang || (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || "en-US").replace(/_/g, "-");
+            const copy = {
+              "vi-VN": { title: "Thanh toán bằng CoinPayments", subtitle: "Hoàn tất thanh toán an toàn ngay tại ZaoGuang Service", order: "Đơn hàng", secure: "Kết nối bảo mật", loading: "Đang tải cổng thanh toán...", waiting: "Đang chờ CoinPayments xác nhận thanh toán", checking: "Đang kiểm tra trạng thái...", paid: "Thanh toán thành công. Đang quay về đơn hàng...", cancelled: "Đơn hàng đã bị hủy.", error: "Chưa thể kiểm tra trạng thái. Hệ thống sẽ tự thử lại.", invalid: "Liên kết CoinPayments không hợp lệ. Không có trang bên ngoài nào được mở.", frameHelp: "Nếu khung thanh toán không hiển thị, hãy dùng nút Mở CoinPayments.", open: "Mở CoinPayments", back: "Quay lại đơn hàng", close: "Đóng cửa sổ thanh toán", check: "Kiểm tra thanh toán", remaining: "Thời gian còn lại", expired: "Đã hết thời gian thanh toán", frameTitle: "Cổng thanh toán CoinPayments" },
+              "en-US": { title: "Pay with CoinPayments", subtitle: "Complete your secure payment inside ZaoGuang Service", order: "Order", secure: "Secure connection", loading: "Loading payment gateway...", waiting: "Waiting for CoinPayments confirmation", checking: "Checking payment status...", paid: "Payment successful. Returning to your order...", cancelled: "This order was cancelled.", error: "The status could not be checked. We will retry automatically.", invalid: "The CoinPayments link is invalid. No external page was opened.", frameHelp: "If the payment frame does not appear, use Open CoinPayments.", open: "Open CoinPayments", back: "Back to orders", close: "Close payment window", check: "Check payment", remaining: "Time remaining", expired: "Payment time expired", frameTitle: "CoinPayments checkout" },
+              "zh-CN": { title: "使用 CoinPayments 支付", subtitle: "在 ZaoGuang Service 内安全完成付款", order: "订单", secure: "安全连接", loading: "正在加载支付网关...", waiting: "正在等待 CoinPayments 确认付款", checking: "正在检查付款状态...", paid: "支付成功，正在返回订单...", cancelled: "订单已取消。", error: "暂时无法检查状态，系统会自动重试。", invalid: "CoinPayments 链接无效，未打开任何外部页面。", frameHelp: "如果支付窗口未显示，请使用“打开 CoinPayments”。", open: "打开 CoinPayments", back: "返回订单", close: "关闭付款窗口", check: "检查付款", remaining: "剩余时间", expired: "支付时间已结束", frameTitle: "CoinPayments 收银台" },
+              "zh-TW": { title: "使用 CoinPayments 付款", subtitle: "在 ZaoGuang Service 內安全完成付款", order: "訂單", secure: "安全連線", loading: "正在載入付款閘道...", waiting: "正在等待 CoinPayments 確認付款", checking: "正在檢查付款狀態...", paid: "付款成功，正在返回訂單...", cancelled: "訂單已取消。", error: "暫時無法檢查狀態，系統會自動重試。", invalid: "CoinPayments 連結無效，未開啟任何外部頁面。", frameHelp: "如果付款視窗未顯示，請使用「開啟 CoinPayments」。", open: "開啟 CoinPayments", back: "返回訂單", close: "關閉付款視窗", check: "檢查付款", remaining: "剩餘時間", expired: "付款時間已結束", frameTitle: "CoinPayments 收銀台" },
+              "ja-JP": { title: "CoinPayments で支払う", subtitle: "ZaoGuang Service 内で安全にお支払いを完了できます", order: "注文", secure: "安全な接続", loading: "決済画面を読み込んでいます...", waiting: "CoinPayments の確認を待っています", checking: "支払い状況を確認しています...", paid: "支払いが完了しました。注文画面に戻ります...", cancelled: "注文はキャンセルされました。", error: "状態を確認できませんでした。自動的に再試行します。", invalid: "CoinPayments のリンクが無効です。外部ページは開かれていません。", frameHelp: "決済画面が表示されない場合は、「CoinPayments を開く」を使用してください。", open: "CoinPayments を開く", back: "注文に戻る", close: "決済画面を閉じる", check: "支払いを確認", remaining: "残り時間", expired: "支払い期限切れ", frameTitle: "CoinPayments 決済" },
+              "ko-KR": { title: "CoinPayments로 결제", subtitle: "ZaoGuang Service 안에서 안전하게 결제를 완료하세요", order: "주문", secure: "보안 연결", loading: "결제 화면을 불러오는 중...", waiting: "CoinPayments 결제 확인을 기다리는 중", checking: "결제 상태를 확인하는 중...", paid: "결제가 완료되었습니다. 주문으로 돌아갑니다...", cancelled: "주문이 취소되었습니다.", error: "상태를 확인하지 못했습니다. 자동으로 다시 시도합니다.", invalid: "CoinPayments 링크가 올바르지 않아 외부 페이지를 열지 않았습니다.", frameHelp: "결제 화면이 보이지 않으면 CoinPayments 열기를 사용하세요.", open: "CoinPayments 열기", back: "주문으로 돌아가기", close: "결제 창 닫기", check: "결제 확인", remaining: "남은 시간", expired: "결제 시간 만료", frameTitle: "CoinPayments 결제" },
+              "fa-IR": { title: "پرداخت با CoinPayments", subtitle: "پرداخت امن را در ZaoGuang Service تکمیل کنید", order: "سفارش", secure: "اتصال امن", loading: "در حال بارگذاری درگاه پرداخت...", waiting: "در انتظار تأیید CoinPayments", checking: "در حال بررسی وضعیت پرداخت...", paid: "پرداخت موفق بود. در حال بازگشت به سفارش...", cancelled: "این سفارش لغو شده است.", error: "وضعیت بررسی نشد. سامانه خودکار دوباره تلاش می‌کند.", invalid: "پیوند CoinPayments نامعتبر است و صفحه خارجی باز نشد.", frameHelp: "اگر درگاه نمایش داده نشد، از دکمه باز کردن CoinPayments استفاده کنید.", open: "باز کردن CoinPayments", back: "بازگشت به سفارش‌ها", close: "بستن پنجره پرداخت", check: "بررسی پرداخت", remaining: "زمان باقی‌مانده", expired: "زمان پرداخت پایان یافت", frameTitle: "درگاه CoinPayments" },
+              "ru-RU": { title: "Оплата через CoinPayments", subtitle: "Завершите безопасную оплату внутри ZaoGuang Service", order: "Заказ", secure: "Защищённое соединение", loading: "Загрузка платёжного шлюза...", waiting: "Ожидание подтверждения CoinPayments", checking: "Проверяем статус платежа...", paid: "Платёж выполнен. Возвращаемся к заказу...", cancelled: "Заказ был отменён.", error: "Не удалось проверить статус. Система повторит попытку автоматически.", invalid: "Недействительная ссылка CoinPayments. Внешняя страница не была открыта.", frameHelp: "Если форма оплаты не появилась, нажмите «Открыть CoinPayments».", open: "Открыть CoinPayments", back: "Назад к заказам", close: "Закрыть окно оплаты", check: "Проверить оплату", remaining: "Осталось времени", expired: "Время оплаты истекло", frameTitle: "Оплата CoinPayments" }
+            };
+            const normalizedLanguage = language.toLowerCase();
+            const exactLocale = Object.keys(copy).find(function(locale) { return locale.toLowerCase() === normalizedLanguage; });
+            const primaryLanguage = normalizedLanguage.split("-")[0];
+            const fallbackLocale = primaryLanguage === "zh"
+              ? (/-(?:tw|hk|mo|hant)(?:-|$)/.test(normalizedLanguage) ? "zh-TW" : "zh-CN")
+              : ({ vi: "vi-VN", en: "en-US", ja: "ja-JP", ko: "ko-KR", fa: "fa-IR", ru: "ru-RU" }[primaryLanguage] || "en-US");
+            const selectedLocale = exactLocale || fallbackLocale;
+            const labels = copy[selectedLocale];
+            const current = document.querySelector("[data-luck-coinpayments-checkout]");
+            if (current && typeof current.__luckCleanup === "function") current.__luckCleanup();
+
+            if (!document.getElementById("luck-coinpayments-checkout-style")) {
+              const style = document.createElement("style");
+              style.id = "luck-coinpayments-checkout-style";
+              style.textContent = ".luck-cp-lock{overflow:hidden!important}.luck-cp-overlay{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:clamp(10px,2vw,28px);background:rgba(15,23,42,.66);backdrop-filter:blur(10px);overscroll-behavior:contain}.luck-cp-card{width:min(1120px,100%);height:min(880px,calc(100vh - 32px));height:min(880px,calc(100dvh - 32px));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;overflow:hidden;border:1px solid rgba(255,255,255,.72);border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(15,23,42,.35);color:#27364a;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}.luck-cp-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:22px 24px;background:linear-gradient(135deg,#49bfa7,#6ed5bf);color:#fff}.luck-cp-heading{min-width:0}.luck-cp-header h1{margin:0 0 5px;font-size:clamp(20px,2.2vw,27px);line-height:1.2}.luck-cp-header p{margin:0;font-size:14px;opacity:.92}.luck-cp-order{margin-top:8px!important;font-weight:650;overflow-wrap:anywhere}.luck-cp-close{flex:0 0 42px;width:42px;height:42px;border:1px solid rgba(255,255,255,.55);border-radius:13px;background:rgba(255,255,255,.17);color:#fff;cursor:pointer;font-size:26px;line-height:1}.luck-cp-state{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 24px;border-bottom:1px solid #e7f1ef;background:#f6fafb;font-size:14px}.luck-cp-state-text{display:flex;align-items:center;gap:9px;min-width:0;font-weight:650}.luck-cp-status{overflow-wrap:anywhere}.luck-cp-dot{flex:0 0 9px;width:9px;height:9px;border-radius:50%;background:#e6a23c;box-shadow:0 0 0 5px rgba(230,162,60,.13)}.luck-cp-state[data-state=paid] .luck-cp-dot{background:#20b486;box-shadow:0 0 0 5px rgba(32,180,134,.13)}.luck-cp-state[data-state=error] .luck-cp-dot,.luck-cp-state[data-state=cancelled] .luck-cp-dot{background:#e45b5b;box-shadow:0 0 0 5px rgba(228,91,91,.13)}.luck-cp-secure{white-space:nowrap;color:#4f6b67;font-size:13px}.luck-cp-frame-wrap{position:relative;min-height:0;background:#eef3f6}.luck-cp-frame{display:block;width:100%;height:100%;border:0;background:#fff}.luck-cp-loader{position:absolute;inset:0;z-index:1;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#f6fafb,#edf7ff);color:#627083;text-align:center}.luck-cp-loader[hidden]{display:none}.luck-cp-footer{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;padding:15px 20px;border-top:1px solid #e7eef1;background:#fff}.luck-cp-meta{min-width:0;color:#627083;font-size:13px;line-height:1.45}.luck-cp-countdown{font-weight:700;color:#a3650b}.luck-cp-help{margin-top:3px}.luck-cp-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:9px}.luck-cp-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:0;border-radius:11px;text-align:center;text-decoration:none;cursor:pointer;font:650 14px/1.25 Inter,ui-sans-serif,system-ui;color:#475569;background:#edf3f5}.luck-cp-btn-primary{background:#49bfa7;color:#fff}.luck-cp-btn-outline{border:1px solid #badbd4;background:#fff;color:#258c76}.luck-cp-btn[hidden]{display:none}.luck-cp-btn:focus-visible,.luck-cp-close:focus-visible{outline:3px solid rgba(37,99,235,.35);outline-offset:2px}@media(max-width:700px){.luck-cp-overlay{place-items:stretch;padding:0}.luck-cp-card{width:100%;height:100vh;height:100dvh;max-height:none;border:0;border-radius:0}.luck-cp-header{padding:calc(15px + env(safe-area-inset-top)) 16px 14px}.luck-cp-state{padding:10px 16px}.luck-cp-secure{display:none}.luck-cp-footer{grid-template-columns:1fr;padding:11px 12px calc(11px + env(safe-area-inset-bottom));gap:9px}.luck-cp-meta{text-align:center}.luck-cp-actions{display:grid;grid-template-columns:1fr 1fr}.luck-cp-btn{padding-inline:10px}.luck-cp-btn-primary{grid-column:1/-1;grid-row:1}.luck-cp-frame-wrap{min-height:0}}@media(max-width:380px){.luck-cp-actions{grid-template-columns:1fr}.luck-cp-btn-primary{grid-column:auto}.luck-cp-help{display:none}}@media(max-height:520px) and (orientation:landscape){.luck-cp-header{padding:8px 14px}.luck-cp-heading>p:not(.luck-cp-order){display:none}.luck-cp-order{margin-top:3px!important}.luck-cp-state{padding:7px 14px}.luck-cp-footer{grid-template-columns:auto minmax(0,1fr);padding:7px 10px;gap:8px}.luck-cp-help{display:none}.luck-cp-actions{display:flex;flex-wrap:nowrap}.luck-cp-btn{min-height:38px;padding:7px 10px;font-size:12px}.luck-cp-frame-wrap{min-height:0}}";
+              document.head.appendChild(style);
+            }
+
+            const make = function(tag, className, text) {
+              const node = document.createElement(tag);
+              if (className) node.className = className;
+              if (typeof text === "string") node.textContent = text;
+              return node;
+            };
+            const overlay = make("div", "luck-cp-overlay");
+            overlay.setAttribute("data-luck-coinpayments-checkout", "1");
+            overlay.setAttribute("role", "dialog");
+            overlay.setAttribute("aria-modal", "true");
+            overlay.setAttribute("aria-label", labels.title);
+            overlay.dir = selectedLocale === "fa-IR" ? "rtl" : "ltr";
+            const card = make("section", "luck-cp-card");
+            const header = make("header", "luck-cp-header");
+            const heading = make("div", "luck-cp-heading");
+            heading.appendChild(make("h1", "", labels.title));
+            heading.appendChild(make("p", "", labels.subtitle));
+            heading.appendChild(make("p", "luck-cp-order", labels.order + " " + String(tradeNo || "")));
+            const close = make("button", "luck-cp-close", "×");
+            close.type = "button";
+            close.setAttribute("aria-label", labels.close);
+            header.append(heading, close);
+            const state = make("div", "luck-cp-state");
+            state.setAttribute("role", "status");
+            state.setAttribute("aria-live", "polite");
+            state.setAttribute("aria-atomic", "true");
+            state.dataset.state = safeCheckoutUrl ? "waiting" : "error";
+            const stateText = make("span", "luck-cp-state-text");
+            stateText.append(make("span", "luck-cp-dot"), make("span", "luck-cp-status", safeCheckoutUrl ? labels.waiting : labels.invalid));
+            state.append(stateText, make("span", "luck-cp-secure", labels.secure));
+            const frameWrap = make("div", "luck-cp-frame-wrap");
+            const loader = make("div", "luck-cp-loader", safeCheckoutUrl ? labels.loading : labels.invalid);
+            frameWrap.appendChild(loader);
+            let frame = null;
+            if (safeCheckoutUrl) {
+              frame = make("iframe", "luck-cp-frame");
+              frame.title = labels.frameTitle;
+              frame.src = safeCheckoutUrl.href;
+              frame.allow = "clipboard-read; clipboard-write; payment";
+              frame.referrerPolicy = "strict-origin-when-cross-origin";
+              frame.addEventListener("load", function() { loader.hidden = true; });
+              frameWrap.appendChild(frame);
+            }
+            const footer = make("footer", "luck-cp-footer");
+            const meta = make("div", "luck-cp-meta");
+            const countdown = make("div", "luck-cp-countdown", labels.remaining + ": 02:00:00");
+            const help = make("div", "luck-cp-help", safeCheckoutUrl ? labels.frameHelp : labels.invalid);
+            meta.append(countdown, help);
+            const actions = make("div", "luck-cp-actions");
+            const external = make("a", "luck-cp-btn luck-cp-btn-outline", labels.open);
+            if (safeCheckoutUrl) {
+              external.href = safeCheckoutUrl.href;
+              external.target = "_blank";
+              external.rel = "noopener noreferrer";
+            } else {
+              external.hidden = true;
+            }
+            const back = make("button", "luck-cp-btn", labels.back);
+            back.type = "button";
+            const check = make("button", "luck-cp-btn luck-cp-btn-primary", labels.check);
+            check.type = "button";
+            actions.append(external, back, check);
+            footer.append(meta, actions);
+            card.append(header, state, frameWrap, footer);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+            document.documentElement.classList.add("luck-cp-lock");
+            document.body.classList.add("luck-cp-lock");
+
+            const statusLabel = state.querySelector(".luck-cp-status");
+            const returnUrl = "/orders?trade_no=" + encodeURIComponent(String(tradeNo || ""));
+            const statusUrl = "/payment/status/" + encodeURIComponent(String(tradeNo || ""));
+            const previousFocus = document.activeElement;
+            let expiresAt = Date.now() + (2 * 60 * 60 * 1000);
+            let pollTimer = null;
+            let clockTimer = null;
+            let routeTimer = null;
+            let redirectTimer = null;
+            let polling = false;
+            let disposed = false;
+            const initialRoute = window.location.pathname + window.location.search + window.location.hash;
+            const isCurrent = function() {
+              return !disposed && document.querySelector("[data-luck-coinpayments-checkout]") === overlay;
+            };
+            const setState = function(kind, text) {
+              state.dataset.state = kind;
+              statusLabel.textContent = text;
+            };
+            const tick = function() {
+              const seconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+              if (seconds === 0) {
+                countdown.textContent = labels.expired;
+                return;
+              }
+              const hours = String(Math.floor(seconds / 3600)).padStart(2, "0");
+              const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+              const remainder = String(seconds % 60).padStart(2, "0");
+              countdown.textContent = labels.remaining + ": " + hours + ":" + minutes + ":" + remainder;
+            };
+            const cleanup = function() {
+              if (disposed) return;
+              disposed = true;
+              if (pollTimer) window.clearInterval(pollTimer);
+              if (clockTimer) window.clearInterval(clockTimer);
+              if (routeTimer) window.clearInterval(routeTimer);
+              if (redirectTimer) window.clearTimeout(redirectTimer);
+              document.removeEventListener("keydown", onKeydown);
+              window.removeEventListener("popstate", onRouteChange);
+              window.removeEventListener("hashchange", onRouteChange);
+              window.removeEventListener("pagehide", cleanup);
+              document.documentElement.classList.remove("luck-cp-lock");
+              document.body.classList.remove("luck-cp-lock");
+              overlay.remove();
+              if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
+            };
+            const goBack = function() {
+              cleanup();
+              window.location.assign(returnUrl);
+            };
+            const poll = async function() {
+              if (polling || disposed || !tradeNo) return;
+              polling = true;
+              setState("checking", labels.checking);
+              try {
+                const response = await fetch(statusUrl, { headers: { Accept: "application/json" }, credentials: "same-origin", cache: "no-store" });
+                if (!isCurrent()) return;
+                if (!response.ok) throw new Error("payment status unavailable");
+                const payload = await response.json();
+                if (!isCurrent()) return;
+                if (payload && Number(payload.expires_at) > 0) expiresAt = Number(payload.expires_at) * 1000;
+                const orderStatus = Number(payload && typeof payload.status !== "undefined" ? payload.status : payload && payload.data);
+                if (orderStatus === 1 || orderStatus === 3) {
+                  setState("paid", labels.paid);
+                  check.disabled = true;
+                  external.hidden = true;
+                  if (pollTimer) window.clearInterval(pollTimer);
+                  redirectTimer = window.setTimeout(goBack, 1100);
+                } else if (orderStatus === 2) {
+                  setState("cancelled", labels.cancelled);
+                  check.disabled = true;
+                  external.hidden = true;
+                  if (pollTimer) window.clearInterval(pollTimer);
+                } else {
+                  setState("waiting", labels.waiting);
+                }
+              } catch (statusError) {
+                if (isCurrent()) setState("error", labels.error);
+              } finally {
+                polling = false;
+              }
+            };
+            function onKeydown(event) {
+              if (event.key === "Escape") {
+                cleanup();
+                return;
+              }
+              if (event.key !== "Tab" || !isCurrent()) return;
+              const focusable = Array.from(overlay.querySelectorAll('button:not([disabled]):not([hidden]),a[href]:not([hidden]),iframe:not([hidden])'));
+              if (!focusable.length) return;
+              const first = focusable[0];
+              const last = focusable[focusable.length - 1];
+              if (!overlay.contains(document.activeElement)) {
+                event.preventDefault();
+                first.focus();
+              } else if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+              } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+              }
+            }
+            function onRouteChange() {
+              cleanup();
+            }
+            overlay.__luckCleanup = cleanup;
+            close.addEventListener("click", cleanup);
+            back.addEventListener("click", goBack);
+            check.addEventListener("click", poll);
+            document.addEventListener("keydown", onKeydown);
+            window.addEventListener("popstate", onRouteChange);
+            window.addEventListener("hashchange", onRouteChange);
+            window.addEventListener("pagehide", cleanup);
+            tick();
+            clockTimer = window.setInterval(tick, 1000);
+            routeTimer = window.setInterval(function() {
+              if (window.location.pathname + window.location.search + window.location.hash !== initialRoute) cleanup();
+            }, 250);
+            poll();
+            pollTimer = window.setInterval(poll, 5000);
+            close.focus();
+            return Boolean(safeCheckoutUrl);
+          };
+        }
+JS;
         $contents = str_replace(
             'const paymentResult = await apiClient.checkoutOrder(tradeNo, method.id);',
-            'const rawPaymentResult = await apiClient.checkoutOrder(tradeNo, method.id);' . "\n"
+            $coinPaymentsBridge . "\n"
+                . '        const rawPaymentResult = await apiClient.checkoutOrder(tradeNo, method.id);' . "\n"
                 . '        const paymentResult = rawPaymentResult && rawPaymentResult.data && typeof rawPaymentResult.type === "undefined" ? rawPaymentResult.data : rawPaymentResult;',
             $contents
         );
@@ -941,7 +1181,7 @@ JS;
                 'message.error("未知的支付类型，请重试");',
             ],
             [
-                'window.location.assign(paymentResult.data);',
+                '(String(method && method.payment || "").toLowerCase() === "coinpayments" ? window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__(paymentResult.data, tradeNo) : window.location.assign(paymentResult.data));',
                 'window.location.assign(paymentResult.data);',
                 'message.error(typeof window.__LUCK_T__ === "function" ? window.__LUCK_T__("未知的支付类型，请重试") : "Unknown payment method. Please try again.");',
             ],

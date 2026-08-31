@@ -33,14 +33,14 @@ for (const marker of [
   'preg_match_all($importPattern, $contents, $importMatches) !== 1',
   'preg_match_all($componentPattern, $contents, $componentMatches) !== 1',
   'public static function rewriteSubscriptionDialogAssetImport',
-  "'-payment-v4.js'",
+  "'-payment-v5.js'",
 ]) {
   assert(patcher.includes(marker), `subscription Teleport patch is missing: ${marker}`);
 }
 
 assert(routes.includes('LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($fixedContents)'), 'the C6 dialog chunk must receive the Teleport patch');
 assert(routes.includes('LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($fixedContents)'), 'the main entry must select the normalized dialog chunk');
-assert(routes.includes('LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)'), 'the physical dialog chunk must use the normalized v4 name');
+assert(routes.includes('LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)'), 'the physical dialog chunk must use the normalized v5 name');
 
 assert(template.includes('BBbuoBq5-fresh.js?v=63'), 'the Teleport entry graph needs a fresh browser/CDN URL');
 assert(!template.includes('syncSubscriptionDialogPortal'), 'the dashboard must not manually move Vue-owned overlays');
@@ -52,7 +52,7 @@ for (const [name, source] of [['published-image smoke', ciSmoke], ['production d
   assert(source.includes('shared_runtime_asset'), `${name} must reject a cached nested shared runtime`);
   assert(source.includes('dashboard_route_asset'), `${name} must open the cache-busted dashboard route graph`);
   assert(source.includes('./BBbuoBq5*-runtime-v3.js'), `${name} must require shared runtime v3`);
-  assert(source.includes('./C6e3mGRa*-payment-v4.js'), `${name} must require the normalized v4 dialog chunk`);
+  assert(source.includes('./C6e3mGRa*-payment-v5.js'), `${name} must require the normalized v5 dialog chunk`);
   assert(source.includes('PortalledSubscriptionDialog'), `${name} must require the Vue-owned Teleport wrapper`);
   assert(source.includes('T as Teleport'), `${name} must require the Vue Teleport runtime import`);
 }

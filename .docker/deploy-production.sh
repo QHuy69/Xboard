@@ -16,7 +16,91 @@ current_container="$(docker ps \
   --filter 'label=com.docker.compose.service=xboard' \
   --format '{{.ID}}' | head -n 1)"
 previous_image=""
+previous_image_id=""
 rollback_image=""
+backup_name=""
+timestamp=""
+
+verify_coinpayments_checkout_schema() {
+  local target_container="$1"
+  local schema_state
+
+  schema_state="$(docker exec "$target_container" sqlite3 /www/.docker/.data/database.sqlite "
+    SELECT printf('%d:%d:%d',
+      (
+        SELECT COUNT(*)
+        FROM pragma_table_info('v2_order_payment_checkout')
+        WHERE \"notnull\" = 0
+          AND (
+            (name IN ('payment_uuid', 'provider_invoice_id', 'expected_amount') AND upper(type) LIKE 'VARCHAR%')
+            OR (name = 'config_snapshot' AND upper(type) = 'TEXT')
+            OR (name = 'provider_expires_at' AND upper(type) = 'INTEGER')
+          )
+      ),
+      (
+        SELECT
+          CASE WHEN (
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('order_payment_checkout_payment_state_idx')
+              ORDER BY seqno
+            )
+          ) = 'payment_id,state'
+            AND COALESCE((
+              SELECT \"unique\"
+              FROM pragma_index_list('v2_order_payment_checkout')
+              WHERE name = 'order_payment_checkout_payment_state_idx'
+            ), -1) = 0
+          THEN 1 ELSE 0 END
+          + CASE WHEN (
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('order_payment_checkout_uuid_state_idx')
+              ORDER BY seqno
+            )
+          ) = 'payment_uuid,state'
+            AND COALESCE((
+              SELECT \"unique\"
+              FROM pragma_index_list('v2_order_payment_checkout')
+              WHERE name = 'order_payment_checkout_uuid_state_idx'
+            ), -1) = 0
+          THEN 1 ELSE 0 END
+          + CASE WHEN (
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('order_payment_checkout_provider_invoice_unique')
+              ORDER BY seqno
+            )
+          ) = 'provider,provider_invoice_id'
+            AND COALESCE((
+              SELECT \"unique\"
+              FROM pragma_index_list('v2_order_payment_checkout')
+              WHERE name = 'order_payment_checkout_provider_invoice_unique'
+            ), -1) = 1
+          THEN 1 ELSE 0 END
+      ),
+      (
+        SELECT COUNT(*)
+        FROM v2_order_payment_checkout
+        WHERE provider = 'CoinPayments'
+          AND state = 'ready'
+          AND (
+            trim(COALESCE(provider_invoice_id, '')) = ''
+            OR provider_expires_at IS NULL
+            OR provider_expires_at <= 0
+          )
+      )
+    );
+  ")" || return 1
+
+  if [ "$schema_state" != '5:3:0' ]; then
+    echo "CoinPayments migration 000005 schema gate failed (columns:indexes:invalid-ready=$schema_state)." >&2
+    return 1
+  fi
+}
 
 if [ -n "$current_container" ]; then
   timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
@@ -36,10 +120,78 @@ fi
 
 rollback() {
   if [ -z "$previous_image" ]; then
+    echo "No previous release and database backup are available for rollback." >&2
     return
   fi
+
+  if [ -z "$previous_image_id" ] || [ -z "$backup_name" ] || [ -z "$timestamp" ]; then
+    echo "Rollback metadata is incomplete; refusing to start an old image against the migrated database." >&2
+    return 1
+  fi
+
+  echo "Stopping the failed release before restoring the pre-deploy database backup." >&2
+  XBOARD_IMAGE="$image" docker compose -f "$compose_file" stop -t 90 xboard
+
+  XBOARD_IMAGE="$previous_image" docker compose -f "$compose_file" run --rm --no-deps \
+    --entrypoint /bin/sh \
+    -e XBOARD_DB_BACKUP_NAME="$backup_name" \
+    -e XBOARD_DB_RESTORE_TOKEN="$timestamp" \
+    xboard -eu -c '
+      data_dir=/www/.docker/.data
+      backup_path="${data_dir}/${XBOARD_DB_BACKUP_NAME}"
+      live_path="${data_dir}/database.sqlite"
+      restore_path="${data_dir}/database.sqlite.restore-${XBOARD_DB_RESTORE_TOKEN}"
+
+      test "$XBOARD_DB_BACKUP_NAME" = "database.sqlite.pre-${XBOARD_DB_RESTORE_TOKEN}"
+      test -f "$backup_path"
+      test -f "$live_path"
+      test ! -e "$restore_path"
+      cleanup_restore() {
+        rm -f "$restore_path" "${restore_path}-wal" "${restore_path}-shm" "${restore_path}-journal"
+      }
+      trap cleanup_restore EXIT HUP INT TERM
+
+      test "$(sqlite3 "$backup_path" "PRAGMA integrity_check;")" = ok
+
+      cp "$backup_path" "$restore_path"
+      test "$(sqlite3 "$restore_path" "PRAGMA integrity_check;")" = ok
+
+      rm -f "${live_path}-wal" "${live_path}-shm" "${live_path}-journal"
+      mv -f "$restore_path" "$live_path"
+      sync
+
+      test "$(sqlite3 "$live_path" "PRAGMA integrity_check;")" = ok
+      cmp -s "$backup_path" "$live_path"
+    '
+
+  echo "Database restored from verified backup: .docker/.data/${backup_name}" >&2
   echo "Restoring previous image: $previous_image" >&2
   XBOARD_IMAGE="$previous_image" docker compose -f "$compose_file" up -d --wait --wait-timeout 120 xboard
+
+  local rollback_container rollback_actual_image rollback_health rollback_integrity
+  rollback_container="$(XBOARD_IMAGE="$previous_image" docker compose -f "$compose_file" ps -q xboard)"
+  test -n "$rollback_container"
+
+  rollback_actual_image="$(docker inspect --format '{{.Image}}' "$rollback_container")"
+  if [ "$rollback_actual_image" != "$previous_image_id" ]; then
+    echo "Rollback container did not use the captured previous image." >&2
+    return 1
+  fi
+
+  rollback_health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' "$rollback_container")"
+  if [ "$rollback_health" != healthy ]; then
+    echo "Rollback container readiness failed (health=$rollback_health)." >&2
+    return 1
+  fi
+
+  curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null
+  rollback_integrity="$(docker exec "$rollback_container" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')"
+  if [ "$rollback_integrity" != ok ]; then
+    echo "Rollback database integrity verification failed." >&2
+    return 1
+  fi
+
+  echo "Rollback verified: pre-deploy database restored and previous image is ready." >&2
 }
 
 post_deploy_checks() {
@@ -134,7 +286,7 @@ post_deploy_checks() {
   esac
   shared_runtime_js="$(curl --fail --silent --show-error \
     "http://127.0.0.1:7001/theme/Luck/assets/${shared_runtime_asset#./}")" || return 1
-  grep -aEq '\./C6e3mGRa[^"?]*-payment-v4\.js' <<<"$shared_runtime_js" || {
+  grep -aEq '\./C6e3mGRa[^"?]*-payment-v5\.js' <<<"$shared_runtime_js" || {
     echo "The deployed shared runtime does not select the Vue-owned dialog chunk." >&2
     return 1
   }
@@ -144,7 +296,7 @@ post_deploy_checks() {
   fi
   subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$subscription_dialog_asset" in
-    ./C6e3mGRa*-payment-v4.js) ;;
+    ./C6e3mGRa*-payment-v5.js) ;;
     *)
       echo "The deployed Luck entry has no normalized subscription-dialog module: $subscription_dialog_asset" >&2
       return 1
@@ -159,7 +311,10 @@ post_deploy_checks() {
     'T as Teleport' \
     'name: "PortalledSubscriptionDialog"' \
     'inheritAttrs: false' \
-    'createVNode(Teleport, { to: "body" }'; do
+    'createVNode(Teleport, { to: "body" }' \
+    'window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__' \
+    'clipboard-read; clipboard-write; payment' \
+    'const statusUrl = "/payment/status/"'; do
     grep -aFq "$subscription_dialog_marker" <<<"$subscription_dialog_js" || {
       echo "The deployed subscription dialog is missing Vue Teleport marker: $subscription_dialog_marker" >&2
       return 1
@@ -332,11 +487,13 @@ post_deploy_checks() {
   migration_status="$(docker exec "$container_id" php /www/artisan migrate:status --no-ansi)" || return 1
   grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_08_30_000004_create_order_payment_checkouts.*Ran' <<<"$migration_status" || return 1
+  grep -q '2026_08_31_000005_add_coinpayments_checkout_snapshot.*Ran' <<<"$migration_status" || return 1
   if grep -q 'Pending' <<<"$migration_status"; then
     echo "Post-deploy migration status still contains Pending entries." >&2
     printf '%s\n' "$migration_status" >&2
     return 1
   fi
+  verify_coinpayments_checkout_schema "$container_id" || return 1
 
   integrity="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')" || return 1
   if [ "$integrity" != "ok" ]; then

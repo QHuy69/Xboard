@@ -144,6 +144,18 @@ class OrderController extends Controller
             return $this->fail([400, __('Payment method is not available')]);
         }
 
+        // A database row can outlive a disabled/removed plugin. Resolve every
+        // gateway before mutating the order so customers receive a controlled
+        // availability error rather than an undefined-class/network error.
+        try {
+            $paymentService = new PaymentService($payment->payment, $payment->id);
+            if ($payment->payment === 'CoinPayments') {
+                $paymentService->validateConfiguration();
+            }
+        } catch (\Throwable $exception) {
+            return $this->fail([400, __('Payment method is not available')]);
+        }
+
         if ($payment->payment === 'CoinPayments') {
             $checkout = OrderService::beginCoinPaymentsCheckout(
                 (int) $request->user()->id,
@@ -157,8 +169,14 @@ class OrderController extends Controller
                 ]);
             }
 
-            $paymentService = new PaymentService($payment->payment, $payment->id);
             try {
+                // The locked claim freezes credentials, exchange rate and
+                // callback URL. Later admin edits must affect only future
+                // invoices, never this already-started provider request.
+                $paymentService = new PaymentService($payment->payment, $payment->id, null, true);
+                $paymentService->useCoinPaymentsConfigurationSnapshot(
+                    $checkout['configuration_snapshot']
+                );
                 $result = $paymentService->pay([
                     'trade_no' => $tradeNo,
                     'total_amount' => $checkout['amount'],
@@ -175,8 +193,10 @@ class OrderController extends Controller
                 // 5xx/transport/malformed-success failures may occur after the
                 // provider created an invoice. Keep them blocked as uncertain;
                 // only a known 4xx/local validation failure may be tried again.
+                $status = (int) $exception->getCode();
                 $ambiguous = !($exception instanceof ApiException)
-                    || (int) $exception->getCode() >= 500;
+                    || $status < 400
+                    || $status >= 500;
                 OrderService::failCoinPaymentsCheckout(
                     (int) $checkout['order']->id,
                     (int) $payment->id,
@@ -199,13 +219,54 @@ class OrderController extends Controller
         );
         $order = $checkout['order'];
         $payment = $checkout['payment'];
-        $paymentService = new PaymentService($payment->payment, $payment->id);
-        $result = $paymentService->pay([
-            'trade_no' => $tradeNo,
-            'total_amount' => $checkout['amount'],
-            'user_id' => $order->user_id,
-            'stripe_token' => $request->input('token')
-        ]);
+        if ($checkout['cached']) {
+            return response([
+                'type' => $checkout['type'],
+                'data' => $checkout['data'],
+            ]);
+        }
+
+        try {
+            $paymentService = new PaymentService($payment->payment, $payment->id);
+            $result = $paymentService->pay([
+                'trade_no' => $tradeNo,
+                'total_amount' => $checkout['amount'],
+                'user_id' => $order->user_id,
+                'stripe_token' => $request->input('token')
+            ]);
+        } catch (\Throwable $exception) {
+            $status = (int) $exception->getCode();
+            $ambiguous = !($exception instanceof ApiException)
+                || $status < 400
+                || $status >= 500;
+            OrderService::failStandardPaymentCheckout(
+                (int) $order->id,
+                (int) $payment->id,
+                (string) $checkout['claim_token'],
+                $ambiguous
+            );
+            throw $exception;
+        }
+
+        try {
+            OrderService::completeStandardPaymentCheckout(
+                (int) $order->id,
+                (int) $payment->id,
+                (string) $checkout['claim_token'],
+                $result
+            );
+        } catch (\Throwable $exception) {
+            // The provider already returned a payable result. Any local
+            // persistence failure is ambiguous regardless of its exception
+            // type and must keep the order locked for reconciliation.
+            OrderService::failStandardPaymentCheckout(
+                (int) $order->id,
+                (int) $payment->id,
+                (string) $checkout['claim_token'],
+                true
+            );
+            throw $exception;
+        }
         return response([
             'type' => $result['type'],
             'data' => $result['data']
@@ -236,7 +297,19 @@ class OrderController extends Controller
         ])
             ->where('enable', 1)
             ->orderBy('sort', 'ASC')
-            ->get();
+            ->get()
+            ->filter(function (Payment $payment): bool {
+                try {
+                    $paymentService = new PaymentService($payment->payment, $payment->id);
+                    if ($payment->payment === 'CoinPayments') {
+                        $paymentService->validateConfiguration();
+                    }
+                    return true;
+                } catch (\Throwable $exception) {
+                    return false;
+                }
+            })
+            ->values();
 
         return $this->success($methods);
     }

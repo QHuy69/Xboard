@@ -3,6 +3,8 @@
 namespace App\Services\Plugin;
 
 use App\Models\Plugin;
+use App\Models\Payment;
+use App\Services\OrderService;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -107,6 +109,12 @@ class PluginManager
         $this->loadedPlugins[$pluginCode] = $plugin;
 
         return $plugin;
+    }
+
+    /** Load a plugin class without enabling or booting it. */
+    public function getPlugin(string $pluginCode): ?AbstractPlugin
+    {
+        return $this->loadPlugin($pluginCode);
     }
 
     /**
@@ -423,19 +431,37 @@ class PluginManager
     /**
      * 禁用插件
      */
-    public function disable(string $pluginCode): bool
+    public function disable(string $pluginCode, bool $forceForUpgrade = false): bool
     {
         $plugin = $this->loadPlugin($pluginCode);
         if (!$plugin) {
             throw new \Exception('Plugin not found');
         }
 
-        Plugin::query()
-            ->where('code', $pluginCode)
-            ->update([
-                'is_enabled' => false,
-                'updated_at' => now(),
-            ]);
+        DB::transaction(function () use ($pluginCode, $forceForUpgrade): void {
+            if ($pluginCode === 'coin_payments') {
+                // Serialize plugin disablement with checkout creation: the
+                // latter locks its concrete payment row before creating the
+                // durable claim. Whichever transaction wins determines a
+                // single, safe outcome.
+                Payment::query()
+                    ->where('payment', 'CoinPayments')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+                if (!$forceForUpgrade && OrderService::hasActiveCoinPaymentsCheckout()) {
+                    throw new \RuntimeException(__('CoinPayments has an active invoice. Reconcile it before disabling the plugin.'));
+                }
+            }
+
+            $dbPlugin = Plugin::query()->where('code', $pluginCode)->lockForUpdate()->first();
+            if (!$dbPlugin) {
+                throw new \RuntimeException('Plugin not installed: ' . $pluginCode);
+            }
+            $dbPlugin->is_enabled = false;
+            $dbPlugin->updated_at = now();
+            $dbPlugin->saveOrFail();
+        });
 
         $plugin->cleanup();
 
@@ -532,7 +558,9 @@ class PluginManager
         // especially important for payment plugins whose credentials may not
         // have been configured yet.
         if ($wasEnabled) {
-            $this->disable($pluginCode);
+            // A deploy upgrade is allowed to restart the plugin while active
+            // invoice snapshots remain independently verifiable.
+            $this->disable($pluginCode, true);
         }
         $this->runMigrations($pluginCode);
 
@@ -769,7 +797,8 @@ class PluginManager
             if (!$code) {
                 continue;
             }
-            if (!Plugin::where('code', $code)->exists()) {
+            $installedPlugin = Plugin::query()->where('code', $code)->first();
+            if (!$installedPlugin) {
                 $pluginManager->install($code);
                 if (($config['auto_enable'] ?? true) === true) {
                     $pluginManager->enable($code);
@@ -777,6 +806,17 @@ class PluginManager
                 } else {
                     Log::info("Installed core plugin in disabled state: {$code}");
                 }
+                continue;
+            }
+
+            // Core integrations may opt in when a source upgrade contains a
+            // required data/config migration. Ordinary third-party and core
+            // plugins keep the existing explicit-upgrade behavior.
+            if (($config['auto_update_on_deploy'] ?? false) === true
+                && isset($config['version'])
+                && version_compare((string) $config['version'], (string) $installedPlugin->version, '>')) {
+                $pluginManager->update($code);
+                Log::info("Updated core plugin during deployment: {$code} {$installedPlugin->version} -> {$config['version']}");
             }
         }
     }

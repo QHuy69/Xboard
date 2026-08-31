@@ -161,7 +161,7 @@ $renderTheme = function (Request $request) {
                                 // Every lazy chunk must select the same shared
                                 // runtime. An unchanged nested import can revive
                                 // a browser-cached payment-v3 dialog after the
-                                // entry has already selected payment-v4.
+                                // entry has already selected payment-v5.
                                 $loadingPatchedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($loadingPatchedContents);
                                 $loadingPatchedContents = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($loadingPatchedContents);
                             }
@@ -191,7 +191,7 @@ $renderTheme = function (Request $request) {
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'BBIEjj8f', '-auth-v3');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'q_WC3BFv', '-register-v2');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'ByaxWMaA', '-localized');
-                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C0KnXkt1', '-payment-v3');
+                                $fixedContents = LuckThemeAssetPatcher::rewriteAssetImport($fixedContents, 'C0KnXkt1', '-payment-v4');
                                 $fixedContents = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::versionPortableIconAssetImports($fixedContents);
                                 $fixedContents = LuckThemeAssetPatcher::patchSharedAuth($fixedContents);
@@ -390,7 +390,7 @@ $renderTheme = function (Request $request) {
                                 @file_put_contents($target, $fixedContents);
                                 $paymentTarget = $isSubscriptionDialogAsset
                                     ? $publicThemePath . '/assets/' . LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)
-                                    : preg_replace('/\.js$/', '-payment-v3.js', $target);
+                                    : preg_replace('/\.js$/', '-payment-v4.js', $target);
                                 @file_put_contents($paymentTarget, $fixedContents);
                                 continue;
                             }
@@ -531,9 +531,24 @@ Route::get('/payment/status/{tradeNo}', function (string $tradeNo) {
     if (!$order) {
         return response()->json(['message' => 'Order not found'], 404);
     }
+    $expiresAt = (int) $order->created_at + (2 * 60 * 60);
+    if (\Illuminate\Support\Facades\Schema::hasTable('v2_order_payment_checkout')
+        && \Illuminate\Support\Facades\Schema::hasColumn('v2_order_payment_checkout', 'provider_expires_at')) {
+        $providerExpiresAt = \Illuminate\Support\Facades\DB::table('v2_order_payment_checkout')
+            ->where('order_id', $order->id)
+            ->where('provider', 'CoinPayments')
+            ->where('state', 'ready')
+            ->value('provider_expires_at');
+        if (is_numeric($providerExpiresAt) && (int) $providerExpiresAt > 0) {
+            $expiresAt = (int) $providerExpiresAt;
+        }
+    }
     return response()->json([
         'status' => (int) $order->status,
-        'expires_at' => (int) $order->created_at + (2 * 60 * 60),
+        'expires_at' => $expiresAt,
+    ])->withHeaders([
+        'Cache-Control' => 'no-store, private, max-age=0',
+        'Pragma' => 'no-cache',
     ]);
 })->where('tradeNo', '[A-Za-z0-9_-]+');
 

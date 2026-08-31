@@ -30,6 +30,9 @@ $manifest = json_decode(
     512,
     JSON_THROW_ON_ERROR
 );
+if (($manifest['author'] ?? null) !== 'ZaoGuang Service') {
+    throw new RuntimeException('CoinPayments plugin author branding is incorrect.');
+}
 
 DB::beginTransaction();
 try {
@@ -47,70 +50,25 @@ try {
     $pluginManager = app(PluginManager::class);
 
     $configService->updateConfig('coin_payments', [
-        'enabled' => 'false',
-        'coinpayments_client_secret' => 'preserve-this-secret',
-        'coinpayments_webhook_max_age' => '420',
-    ]);
-    $configService->updateConfig('coin_payments', [
-        'coinpayments_client_id' => 'updated-client',
-        'coinpayments_client_secret' => '',
+        'display_name' => 'CoinPayments draft',
     ]);
     $stored = json_decode((string) $installed->fresh()->config, true, 512, JSON_THROW_ON_ERROR);
-    if (($stored['enabled'] ?? null) !== false
-        || ($stored['coinpayments_webhook_max_age'] ?? null) !== 420
-        || ($stored['coinpayments_client_secret'] ?? null) !== 'preserve-this-secret') {
-        throw new RuntimeException('Plugin admin config did not preserve or normalize values.');
+    if (($stored['display_name'] ?? null) !== 'CoinPayments draft'
+        || array_key_exists('coinpayments_client_secret', $stored)) {
+        throw new RuntimeException('CoinPayments plugin settings retained payment credentials.');
     }
 
     $adminConfig = $configService->getConfig('coin_payments');
-    if (($adminConfig['coinpayments_client_secret']['value'] ?? null) !== ''
-        || ($adminConfig['coinpayments_client_secret']['has_value'] ?? false) !== true) {
-        throw new RuntimeException('Plugin admin API exposed a stored secret or lost its presence marker.');
+    if (array_key_exists('coinpayments_client_secret', $adminConfig)) {
+        throw new RuntimeException('CoinPayments credentials were exposed in plugin settings instead of payment settings.');
     }
 
-    try {
-        $pluginManager->enable('coin_payments');
-        throw new RuntimeException('CoinPayments activated without the mandatory configuration.');
-    } catch (InvalidArgumentException $exception) {
-        if (!str_contains($exception->getMessage(), 'CoinPayments')) {
-            throw $exception;
-        }
-    }
-    if ($installed->fresh()->is_enabled) {
-        throw new RuntimeException('Failed CoinPayments activation changed the enabled state.');
-    }
-
-    $configService->updateConfig('coin_payments', [
-        'enabled' => true,
-        'coinpayments_invoice_currency_id' => '5057',
-        'coinpayments_cny_invoice_rate' => '0.14',
-        'coinpayments_api_base' => 'https://a-api.coinpayments.net',
-    ]);
     $pluginManager->enable('coin_payments');
     if (!$installed->fresh()->is_enabled) {
-        throw new RuntimeException('Valid CoinPayments configuration could not be explicitly activated.');
+        throw new RuntimeException('CoinPayments could not be enabled before payment-record configuration.');
     }
-
-    $validEnabledConfig = json_decode(
-        (string) $installed->fresh()->config,
-        true,
-        512,
-        JSON_THROW_ON_ERROR
-    );
-    try {
-        $configService->updateConfig('coin_payments', [
-            'coinpayments_api_base' => 'http://insecure.invalid',
-        ]);
-        throw new RuntimeException('An enabled plugin accepted an invalid replacement configuration.');
-    } catch (InvalidArgumentException $exception) {
-        if (!str_contains($exception->getMessage(), 'HTTPS')) {
-            throw $exception;
-        }
-    }
-    $afterRejectedConfig = $installed->fresh();
-    if (!$afterRejectedConfig->is_enabled
-        || json_decode((string) $afterRejectedConfig->config, true, 512, JSON_THROW_ON_ERROR) !== $validEnabledConfig) {
-        throw new RuntimeException('Rejected enabled-plugin config was persisted or disabled the plugin.');
+    if (!in_array('CoinPayments', PaymentService::getAllPaymentMethodNames(), true)) {
+        throw new RuntimeException('Enabled CoinPayments was not exposed in the payment-method dropdown.');
     }
 
     $configService->updateConfig('coin_payments', ['display_name' => 'CoinPayments verified']);
@@ -133,17 +91,69 @@ try {
         'config' => [
             'coinpayments_client_id' => 'payment-specific-client',
             'coinpayments_client_secret' => 'payment-specific-secret',
+            'coinpayments_invoice_currency_id' => '5057',
+            'coinpayments_cny_invoice_rate' => 0.14,
             'coinpayments_payment_currency' => '',
+            'coinpayments_webhook_url' => 'https://xboard.example.test/api/v1/guest/payment/notify/CoinPayments/cpsmoke1',
         ],
     ]);
     $paymentService = new PaymentService('CoinPayments', $payment->id);
     $paymentForm = $paymentService->form();
     if (($paymentForm['coinpayments_client_secret']['value'] ?? null) !== ''
         || ($paymentForm['coinpayments_client_secret']['has_value'] ?? false) !== true) {
-        throw new RuntimeException('Payment form exposed or lost the plugin-global CoinPayments secret.');
+        throw new RuntimeException('Payment form exposed or lost the per-payment CoinPayments secret marker.');
     }
     if (($paymentForm['coinpayments_client_id']['value'] ?? null) !== 'payment-specific-client') {
         throw new RuntimeException('Payment-specific CoinPayments config was not applied.');
+    }
+    $paymentService->validateConfiguration();
+
+    $draftPayment = Payment::query()->create([
+        'name' => 'CoinPayments draft smoke',
+        'icon' => 'CoinPayments',
+        'payment' => 'CoinPayments',
+        'uuid' => 'cpsmoke3',
+        'enable' => false,
+        'config' => [],
+    ]);
+    $draftToggle = (new AdminPaymentController())->show(
+        Request::create('/api/v2/admin/payment/show', 'POST', ['id' => $draftPayment->id])
+    )->getData(true);
+    if (($draftToggle['status'] ?? null) !== 'fail'
+        || ($draftToggle['data'] ?? null) !== null
+        || $draftPayment->fresh()->enable) {
+        throw new RuntimeException('An incomplete CoinPayments draft was exposed to customers.');
+    }
+    // Simulate a legacy/bad database row that predates the enable guard. The
+    // customer endpoint must still fail closed.
+    $draftPayment->enable = true;
+    $draftPayment->save();
+    $customerMethods = (new \App\Http\Controllers\V1\User\OrderController())
+        ->getPaymentMethod()
+        ->getData(true)['data'] ?? [];
+    if (collect($customerMethods)->contains('id', $draftPayment->id)) {
+        throw new RuntimeException('Customer payment list exposed an incomplete legacy CoinPayments row.');
+    }
+    $draftPayment->enable = false;
+    $draftPayment->config = [
+        'coinpayments_client_id' => 'draft-client',
+        'coinpayments_client_secret' => 'draft-secret',
+        'coinpayments_invoice_currency_id' => '5057',
+        'coinpayments_cny_invoice_rate' => 0.14,
+        'coinpayments_webhook_url' => 'https://xboard.example.test/api/v1/guest/payment/notify/CoinPayments/cpsmoke3',
+    ];
+    $draftPayment->save();
+    $validDraftToggle = (new AdminPaymentController())->show(
+        Request::create('/api/v2/admin/payment/show', 'POST', ['id' => $draftPayment->id])
+    )->getData(true);
+    if (($validDraftToggle['data'] ?? null) !== true || !$draftPayment->fresh()->enable) {
+        throw new RuntimeException('A configured CoinPayments draft could not be enabled.');
+    }
+    $configuredCustomerMethods = (new \App\Http\Controllers\V1\User\OrderController())
+        ->getPaymentMethod()
+        ->getData(true)['data'] ?? [];
+    if (!collect($configuredCustomerMethods)->contains('id', $draftPayment->id)) {
+        throw new RuntimeException('Customer payment list hid a configured enabled CoinPayments row.');
     }
 
     foreach ([
@@ -168,14 +178,15 @@ try {
         'uuid' => 'cpsmoke2',
         'enable' => true,
         'config' => [
-            // An old admin form may have persisted an empty override. It must
-            // fall back to the plugin-global secret, not disable the gateway.
+            // An old admin form may have persisted an empty secret. It must
+            // not inherit credentials from plugin settings or another row.
             'coinpayments_client_secret' => '',
         ],
     ]);
     $secondPaymentForm = (new PaymentService('CoinPayments', $secondPayment->id))->form();
-    if (($secondPaymentForm['coinpayments_client_id']['value'] ?? null) !== 'updated-client') {
-        throw new RuntimeException('One payment record leaked its config into another payment record.');
+    if (($secondPaymentForm['coinpayments_client_id']['value'] ?? null) !== ''
+        || ($secondPaymentForm['coinpayments_client_secret']['has_value'] ?? false) !== false) {
+        throw new RuntimeException('CoinPayments credentials leaked from plugin/global or another payment record.');
     }
 
     $redacted = $paymentService->redactPasswordConfig([
@@ -236,7 +247,7 @@ try {
         []
     );
     if (array_key_exists('coinpayments_client_secret', $globalFallback)) {
-        throw new RuntimeException('Blank payment secret overrode the plugin-global secret.');
+        throw new RuntimeException('Blank payment secret was persisted without a per-payment value.');
     }
 
     $pluginManager->disable('coin_payments');
@@ -299,11 +310,39 @@ try {
         throw new RuntimeException('A missing plugin file deleted or changed its persisted configuration.');
     }
 
-    $installed->update(['version' => '2.0.0', 'is_enabled' => false]);
-    $pluginManager->update('coin_payments');
+    $installed->update([
+        'version' => '2.0.0',
+        'is_enabled' => false,
+        'config' => json_encode([
+            'display_name' => 'Legacy CoinPayments',
+            'enabled' => true,
+            'coinpayments_client_id' => 'legacy-global-client',
+            'coinpayments_client_secret' => 'legacy-global-secret',
+            'coinpayments_invoice_currency_id' => '5057',
+            'coinpayments_cny_invoice_rate' => 0.15,
+            'coinpayments_webhook_url' => 'https://xboard.example.test/api/v1/guest/payment/notify/CoinPayments/legacy',
+        ], JSON_THROW_ON_ERROR),
+    ]);
+    PluginManager::installDefaultPlugins();
     $updated = $installed->fresh();
     if ($updated->version !== $manifest['version'] || $updated->is_enabled) {
         throw new RuntimeException('CoinPayments upgrade changed the disabled state.');
+    }
+    $migratedPluginConfig = json_decode((string) $updated->config, true, 512, JSON_THROW_ON_ERROR);
+    if ($migratedPluginConfig !== ['display_name' => 'Legacy CoinPayments']) {
+        throw new RuntimeException('CoinPayments upgrade retained credentials in plugin-global storage.');
+    }
+    $migratedSecondConfig = $secondPayment->fresh()->config;
+    if (($migratedSecondConfig['coinpayments_client_id'] ?? null) !== 'legacy-global-client'
+        || ($migratedSecondConfig['coinpayments_client_secret'] ?? null) !== 'legacy-global-secret'
+        || ($migratedSecondConfig['coinpayments_invoice_currency_id'] ?? null) !== '5057'
+        || (float) ($migratedSecondConfig['coinpayments_cny_invoice_rate'] ?? 0) !== 0.15) {
+        throw new RuntimeException('CoinPayments upgrade did not migrate legacy defaults into the payment record.');
+    }
+    $migratedPrimaryConfig = $payment->fresh()->config;
+    if (($migratedPrimaryConfig['coinpayments_client_id'] ?? null) !== 'payment-specific-client'
+        || ($migratedPrimaryConfig['coinpayments_client_secret'] ?? null) !== 'payment-specific-secret') {
+        throw new RuntimeException('CoinPayments upgrade overwrote payment-specific credentials.');
     }
 
     $requestPluginManager = new class extends PluginManager {

@@ -14,6 +14,7 @@ use App\Utils\Helper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 use App\Services\PlanService;
 
@@ -379,7 +380,7 @@ class OrderService
         return 'coinpayments-checkout:' . hash('sha256', $userId . '|' . $tradeNo);
     }
 
-    private static function isHttpsCheckoutUrl(mixed $url): bool
+    private static function isCoinPaymentsCheckoutUrl(mixed $url): bool
     {
         if (!is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
             return false;
@@ -389,7 +390,42 @@ class OrderService
 
         return is_array($parts)
             && strtolower((string) ($parts['scheme'] ?? '')) === 'https'
-            && trim((string) ($parts['host'] ?? '')) !== '';
+            && in_array(strtolower((string) ($parts['host'] ?? '')), [
+                'checkout.coinpayments.net',
+                'a-checkout.coinpayments.net',
+                'b-checkout.coinpayments.net',
+                'c-checkout.coinpayments.net',
+            ], true)
+            && !isset($parts['user'])
+            && !isset($parts['pass'])
+            && (!isset($parts['port']) || (int) $parts['port'] === 443);
+    }
+
+    /** @return list<string> */
+    private static function activeCoinPaymentsStates(): array
+    {
+        return [self::CHECKOUT_CREATING, self::CHECKOUT_READY, self::CHECKOUT_UNCERTAIN];
+    }
+
+    public static function hasActiveCoinPaymentsCheckout(?int $paymentId = null): bool
+    {
+        if (!Schema::hasTable(self::CHECKOUT_TABLE)) {
+            return false;
+        }
+
+        $query = DB::table(self::CHECKOUT_TABLE)
+            ->where('provider', 'CoinPayments')
+            ->whereIn('state', self::activeCoinPaymentsStates());
+        if ($paymentId !== null) {
+            $query->where('payment_id', $paymentId);
+        }
+
+        return $query->exists();
+    }
+
+    public static function hasActiveCoinPaymentsCheckoutForPayment(int $paymentId): bool
+    {
+        return self::hasActiveCoinPaymentsCheckout($paymentId);
     }
 
     /**
@@ -399,7 +435,7 @@ class OrderService
      * durable `creating` claim prevents another worker/reload from issuing the
      * same non-idempotent POST. A stale claim is made uncertain, never retried.
      *
-     * @return array{cached: bool, order: Order, amount: int, claim_token?: string, type?: int, data?: string}
+     * @return array{cached: bool, order: Order, amount: int, claim_token?: string, configuration_snapshot?: array, type?: int, data?: string}
      */
     public static function beginCoinPaymentsCheckout(
         int $userId,
@@ -426,9 +462,19 @@ class OrderService
             if ((int) $order->total_amount <= 0) {
                 throw new ApiException(__('Order amount is invalid'));
             }
-            if (!$payment->exists || !(bool) $payment->enable || $payment->payment !== 'CoinPayments') {
+            $freshPayment = Payment::whereKey($payment->id)->lockForUpdate()->first();
+            if (!$freshPayment
+                || !(bool) $freshPayment->enable
+                || $freshPayment->payment !== 'CoinPayments') {
                 throw new ApiException(__('Payment method is not available'));
             }
+            // Repeat the validation under the payment-row lock. The fast
+            // controller check avoids work for obvious bad rows; this closes
+            // the race where an administrator disables or invalidates the
+            // method between that check and the durable provider claim.
+            $paymentService = new PaymentService($freshPayment->payment, $freshPayment->id);
+            $paymentService->validateConfiguration();
+            $configurationSnapshot = $paymentService->coinPaymentsConfigurationSnapshot();
 
             // A worker that vanished after the POST began is ambiguous. Mark
             // stale claims before selecting this payment's durable record.
@@ -444,30 +490,32 @@ class OrderService
 
             $checkout = DB::table(self::CHECKOUT_TABLE)
                 ->where('order_id', $order->id)
-                ->where('payment_id', $payment->id)
+                ->where('payment_id', $freshPayment->id)
                 ->lockForUpdate()
                 ->first();
 
-            // Never open another provider path while one request is running
-            // or an earlier request has an unknown remote outcome.
-            $orderHasBlockingCheckout = DB::table(self::CHECKOUT_TABLE)
-                ->where('order_id', $order->id)
-                ->where(function ($query): void {
-                    $query->where('state', self::CHECKOUT_UNCERTAIN)
-                        ->orWhere('state', self::CHECKOUT_CREATING);
-                })
-                ->exists();
-            if ($orderHasBlockingCheckout) {
-                return ['blocked' => true];
-            }
-
             if ($checkout && $checkout->state === self::CHECKOUT_READY) {
                 $data = json_decode((string) $checkout->response_data, true);
-                $validData = self::isHttpsCheckoutUrl($data);
+                $validData = self::isCoinPaymentsCheckoutUrl($data);
                 $validType = (int) $checkout->response_type === 1;
                 $sameOrderAmount = (int) $checkout->base_amount === (int) $order->total_amount;
-                $sameProvider = hash_equals((string) $checkout->provider, (string) $payment->payment);
-                if (!$validData || !$validType || !$sameOrderAmount || !$sameProvider) {
+                $sameProvider = hash_equals((string) $checkout->provider, (string) $freshPayment->payment);
+                $validProviderInvoice = is_string($checkout->provider_invoice_id)
+                    && trim($checkout->provider_invoice_id) !== '';
+                $validProviderExpiry = is_numeric($checkout->provider_expires_at)
+                    && (int) $checkout->provider_expires_at > 0;
+                $anotherActiveCheckout = DB::table(self::CHECKOUT_TABLE)
+                    ->where('order_id', $order->id)
+                    ->where('id', '!=', $checkout->id)
+                    ->whereIn('state', self::activeCoinPaymentsStates())
+                    ->exists();
+                if (!$validData
+                    || !$validType
+                    || !$sameOrderAmount
+                    || !$sameProvider
+                    || !$validProviderInvoice
+                    || !$validProviderExpiry
+                    || $anotherActiveCheckout) {
                     DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
                         'state' => self::CHECKOUT_UNCERTAIN,
                         'claim_token' => null,
@@ -476,7 +524,15 @@ class OrderService
                     return ['blocked' => true];
                 }
 
-                $order->payment_id = $payment->id;
+                // The local clock may hide an expired checkout URL, but it can
+                // never prove that the provider invoice is terminal. Only an
+                // authenticated CoinPayments terminal event (or explicit
+                // administrator reconciliation) may release this claim.
+                if ((int) $checkout->provider_expires_at <= time()) {
+                    return ['blocked' => true];
+                }
+
+                $order->payment_id = $freshPayment->id;
                 $order->handling_amount = $checkout->handling_amount;
                 $order->save();
 
@@ -489,21 +545,42 @@ class OrderService
                 ];
             }
 
+            // READY is payable just like an in-flight or uncertain invoice.
+            // A customer must never open another gateway (or another
+            // CoinPayments method) while any one of those paths exists.
+            $orderHasBlockingCheckout = DB::table(self::CHECKOUT_TABLE)
+                ->where('order_id', $order->id)
+                ->whereIn('state', self::activeCoinPaymentsStates())
+                ->exists();
+            if ($orderHasBlockingCheckout) {
+                return ['blocked' => true];
+            }
+
             if ($checkout && in_array($checkout->state, [self::CHECKOUT_UNCERTAIN, self::CHECKOUT_CLOSED], true)) {
                 return ['blocked' => true];
             }
 
             $handlingAmount = null;
-            if ($payment->handling_fee_fixed || $payment->handling_fee_percent) {
+            if ($freshPayment->handling_fee_fixed || $freshPayment->handling_fee_percent) {
                 $handlingAmount = (int) round(
-                    ($order->total_amount * ($payment->handling_fee_percent / 100))
-                    + $payment->handling_fee_fixed
+                    ($order->total_amount * ($freshPayment->handling_fee_percent / 100))
+                    + $freshPayment->handling_fee_fixed
                 );
             }
+            $expectedAmount = CoinPaymentsCheckoutSnapshot::expectedAmount(
+                (int) $order->total_amount,
+                $handlingAmount,
+                $configurationSnapshot['coinpayments_cny_invoice_rate']
+            );
             $claimToken = bin2hex(random_bytes(16));
             $now = time();
             $values = [
-                'provider' => (string) $payment->payment,
+                'provider' => (string) $freshPayment->payment,
+                'payment_uuid' => (string) $configurationSnapshot['payment_uuid'],
+                'config_snapshot' => CoinPaymentsCheckoutSnapshot::encrypt($configurationSnapshot),
+                'provider_invoice_id' => null,
+                'provider_expires_at' => null,
+                'expected_amount' => $expectedAmount,
                 'state' => self::CHECKOUT_CREATING,
                 'claim_token' => $claimToken,
                 'base_amount' => (int) $order->total_amount,
@@ -518,7 +595,7 @@ class OrderService
             } else {
                 $inserted = DB::table(self::CHECKOUT_TABLE)->insertOrIgnore($values + [
                     'order_id' => $order->id,
-                    'payment_id' => $payment->id,
+                    'payment_id' => $freshPayment->id,
                     'created_at' => $now,
                 ]);
                 if ($inserted !== 1) {
@@ -530,7 +607,7 @@ class OrderService
                 }
             }
 
-            $order->payment_id = $payment->id;
+            $order->payment_id = $freshPayment->id;
             $order->handling_amount = $handlingAmount;
             $order->save();
 
@@ -539,6 +616,7 @@ class OrderService
                 'order' => $order,
                 'amount' => (int) $order->total_amount + (int) ($handlingAmount ?? 0),
                 'claim_token' => $claimToken,
+                'configuration_snapshot' => $configurationSnapshot,
             ];
             });
         } finally {
@@ -555,13 +633,14 @@ class OrderService
     }
 
     /**
-     * Freeze the order/payment/fee tuple used by a non-CoinPayments gateway.
+     * Claim (or reuse) one checkout for a non-CoinPayments gateway.
      *
-     * This uses the same per-order lock and durable-state check as
-     * CoinPayments. A payment switch must never start a second provider path
-     * while invoice creation is running or its remote outcome is uncertain.
+     * Provider creation happens after this transaction. Persisting both the
+     * in-flight claim and the successful response is what prevents a reload,
+     * another standard gateway, or CoinPayments from creating a second
+     * payable path for the same order.
      *
-     * @return array{order: Order, payment: Payment, amount: int}
+     * @return array{cached: bool, order: Order, payment: Payment, amount: int, claim_token?: string, type?: int, data?: string}
      */
     public static function beginStandardPaymentCheckout(
         int $userId,
@@ -603,16 +682,61 @@ class OrderService
                         'updated_at' => time(),
                     ]);
 
-                $hasBlockingCoinPaymentsCheckout = DB::table(self::CHECKOUT_TABLE)
+                $checkout = DB::table(self::CHECKOUT_TABLE)
                     ->where('order_id', $order->id)
-                    ->where(function ($query): void {
-                        $query->where('state', self::CHECKOUT_CREATING)
-                            ->orWhere('state', self::CHECKOUT_UNCERTAIN);
-                    })
+                    ->where('payment_id', $freshPayment->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($checkout && $checkout->state === self::CHECKOUT_READY) {
+                    $data = json_decode((string) $checkout->response_data, true);
+                    $validType = in_array((int) $checkout->response_type, [0, 1], true);
+                    $validData = is_string($data) && trim($data) !== '';
+                    $sameOrderAmount = (int) $checkout->base_amount === (int) $order->total_amount;
+                    $sameProvider = hash_equals((string) $checkout->provider, (string) $freshPayment->payment);
+                    $anotherActiveCheckout = DB::table(self::CHECKOUT_TABLE)
+                        ->where('order_id', $order->id)
+                        ->where('id', '!=', $checkout->id)
+                        ->whereIn('state', self::activeCoinPaymentsStates())
+                        ->exists();
+                    if (!$validType
+                        || !$validData
+                        || !$sameOrderAmount
+                        || !$sameProvider
+                        || $anotherActiveCheckout) {
+                        DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                            'state' => self::CHECKOUT_UNCERTAIN,
+                            'claim_token' => null,
+                            'updated_at' => time(),
+                        ]);
+                        return ['blocked' => true];
+                    }
+
+                    $order->payment_id = $freshPayment->id;
+                    $order->handling_amount = $checkout->handling_amount;
+                    $order->saveOrFail();
+
+                    return [
+                        'cached' => true,
+                        'order' => $order,
+                        'payment' => $freshPayment,
+                        'amount' => (int) $checkout->base_amount + (int) ($checkout->handling_amount ?? 0),
+                        'type' => (int) $checkout->response_type,
+                        'data' => $data,
+                    ];
+                }
+
+                $hasBlockingCheckout = DB::table(self::CHECKOUT_TABLE)
+                    ->where('order_id', $order->id)
+                    ->whereIn('state', self::activeCoinPaymentsStates())
                     ->exists();
-                if ($hasBlockingCoinPaymentsCheckout) {
+                if ($hasBlockingCheckout) {
                     // Return instead of throwing so a stale creating ->
                     // uncertain transition is committed for reconciliation.
+                    return ['blocked' => true];
+                }
+
+                if ($checkout && $checkout->state === self::CHECKOUT_UNCERTAIN) {
                     return ['blocked' => true];
                 }
 
@@ -623,14 +747,47 @@ class OrderService
                         + $freshPayment->handling_fee_fixed
                     );
                 }
+                $claimToken = bin2hex(random_bytes(16));
+                $now = time();
+                $values = [
+                    'provider' => (string) $freshPayment->payment,
+                    'payment_uuid' => (string) $freshPayment->uuid,
+                    'config_snapshot' => null,
+                    'provider_invoice_id' => null,
+                    'provider_expires_at' => null,
+                    'expected_amount' => null,
+                    'state' => self::CHECKOUT_CREATING,
+                    'claim_token' => $claimToken,
+                    'base_amount' => (int) $order->total_amount,
+                    'handling_amount' => $handlingAmount,
+                    'response_type' => null,
+                    'response_data' => null,
+                    'attempted_at' => $now,
+                    'updated_at' => $now,
+                ];
+                if ($checkout) {
+                    DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update($values);
+                } else {
+                    $inserted = DB::table(self::CHECKOUT_TABLE)->insertOrIgnore($values + [
+                        'order_id' => $order->id,
+                        'payment_id' => $freshPayment->id,
+                        'created_at' => $now,
+                    ]);
+                    if ($inserted !== 1) {
+                        return ['blocked' => true];
+                    }
+                }
+
                 $order->payment_id = $freshPayment->id;
                 $order->handling_amount = $handlingAmount;
                 $order->saveOrFail();
 
                 return [
+                    'cached' => false,
                     'order' => $order,
                     'payment' => $freshPayment,
                     'amount' => (int) $order->total_amount + (int) ($handlingAmount ?? 0),
+                    'claim_token' => $claimToken,
                 ];
             });
         } finally {
@@ -645,7 +802,7 @@ class OrderService
     }
 
     /** @param array{type: mixed, data: mixed} $result */
-    public static function completeCoinPaymentsCheckout(
+    public static function completeStandardPaymentCheckout(
         int $orderId,
         int $paymentId,
         string $claimToken,
@@ -653,11 +810,21 @@ class OrderService
     ): void {
         $type = filter_var($result['type'] ?? null, FILTER_VALIDATE_INT);
         $data = $result['data'] ?? null;
-        if ($type !== 1 || !self::isHttpsCheckoutUrl($data)) {
+        if ($type === false
+            || !in_array((int) $type, [0, 1], true)
+            || !is_string($data)
+            || trim($data) === '') {
             throw new ApiException(__('Request failed, please try again later'), 503);
         }
+        $encodedData = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
-        $completed = DB::transaction(function () use ($orderId, $paymentId, $claimToken, $type, $data): bool {
+        $completed = DB::transaction(function () use (
+            $orderId,
+            $paymentId,
+            $claimToken,
+            $type,
+            $encodedData
+        ): bool {
             $order = Order::whereKey($orderId)->lockForUpdate()->first();
             $checkout = DB::table(self::CHECKOUT_TABLE)
                 ->where('order_id', $orderId)
@@ -678,13 +845,111 @@ class OrderService
                 'state' => self::CHECKOUT_READY,
                 'claim_token' => null,
                 'response_type' => (int) $type,
+                'response_data' => $encodedData,
+                'updated_at' => time(),
+            ]) === 1;
+        });
+
+        if (!$completed) {
+            // The provider call has already returned a checkout. Failure to
+            // persist it is ambiguous and must never authorize another POST.
+            throw new ApiException(__('Request failed, please try again later'), 503);
+        }
+    }
+
+    public static function failStandardPaymentCheckout(
+        int $orderId,
+        int $paymentId,
+        string $claimToken,
+        bool $ambiguous
+    ): void {
+        DB::table(self::CHECKOUT_TABLE)
+            ->where('order_id', $orderId)
+            ->where('payment_id', $paymentId)
+            ->where('state', self::CHECKOUT_CREATING)
+            ->where('claim_token', $claimToken)
+            ->update([
+                'state' => $ambiguous ? self::CHECKOUT_UNCERTAIN : self::CHECKOUT_FAILED,
+                'claim_token' => null,
+                'updated_at' => time(),
+            ]);
+    }
+
+    /** @param array{type: mixed, data: mixed, provider_invoice_id?: mixed, provider_expires_at?: mixed, expected_amount?: mixed} $result */
+    public static function completeCoinPaymentsCheckout(
+        int $orderId,
+        int $paymentId,
+        string $claimToken,
+        array $result
+    ): void {
+        $type = filter_var($result['type'] ?? null, FILTER_VALIDATE_INT);
+        $data = $result['data'] ?? null;
+        $providerInvoiceIdValue = $result['provider_invoice_id'] ?? null;
+        $providerInvoiceId = (is_scalar($providerInvoiceIdValue) || $providerInvoiceIdValue === null)
+            ? trim((string) $providerInvoiceIdValue)
+            : '';
+        $expectedAmountValue = $result['expected_amount'] ?? null;
+        $expectedAmount = (is_scalar($expectedAmountValue) || $expectedAmountValue === null)
+            ? trim((string) $expectedAmountValue)
+            : '';
+        $providerExpiresAt = filter_var(
+            $result['provider_expires_at'] ?? null,
+            FILTER_VALIDATE_INT
+        );
+        if ($type !== 1
+            || !self::isCoinPaymentsCheckoutUrl($data)
+            || $providerInvoiceId === ''
+            || $providerExpiresAt === false
+            || (int) $providerExpiresAt <= time()
+            || !is_numeric($expectedAmount)
+            || (float) $expectedAmount <= 0) {
+            throw new ApiException(__('Request failed, please try again later'), 503);
+        }
+        $providerExpiresAt = (int) $providerExpiresAt;
+
+        $completed = DB::transaction(function () use (
+            $orderId,
+            $paymentId,
+            $claimToken,
+            $type,
+            $data,
+            $providerInvoiceId,
+            $providerExpiresAt,
+            $expectedAmount
+        ): bool {
+            $order = Order::whereKey($orderId)->lockForUpdate()->first();
+            $checkout = DB::table(self::CHECKOUT_TABLE)
+                ->where('order_id', $orderId)
+                ->where('payment_id', $paymentId)
+                ->where('state', self::CHECKOUT_CREATING)
+                ->where('claim_token', $claimToken)
+                ->lockForUpdate()
+                ->first();
+            if (!$order || !$checkout) {
+                return false;
+            }
+            if ((int) $order->status !== Order::STATUS_PENDING) {
+                self::closePaymentCheckouts($orderId);
+                return false;
+            }
+            if ($checkout->expected_amount === null
+                || !hash_equals((string) $checkout->expected_amount, $expectedAmount)) {
+                return false;
+            }
+
+            return DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                'state' => self::CHECKOUT_READY,
+                'claim_token' => null,
+                'provider_invoice_id' => $providerInvoiceId,
+                'provider_expires_at' => $providerExpiresAt,
+                'response_type' => (int) $type,
                 'response_data' => json_encode($data, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
                 'updated_at' => time(),
             ]) === 1;
         });
 
         if (!$completed) {
-            throw new ApiException(__('Order does not exist or has been paid'));
+            throw new ApiException(__('Request failed, please try again later'), 503);
         }
     }
 
@@ -704,6 +969,245 @@ class OrderService
                 'claim_token' => null,
                 'updated_at' => time(),
             ]);
+    }
+
+    /**
+     * Apply an authenticated CoinPayments lifecycle event while holding the
+     * order and checkout rows. Authentication happens in the plugin, but the
+     * order status decision must be made in the same transaction as the state
+     * change so a concurrent cancellation can never be acknowledged silently.
+     *
+     * @param array{event: string, trade_no: string, callback_no: string, checkout_id: int, payment_uuid: string, provider_invoice_id: string} $notification
+     * @return array{order: Order, transitioned: bool, cancelled: bool}
+     */
+    public static function handleCoinPaymentsNotification(array $notification): array
+    {
+        $event = (string) ($notification['event'] ?? '');
+        $tradeNo = trim((string) ($notification['trade_no'] ?? ''));
+        $callbackNo = trim((string) ($notification['callback_no'] ?? ''));
+        $checkoutId = filter_var($notification['checkout_id'] ?? null, FILTER_VALIDATE_INT);
+        $paymentUuid = trim((string) ($notification['payment_uuid'] ?? ''));
+        $providerInvoiceId = trim((string) ($notification['provider_invoice_id'] ?? ''));
+        if (!in_array($event, ['completed', 'timed_out', 'cancelled'], true)
+            || $tradeNo === ''
+            || $callbackNo === ''
+            || $checkoutId === false
+            || (int) $checkoutId <= 0
+            || $paymentUuid === ''
+            || $providerInvoiceId === '') {
+            throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
+        }
+
+        $outcome = DB::transaction(function () use (
+            $event,
+            $tradeNo,
+            $callbackNo,
+            $checkoutId,
+            $paymentUuid,
+            $providerInvoiceId
+        ): array {
+            $order = Order::where('trade_no', $tradeNo)->lockForUpdate()->first();
+            if (!$order) {
+                throw new ApiException(__('Order does not exist'), 400);
+            }
+
+            $checkout = DB::table(self::CHECKOUT_TABLE)
+                ->where('id', (int) $checkoutId)
+                ->where('order_id', $order->id)
+                ->where('provider', 'CoinPayments')
+                ->where('payment_uuid', $paymentUuid)
+                ->lockForUpdate()
+                ->first();
+            if (!$checkout) {
+                throw new ApiException(__('CoinPayments invoice does not match the payment checkout.'), 400);
+            }
+
+            $storedProviderInvoiceId = trim((string) ($checkout->provider_invoice_id ?? ''));
+            $legacyUnboundInvoice = $storedProviderInvoiceId === '';
+            if (!$legacyUnboundInvoice
+                && !hash_equals($storedProviderInvoiceId, $providerInvoiceId)) {
+                throw new ApiException(__('CoinPayments invoice identifier does not match.'), 400);
+            }
+
+            $bindProviderInvoice = static function () use (
+                $checkout,
+                $legacyUnboundInvoice,
+                $providerInvoiceId
+            ): void {
+                if ($legacyUnboundInvoice) {
+                    DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                        'provider_invoice_id' => $providerInvoiceId,
+                        'updated_at' => time(),
+                    ]);
+                }
+            };
+
+            if ($event !== 'completed') {
+                // A signed terminal event is provider authority that this one
+                // payment path is no longer payable. Preserve its concrete
+                // invoice identity, then close the local order exactly once so
+                // the unique checkout row is never overwritten by a new remote
+                // invoice with a different identity.
+                $bindProviderInvoice();
+                $status = (int) $order->status;
+                if ($status === Order::STATUS_PENDING) {
+                    $anotherActiveCheckout = DB::table(self::CHECKOUT_TABLE)
+                        ->where('order_id', $order->id)
+                        ->where('id', '!=', $checkout->id)
+                        ->whereIn('state', self::activeCoinPaymentsStates())
+                        ->exists();
+                    if ($anotherActiveCheckout) {
+                        DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                            'state' => self::CHECKOUT_CLOSED,
+                            'claim_token' => null,
+                            'response_data' => null,
+                            'updated_at' => time(),
+                        ]);
+                        return [
+                            'order' => $order,
+                            'transitioned' => false,
+                            'cancelled' => false,
+                            'conflict' => true,
+                        ];
+                    }
+
+                    HookManager::call('order.cancel.before', $order);
+                    $order->status = Order::STATUS_CANCELLED;
+                    $order->saveOrFail();
+                    self::closePaymentCheckouts($order->id);
+                    if ($order->balance_amount) {
+                        $userService = new UserService();
+                        if (!$userService->addBalance($order->user_id, $order->balance_amount)) {
+                            throw new \RuntimeException('Failed to add balance.');
+                        }
+                    }
+
+                    return [
+                        'order' => $order,
+                        'transitioned' => false,
+                        'cancelled' => true,
+                        'conflict' => false,
+                    ];
+                }
+
+                DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                    'state' => self::CHECKOUT_CLOSED,
+                    'claim_token' => null,
+                    'response_data' => null,
+                    'updated_at' => time(),
+                ]);
+                if ($status === Order::STATUS_CANCELLED) {
+                    return [
+                        'order' => $order,
+                        'transitioned' => false,
+                        'cancelled' => false,
+                        'conflict' => false,
+                    ];
+                }
+                if (in_array($status, [Order::STATUS_PROCESSING, Order::STATUS_COMPLETED], true)
+                    && (int) $order->payment_id === (int) $checkout->payment_id) {
+                    return [
+                        'order' => $order,
+                        'transitioned' => false,
+                        'cancelled' => false,
+                        'conflict' => true,
+                    ];
+                }
+
+                return [
+                    'order' => $order,
+                    'transitioned' => false,
+                    'cancelled' => false,
+                    'conflict' => false,
+                ];
+            }
+
+            $status = (int) $order->status;
+            if ($status === Order::STATUS_PENDING) {
+                $bindProviderInvoice();
+                if (!in_array(
+                    (string) $checkout->state,
+                    [self::CHECKOUT_CREATING, self::CHECKOUT_READY, self::CHECKOUT_UNCERTAIN],
+                    true
+                )) {
+                    return [
+                        'order' => $order,
+                        'transitioned' => false,
+                        'cancelled' => false,
+                        'conflict' => true,
+                    ];
+                }
+                $anotherActiveCheckout = DB::table(self::CHECKOUT_TABLE)
+                    ->where('order_id', $order->id)
+                    ->where('id', '!=', $checkout->id)
+                    ->whereIn('state', self::activeCoinPaymentsStates())
+                    ->exists();
+                if ($anotherActiveCheckout) {
+                    return [
+                        'order' => $order,
+                        'transitioned' => false,
+                        'cancelled' => false,
+                        'conflict' => true,
+                    ];
+                }
+
+                $order->payment_id = (int) $checkout->payment_id;
+                $order->handling_amount = $checkout->handling_amount;
+                $order->status = Order::STATUS_PROCESSING;
+                $order->paid_at = time();
+                $order->callback_no = $callbackNo;
+                $order->saveOrFail();
+                self::closePaymentCheckouts($order->id);
+
+                return [
+                    'order' => $order,
+                    'transitioned' => true,
+                    'cancelled' => false,
+                    'conflict' => false,
+                ];
+            }
+
+            // Only a checkout already bound to this concrete provider invoice
+            // can be acknowledged as an idempotent replay. A cancelled order,
+            // another gateway's settlement, or an unbound legacy row requires
+            // operator reconciliation and must keep returning non-2xx.
+            $sameSettledInvoice = in_array($status, [Order::STATUS_PROCESSING, Order::STATUS_COMPLETED], true)
+                && (int) $order->payment_id === (int) $checkout->payment_id
+                && hash_equals((string) $order->callback_no, $providerInvoiceId);
+            $bindProviderInvoice();
+            if ($sameSettledInvoice) {
+                return [
+                    'order' => $order,
+                    'transitioned' => false,
+                    'cancelled' => false,
+                    'conflict' => false,
+                ];
+            }
+
+            return [
+                'order' => $order,
+                'transitioned' => false,
+                'cancelled' => false,
+                'conflict' => true,
+            ];
+        });
+
+        if (!empty($outcome['conflict'])) {
+            // Throw only after the transaction commits the provider invoice ID
+            // as reconciliation evidence. Throwing inside would roll it back.
+            throw new ApiException(
+                __('A completed CoinPayments invoice requires manual order reconciliation.'),
+                409
+            );
+        }
+        if ($outcome['transitioned']) {
+            OrderHandleJob::dispatchSync($outcome['order']->trade_no);
+        }
+        if ($outcome['cancelled']) {
+            HookManager::call('order.cancel.after', $outcome['order']);
+        }
+
+        return $outcome;
     }
 
     private static function closePaymentCheckouts(int $orderId): void
@@ -729,8 +1233,8 @@ class OrderService
     }
 
     /**
-     * Admin-only recovery after the provider invoice has been checked and, if
-     * necessary, cancelled/refunded manually in CoinPayments.
+     * Admin-only recovery after every active provider checkout has been
+     * checked and, if necessary, cancelled or refunded manually.
      */
     public function cancelAfterManualPaymentReconciliation(): bool
     {
@@ -764,8 +1268,8 @@ class OrderService
                 }
 
                 // A worker that disappeared while creating an invoice leaves
-                // an ambiguous provider outcome. Closing the order is the
-                // safe recovery path; it also makes late webhooks harmless.
+                // an ambiguous provider outcome. It becomes reconcilable, but
+                // only the explicit admin path may close it.
                 DB::table(self::CHECKOUT_TABLE)
                     ->where('order_id', $order->id)
                     ->where('state', self::CHECKOUT_CREATING)
@@ -775,11 +1279,11 @@ class OrderService
                         'updated_at' => time(),
                     ]);
 
-                $hasUncertainCheckout = DB::table(self::CHECKOUT_TABLE)
+                $hasPayableCheckout = DB::table(self::CHECKOUT_TABLE)
                     ->where('order_id', $order->id)
-                    ->where('state', self::CHECKOUT_UNCERTAIN)
+                    ->whereIn('state', [self::CHECKOUT_READY, self::CHECKOUT_UNCERTAIN])
                     ->exists();
-                if ($hasUncertainCheckout && !$allowUncertainCheckout) {
+                if ($hasPayableCheckout && !$allowUncertainCheckout) {
                     throw new ApiException(__('Payment verification is still in progress. Do not retry or cancel this order. Please contact support if it does not update.'));
                 }
 

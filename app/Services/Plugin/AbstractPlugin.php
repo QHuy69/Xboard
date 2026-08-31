@@ -156,6 +156,22 @@ abstract class AbstractPlugin
     }
 
     /**
+     * Validate a concrete payment method's effective configuration before the
+     * administrator exposes it to customers. Feature plugins and gateways
+     * without extra requirements keep the no-op default.
+     */
+    public function validatePaymentConfiguration(): void
+    {
+        // No payment-record requirements by default.
+    }
+
+    /** Whether plugin-admin values may act as defaults for payment records. */
+    public function usesGlobalPaymentConfiguration(): bool
+    {
+        return true;
+    }
+
+    /**
      * 插件安装时调用
      */
     public function install(): void

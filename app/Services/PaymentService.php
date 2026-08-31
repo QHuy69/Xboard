@@ -7,16 +7,19 @@ use App\Models\Payment;
 use App\Services\Plugin\PluginConfigService;
 use App\Services\Plugin\PluginManager;
 use App\Services\Plugin\HookManager;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PaymentService
 {
     public $method;
     protected $config;
+    protected array $pluginPaymentDefaults = [];
     protected $payment;
     protected $pluginManager;
     protected $class;
 
-    public function __construct($method, $id = NULL, $uuid = NULL)
+    public function __construct($method, $id = NULL, $uuid = NULL, bool $allowDisabledPlugin = false)
     {
         $this->method = $method;
         $this->pluginManager = app(PluginManager::class);
@@ -34,10 +37,37 @@ class PaymentService
         }
         if ($uuid) {
             $paymentModel = Payment::where('uuid', $uuid)->first();
-            if (!$paymentModel) {
+            if ($paymentModel) {
+                $payment = $paymentModel->makeVisible('config')->toArray();
+            } elseif ($allowDisabledPlugin
+                && $method === 'CoinPayments'
+                && Schema::hasTable('v2_order_payment_checkout')
+                && Schema::hasColumn('v2_order_payment_checkout', 'payment_uuid')) {
+                // A pre-guard deployment may have deleted the payment row
+                // while a provider invoice was still payable. The encrypted
+                // checkout snapshot is sufficient to authenticate that late
+                // callback without reviving the method for new purchases.
+                $checkout = DB::table('v2_order_payment_checkout')
+                    ->where('payment_uuid', (string) $uuid)
+                    ->where('provider', 'CoinPayments')
+                    ->whereNotNull('config_snapshot')
+                    ->orderByDesc('id')
+                    ->first();
+                if ($checkout) {
+                    $snapshot = CoinPaymentsCheckoutSnapshot::decrypt((string) $checkout->config_snapshot);
+                    $payment = [
+                        'payment' => 'CoinPayments',
+                        'config' => $snapshot,
+                        'enable' => false,
+                        'id' => (int) $snapshot['payment_id'],
+                        'uuid' => (string) $snapshot['payment_uuid'],
+                        'notify_domain' => '',
+                    ];
+                }
+            }
+            if (!isset($payment)) {
                 throw new ApiException('payment not found');
             }
-            $payment = $paymentModel->makeVisible('config')->toArray();
         }
 
         // The route/form supplies both a gateway name and a concrete payment
@@ -71,16 +101,21 @@ class PaymentService
                     // record cannot leak its credentials/config into another
                     // record later in the same request.
                     $paymentPlugin = clone $plugin;
-                    // Plugin-admin configuration supplies safe global
-                    // defaults. A concrete payment record can override those
-                    // values without making the plugin settings decorative.
-                    $pluginConfig = $plugin->getConfig();
+                    // Some legacy gateways allow plugin-admin defaults. New
+                    // gateways can opt out so credentials stay isolated in
+                    // each concrete payment record.
+                    $pluginConfig = $plugin->usesGlobalPaymentConfiguration()
+                        ? $plugin->getConfig()
+                        : [];
+                    $this->pluginPaymentDefaults = is_array($pluginConfig)
+                        ? $pluginConfig
+                        : [];
                     $paymentConfig = $this->withoutBlankPasswordOverrides(
                         $this->config,
                         $paymentPlugin->form()
                     );
                     $this->config = array_replace(
-                        is_array($pluginConfig) ? $pluginConfig : [],
+                        $this->pluginPaymentDefaults,
                         $paymentConfig
                     );
                     $paymentPlugin->setConfig($this->config);
@@ -90,33 +125,130 @@ class PaymentService
             }
         }
 
-        $this->payment = new $this->class($this->config);
+        if ($allowDisabledPlugin && $this->method === 'CoinPayments') {
+            $plugin = $this->pluginManager->getPlugin('coin_payments');
+            if ($plugin) {
+                $paymentPlugin = clone $plugin;
+                $this->pluginPaymentDefaults = [];
+                $paymentPlugin->setConfig($this->config);
+                $this->payment = $paymentPlugin;
+                return;
+            }
+        }
+
+        throw new ApiException(__('Payment method does not exist or is not enabled.'));
     }
 
     public function notify($params)
     {
-        if (!$this->config['enable'])
+        // CoinPayments invoices can complete after an administrator disables
+        // new checkouts. Its signed callback is still tied to an immutable
+        // durable claim and must be allowed to credit an already-paid order.
+        if (!$this->config['enable'] && $this->method !== 'CoinPayments')
             throw new ApiException('gate is not enable');
         return $this->payment->notify($params);
     }
 
     public function pay($order)
     {
-        // custom notify domain name
-        $notifyUrl = url("/api/v1/guest/payment/notify/{$this->method}/{$this->config['uuid']}");
-        if ($this->config['notify_domain']) {
-            $parseUrl = parse_url($notifyUrl);
-            $notifyUrl = $this->config['notify_domain'] . $parseUrl['path'];
+        if (empty($this->config['enable'])) {
+            throw new ApiException(__('Payment method is not available'));
         }
+
+        // custom notify domain name
+        $notifyUrl = $this->resolvedNotifyUrl();
+        $returnUrl = $this->method === 'CoinPayments'
+            ? source_base_url('/orders?trade_no=' . rawurlencode((string) $order['trade_no']))
+            : source_base_url('/#/order/' . $order['trade_no']);
 
         return $this->payment->pay([
             'notify_url' => $notifyUrl,
-            'return_url' => source_base_url('/#/order/' . $order['trade_no']),
+            'return_url' => $returnUrl,
             'trade_no' => $order['trade_no'],
             'total_amount' => $order['total_amount'],
             'user_id' => $order['user_id'],
             'stripe_token' => $order['stripe_token']
         ]);
+    }
+
+    /**
+     * Freeze every value that can affect invoice creation or callback
+     * authentication. The returned array is encrypted before persistence.
+     */
+    public function coinPaymentsConfigurationSnapshot(): array
+    {
+        if ($this->method !== 'CoinPayments') {
+            throw new \LogicException('CoinPayments configuration snapshot requested for another gateway.');
+        }
+
+        $this->validateConfiguration();
+        $apiBase = trim((string) ($this->config['coinpayments_api_base'] ?? 'https://a-api.coinpayments.net'));
+        $apiParts = parse_url($apiBase);
+        if (!is_array($apiParts) || empty($apiParts['host'])) {
+            throw new \UnexpectedValueException('CoinPayments API base URL is invalid.');
+        }
+
+        $snapshot = [
+            'snapshot_version' => CoinPaymentsCheckoutSnapshot::VERSION,
+            'payment_id' => (int) ($this->config['id'] ?? 0),
+            'payment_uuid' => trim((string) ($this->config['uuid'] ?? '')),
+            'coinpayments_client_id' => trim((string) ($this->config['coinpayments_client_id'] ?? '')),
+            'coinpayments_client_secret' => trim((string) ($this->config['coinpayments_client_secret'] ?? '')),
+            'coinpayments_invoice_currency_id' => trim((string) ($this->config['coinpayments_invoice_currency_id'] ?? '')),
+            'coinpayments_payment_currency' => trim((string) ($this->config['coinpayments_payment_currency'] ?? '')),
+            'coinpayments_cny_invoice_rate' => (string) ($this->config['coinpayments_cny_invoice_rate'] ?? ''),
+            'coinpayments_api_base' => 'https://' . strtolower((string) $apiParts['host']),
+            'coinpayments_webhook_url' => $this->resolvedNotifyUrl(),
+            'coinpayments_webhook_max_age' => max(
+                60,
+                min(900, (int) ($this->config['coinpayments_webhook_max_age'] ?? 300))
+            ),
+        ];
+        CoinPaymentsCheckoutSnapshot::assertValid($snapshot);
+
+        return $snapshot;
+    }
+
+    public function useCoinPaymentsConfigurationSnapshot(array $snapshot): self
+    {
+        if ($this->method !== 'CoinPayments') {
+            throw new \LogicException('CoinPayments configuration snapshot applied to another gateway.');
+        }
+        CoinPaymentsCheckoutSnapshot::assertValid($snapshot);
+
+        $currentPaymentId = (int) ($this->config['id'] ?? 0);
+        if ($currentPaymentId > 0 && $currentPaymentId !== (int) $snapshot['payment_id']) {
+            throw new \UnexpectedValueException('CoinPayments checkout snapshot belongs to another payment method.');
+        }
+
+        $this->config = array_replace($this->config ?? [], $snapshot, [
+            'id' => (int) $snapshot['payment_id'],
+            'uuid' => (string) $snapshot['payment_uuid'],
+            'enable' => true,
+            'notify_domain' => '',
+        ]);
+        $this->payment->setConfig($this->config);
+
+        return $this;
+    }
+
+    private function resolvedNotifyUrl(): string
+    {
+        $configured = trim((string) ($this->config['coinpayments_webhook_url'] ?? ''));
+        if ($this->method === 'CoinPayments' && $configured !== '') {
+            return $configured;
+        }
+
+        $notifyUrl = url("/api/v1/guest/payment/notify/{$this->method}/{$this->config['uuid']}");
+        $notifyDomain = rtrim(trim((string) ($this->config['notify_domain'] ?? '')), '/');
+        if ($notifyDomain !== '') {
+            $parseUrl = parse_url($notifyUrl);
+            if (is_array($parseUrl) && isset($parseUrl['path'])) {
+                $notifyUrl = $notifyDomain . $parseUrl['path'];
+            }
+        }
+
+        return $notifyUrl;
     }
 
     public function form()
@@ -137,7 +269,7 @@ class PaymentService
                 'placeholder' => $this->translateFormMetadata($placeholder),
                 'description' => $this->translateFormMetadata($field['description'] ?? ''),
                 // Payment forms are another admin API surface. Never leak a
-                // plugin-global or per-payment secret through this endpoint,
+                // plugin-default or per-payment secret through this endpoint,
                 // including legacy plugins that declared API keys as strings.
                 'value' => $isSensitive ? '' : $storedValue,
                 'has_value' => $isSensitive && $this->hasNonBlankValue($storedValue),
@@ -147,6 +279,33 @@ class PaymentService
             ];
         }
         return $result;
+    }
+
+    /**
+     * Validate the effective configuration that would actually be persisted.
+     * Existing record values must not make a partial/crafted replacement look
+     * valid; only explicit plugin defaults and the submitted record are used.
+     */
+    public function validateConfiguration(?array $overrides = null): void
+    {
+        if (!method_exists($this->payment, 'validatePaymentConfiguration')) {
+            return;
+        }
+
+        $candidate = clone $this->payment;
+        if ($overrides !== null) {
+            $candidate->setConfig(array_replace(
+                $this->pluginPaymentDefaults,
+                array_intersect_key($this->config ?? [], [
+                    'id' => true,
+                    'uuid' => true,
+                    'enable' => true,
+                    'notify_domain' => true,
+                ]),
+                $overrides
+            ));
+        }
+        $candidate->validatePaymentConfiguration();
     }
 
     private function translateFormMetadata(mixed $value): string
@@ -211,7 +370,7 @@ class PaymentService
 
     /**
      * A blank password means "keep the current value". If no per-payment
-     * value exists, omit the key so the plugin-global secret remains the
+     * value exists, omit the key so a legacy plugin default remains the
      * effective default instead of being overwritten by an empty string.
      */
     public function preserveBlankPasswords(array $submitted, array $existing = []): array

@@ -229,10 +229,16 @@ class PluginController extends Controller
             'code' => 'required|string'
         ]);
 
-        $this->pluginManager->disable($request->input('code'));
-        return response()->json([
-            'message' => __('Plugin disabled successfully.')
-        ]);
+        try {
+            $this->pluginManager->disable($request->input('code'));
+            return response()->json([
+                'message' => __('Plugin disabled successfully.')
+            ]);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'message' => __('Unable to disable plugin: :error', ['error' => $exception->getMessage()])
+            ], 409);
+        }
 
     }
 

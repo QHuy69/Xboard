@@ -133,13 +133,11 @@ if [ ! -s /www/.env ] || ! grep -qE '^INSTALLED=(1|true)$' /www/.env || echo " $
 else
     if redis_reachable; then
         echo "[entrypoint] Running xboard:update (redis reachable, real drivers)..."
-        php /www/artisan xboard:update --no-interaction || \
-            echo "[entrypoint] WARNING: xboard:update failed; continuing so supervisor can boot anyway." >&2
+        php /www/artisan xboard:update --no-interaction
     else
         echo "[entrypoint] Running xboard:update (redis not yet up, using array/sync drivers)..."
         CACHE_DRIVER=array QUEUE_CONNECTION=sync SESSION_DRIVER=array \
-            php /www/artisan xboard:update --no-interaction || \
-            echo "[entrypoint] WARNING: xboard:update failed; continuing so supervisor can boot anyway." >&2
+            php /www/artisan xboard:update --no-interaction
     fi
 fi
 

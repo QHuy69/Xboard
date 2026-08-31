@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\V2\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Exceptions\ApiException;
 use App\Models\Payment;
+use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Utils\Helper;
 use Illuminate\Http\Request;
@@ -40,7 +42,7 @@ class PaymentController extends Controller
             $notifyUrl = url("/api/v1/guest/payment/notify/{$v->payment}/{$v->uuid}");
             if ($v->notify_domain) {
                 $parseUrl = parse_url($notifyUrl);
-                $notifyUrl = $v->notify_domain . $parseUrl['path'];
+                $notifyUrl = rtrim((string) $v->notify_domain, '/') . $parseUrl['path'];
             }
             $payments[$k]['notify_url'] = $notifyUrl;
         }
@@ -59,12 +61,36 @@ class PaymentController extends Controller
 
     public function show(Request $request)
     {
-        $payment = Payment::find($request->input('id'));
-        if (!$payment)
-            return $this->fail([400202, __('Payment method does not exist.')]);
-        $payment->enable = !$payment->enable;
-        if (!$payment->save())
+        try {
+            $updated = DB::transaction(function () use ($request): ?bool {
+                $payment = Payment::whereKey($request->input('id'))->lockForUpdate()->first();
+                if (!$payment) {
+                    return null;
+                }
+
+                // Validate and expose the row atomically. Concurrent save()
+                // uses the same row lock, so invalid credentials cannot land
+                // between validation and the enable write.
+                if (!$payment->enable) {
+                    (new PaymentService($payment->payment, $payment->id))
+                        ->validateConfiguration();
+                }
+                $payment->enable = !$payment->enable;
+                $payment->saveOrFail();
+
+                return true;
+            });
+        } catch (ApiException|\InvalidArgumentException $exception) {
+            return $this->fail([400, $exception->getMessage()]);
+        } catch (\Throwable $exception) {
+            Log::error($exception);
             return $this->fail([500, __('Unable to save payment method.')]);
+        }
+
+        if ($updated === null) {
+            return $this->fail([400202, __('Payment method does not exist.')]);
+        }
+
         return $this->success(true);
     }
 
@@ -91,60 +117,76 @@ class PaymentController extends Controller
             'handling_fee_percent.between' => __('Percentage handling fee must be between 0 and 100.')
         ]);
 
-        $existingPayment = null;
-        if ($request->input('id')) {
-            $existingPayment = Payment::find($request->input('id'));
-            if (!$existingPayment)
-                return $this->fail([400202, __('Payment method does not exist.')]);
-        }
-
-        if (is_array($params['config'])) {
-            $sameGateway = $existingPayment
-                && hash_equals((string) $existingPayment->payment, (string) $params['payment']);
-            $existingConfig = $sameGateway && is_array($existingPayment->config)
-                ? $existingPayment->config
-                : [];
-            try {
-                $paymentService = new PaymentService(
-                    $params['payment'],
-                    $sameGateway ? $existingPayment->id : null
-                );
-                $submittedConfig = $paymentService->onlyKnownConfigFields($params['config']);
-                $existingConfig = $paymentService->onlyKnownConfigFields($existingConfig);
-                $params['config'] = $paymentService->preserveBlankPasswords(
-                    $submittedConfig,
-                    $existingConfig
-                );
-            } catch (\Throwable $exception) {
-                // A new record or gateway change must resolve to an enabled
-                // integration. Only an unchanged historical gateway may use
-                // the compatibility path for a plugin that was later removed.
-                if (!$sameGateway) {
-                    return $this->fail([400, __('Payment method does not exist or is not enabled.')]);
+        return DB::transaction(function () use ($request, $params) {
+            $existingPayment = null;
+            if ($request->input('id')) {
+                $existingPayment = Payment::whereKey($request->input('id'))->lockForUpdate()->first();
+                if (!$existingPayment) {
+                    return $this->fail([400202, __('Payment method does not exist.')]);
                 }
-                // Preserve compatibility with disabled/removed third-party
-                // plugins while retaining obvious historical secrets.
-                $params['config'] = $this->preserveSensitiveConfigFallback(
-                    $params['config'],
-                    $existingConfig
-                );
+                if ($existingPayment->payment === 'CoinPayments'
+                    && $params['payment'] !== 'CoinPayments'
+                    && OrderService::hasActiveCoinPaymentsCheckoutForPayment((int) $existingPayment->id)) {
+                    return $this->fail([409, __('CoinPayments has an active invoice. Reconcile it before changing the gateway.')]);
+                }
             }
-        }
 
-        if ($existingPayment) {
-            try {
-                $existingPayment->update($params);
-            } catch (\Exception $e) {
-                Log::error($e);
+            if (is_array($params['config'])) {
+                $sameGateway = $existingPayment
+                    && hash_equals((string) $existingPayment->payment, (string) $params['payment']);
+                $existingConfig = $sameGateway && is_array($existingPayment->config)
+                    ? $existingPayment->config
+                    : [];
+                $paymentService = null;
+                try {
+                    $paymentService = new PaymentService(
+                        $params['payment'],
+                        $sameGateway ? $existingPayment->id : null
+                    );
+                    $submittedConfig = $paymentService->onlyKnownConfigFields($params['config']);
+                    $existingConfig = $paymentService->onlyKnownConfigFields($existingConfig);
+                    $params['config'] = $paymentService->preserveBlankPasswords(
+                        $submittedConfig,
+                        $existingConfig
+                    );
+                } catch (\Throwable $exception) {
+                    // A new record or gateway change must resolve to an enabled
+                    // integration. Only an unchanged historical gateway may use
+                    // the compatibility path for a plugin that was later removed.
+                    if (!$sameGateway) {
+                        return $this->fail([400, __('Payment method does not exist or is not enabled.')]);
+                    }
+                    // Preserve compatibility with disabled/removed third-party
+                    // plugins while retaining obvious historical secrets.
+                    $params['config'] = $this->preserveSensitiveConfigFallback(
+                        $params['config'],
+                        $existingConfig
+                    );
+                }
+                if ($existingPayment?->enable && $paymentService instanceof PaymentService) {
+                    try {
+                        $paymentService->validateConfiguration($params['config']);
+                    } catch (\Throwable $exception) {
+                        return $this->fail([400, $exception->getMessage()]);
+                    }
+                }
+            }
+
+            if ($existingPayment) {
+                try {
+                    $existingPayment->updateOrFail($params);
+                } catch (\Throwable $exception) {
+                    Log::error($exception);
+                    return $this->fail([500, __('Unable to save payment method.')]);
+                }
+                return $this->success(true);
+            }
+            $params['uuid'] = Helper::randomChar(8);
+            if (!Payment::create($params)) {
                 return $this->fail([500, __('Unable to save payment method.')]);
             }
             return $this->success(true);
-        }
-        $params['uuid'] = Helper::randomChar(8);
-        if (!Payment::create($params)) {
-            return $this->fail([500, __('Unable to save payment method.')]);
-        }
-        return $this->success(true);
+        });
     }
 
     private function redactSensitiveConfigFallback(array $config): array
@@ -187,10 +229,18 @@ class PaymentController extends Controller
 
     public function drop(Request $request)
     {
-        $payment = Payment::find($request->input('id'));
-        if (!$payment)
-            return $this->fail([400202, __('Payment method does not exist.')]);
-        return $this->success($payment->delete());
+        return DB::transaction(function () use ($request) {
+            $payment = Payment::whereKey($request->input('id'))->lockForUpdate()->first();
+            if (!$payment) {
+                return $this->fail([400202, __('Payment method does not exist.')]);
+            }
+            if ($payment->payment === 'CoinPayments'
+                && OrderService::hasActiveCoinPaymentsCheckoutForPayment((int) $payment->id)) {
+                return $this->fail([409, __('CoinPayments has an active invoice. Reconcile it before deleting the payment method.')]);
+            }
+
+            return $this->success($payment->delete());
+        });
     }
 
 

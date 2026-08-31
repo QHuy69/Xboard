@@ -47,10 +47,9 @@ set_exception_handler(static function (Throwable $throwable): never {
 
 HookManager::reset();
 $unconfiguredCoinPayments = new CoinPaymentsPlugin('coin_payments');
-$unconfiguredCoinPayments->setConfig(['enabled' => true]);
 $unconfiguredCoinPayments->boot();
-if (array_key_exists('CoinPayments', HookManager::filter('available_payment_methods', []))) {
-    fwrite(STDERR, "CoinPayments was exposed without required credentials.\n");
+if (!array_key_exists('CoinPayments', HookManager::filter('available_payment_methods', []))) {
+    fwrite(STDERR, "Enabled CoinPayments was not exposed to the payment editor before credential entry.\n");
     exit(1);
 }
 
@@ -67,6 +66,34 @@ $configuredCoinPayments->boot();
 if (!array_key_exists('CoinPayments', HookManager::filter('available_payment_methods', []))) {
     fwrite(STDERR, "Configured CoinPayments was not registered.\n");
     exit(1);
+}
+
+$validCoinPaymentsConfig = [
+    'coinpayments_client_id' => 'client-123',
+    'coinpayments_client_secret' => 'secret-xyz',
+    'coinpayments_invoice_currency_id' => '5057',
+    'coinpayments_cny_invoice_rate' => '0.14',
+    'coinpayments_api_base' => 'https://a-api.coinpayments.net',
+    'coinpayments_webhook_url' => 'https://payments.example.test/coinpayments/callback',
+];
+foreach ([
+    'coinpayments_client_id',
+    'coinpayments_client_secret',
+    'coinpayments_invoice_currency_id',
+    'coinpayments_cny_invoice_rate',
+    'coinpayments_api_base',
+    'coinpayments_webhook_url',
+] as $malformedField) {
+    $malformed = new CoinPaymentsPlugin('coin_payments');
+    $malformed->setConfig(array_replace($validCoinPaymentsConfig, [$malformedField => []]));
+    try {
+        $malformed->validatePaymentConfiguration();
+        fwrite(STDERR, "CoinPayments accepted a non-scalar {$malformedField}.\n");
+        exit(1);
+    } catch (InvalidArgumentException) {
+        // Expected: crafted array/object values cannot become the string
+        // "Array" or a positive numeric cast inside request signing.
+    }
 }
 
 HookManager::reset();
@@ -261,12 +288,12 @@ foreach (['plugins-core/CoinPayments/config.json', 'plugins-core/Telegram/config
 
 $coinPaymentsManifest = json_decode((string) file_get_contents(dirname(__DIR__) . '/plugins-core/CoinPayments/config.json'), true, 512, JSON_THROW_ON_ERROR);
 if (($coinPaymentsManifest['auto_enable'] ?? true) !== false) {
-    fwrite(STDERR, "CoinPayments must not auto-enable before credentials are configured.\n");
+    fwrite(STDERR, "CoinPayments must still require explicit administrator activation.\n");
     exit(1);
 }
 foreach (['coinpayments_client_id', 'coinpayments_client_secret', 'coinpayments_invoice_currency_id', 'coinpayments_webhook_url'] as $field) {
-    if (!isset($coinPaymentsManifest['config'][$field])) {
-        fwrite(STDERR, "CoinPayments admin config is missing {$field}.\n");
+    if (isset($coinPaymentsManifest['config'][$field])) {
+        fwrite(STDERR, "CoinPayments plugin settings still expose payment credential field {$field}.\n");
         exit(1);
     }
 }
@@ -281,8 +308,8 @@ if (isset($coinPaymentsForm['coinpayments_invoice_currency'])
     exit(1);
 }
 foreach ($coinPaymentsForm as $field => $_meta) {
-    if (!isset($coinPaymentsManifest['config'][$field])) {
-        fwrite(STDERR, "CoinPayments payment field {$field} cannot be configured from plugin admin.\n");
+    if ($field !== 'display_name' && isset($coinPaymentsManifest['config'][$field])) {
+        fwrite(STDERR, "CoinPayments payment field {$field} is duplicated in plugin-global settings.\n");
         exit(1);
     }
 }

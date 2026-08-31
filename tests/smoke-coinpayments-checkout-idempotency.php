@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\User;
 use App\Services\OrderService;
+use App\Services\Plugin\HookManager;
+use App\Services\Plugin\PluginManager;
 use App\Utils\Helper;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +37,33 @@ function expectCheckoutRejected(callable $operation, string $message): void
     throw new RuntimeException($message);
 }
 
+function coinPaymentsSmokeConfig(string $uuid): array
+{
+    return [
+        'coinpayments_client_id' => 'checkout-smoke-client',
+        'coinpayments_client_secret' => 'checkout-smoke-secret',
+        'coinpayments_invoice_currency_id' => '5057',
+        'coinpayments_payment_currency' => '',
+        'coinpayments_cny_invoice_rate' => 1,
+        'coinpayments_api_base' => 'https://a-api.coinpayments.net',
+        'coinpayments_webhook_url' => 'https://payments.example.test/api/v1/guest/payment/notify/CoinPayments/' . $uuid,
+        'coinpayments_webhook_max_age' => 300,
+    ];
+}
+
 DB::beginTransaction();
 try {
+    HookManager::reset();
+    $pluginManager = app(PluginManager::class);
+    $pluginManager->prepareForRequest();
+    if (!\App\Models\Plugin::query()->where('code', 'coin_payments')->exists()) {
+        $pluginManager->install('coin_payments');
+    }
+    if (!\App\Models\Plugin::query()->where('code', 'coin_payments')->value('is_enabled')) {
+        $pluginManager->enable('coin_payments');
+    } else {
+        $pluginManager->initializeEnabledPlugins();
+    }
     $user = User::create([
         'email' => 'checkout-smoke-' . bin2hex(random_bytes(4)) . '@example.invalid',
         'password' => password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT),
@@ -85,22 +112,24 @@ try {
         'sell' => 1,
         'device_limit' => 2,
     ]);
+    $paymentOneUuid = bin2hex(random_bytes(16));
     $paymentOne = Payment::create([
-        'uuid' => bin2hex(random_bytes(16)),
+        'uuid' => $paymentOneUuid,
         'payment' => 'CoinPayments',
         'name' => 'CoinPayments one',
         'icon' => 'CoinPayments',
-        'config' => [],
+        'config' => coinPaymentsSmokeConfig($paymentOneUuid),
         'handling_fee_fixed' => 2,
         'handling_fee_percent' => 1,
         'enable' => true,
     ]);
+    $paymentTwoUuid = bin2hex(random_bytes(16));
     $paymentTwo = Payment::create([
-        'uuid' => bin2hex(random_bytes(16)),
+        'uuid' => $paymentTwoUuid,
         'payment' => 'CoinPayments',
         'name' => 'CoinPayments two',
         'icon' => 'CoinPayments',
-        'config' => [],
+        'config' => coinPaymentsSmokeConfig($paymentTwoUuid),
         'handling_fee_fixed' => 0,
         'handling_fee_percent' => 0,
         'enable' => true,
@@ -156,12 +185,18 @@ try {
         $order->id,
         $paymentOne->id,
         $first['claim_token'],
-        ['type' => 1, 'data' => 'https://checkout.coinpayments.example/invoice-one']
+        [
+            'type' => 1,
+            'data' => 'https://checkout.coinpayments.net/invoice-one',
+            'provider_invoice_id' => 'smoke-provider-invoice-one',
+            'provider_expires_at' => time() + 3600,
+            'expected_amount' => '1.03000000',
+        ]
     );
 
     $reloaded = OrderService::beginCoinPaymentsCheckout($user->id, $order->trade_no, $paymentOne);
     checkoutAssert($reloaded['cached'], 'Reload did not reuse the successful provider result.');
-    checkoutAssert($reloaded['data'] === 'https://checkout.coinpayments.example/invoice-one', 'Reload returned the wrong checkout URL.');
+    checkoutAssert($reloaded['data'] === 'https://checkout.coinpayments.net/invoice-one', 'Reload returned the wrong checkout URL.');
     checkoutAssert($providerCalls === 1, 'Reload issued a second provider call.');
 
     expectCheckoutRejected(
@@ -169,31 +204,42 @@ try {
         'Another user could read the checkout URL.'
     );
 
-    // A different payment record gets an isolated claim; switching back must
-    // still return payment one's original URL rather than create another one.
-    $switched = OrderService::beginCoinPaymentsCheckout($user->id, $order->trade_no, $paymentTwo);
-    checkoutAssert(!$switched['cached'], 'Payment switch leaked a cached URL from another payment record.');
+    // READY remains payable. Neither another CoinPayments record, a standard
+    // gateway nor user cancellation may create an alternative outcome.
+    expectCheckoutRejected(
+        fn () => OrderService::beginCoinPaymentsCheckout($user->id, $order->trade_no, $paymentTwo),
+        'Payment switch leaked a cached URL from another payment record.'
+    );
     expectCheckoutRejected(
         fn () => OrderService::beginCoinPaymentsCheckout($user->id, $order->trade_no, $paymentTwo),
         'Concurrent checkout was not serialized.'
     );
-    OrderService::failCoinPaymentsCheckout($order->id, $paymentTwo->id, $switched['claim_token'], false);
-    $standardCheckout = OrderService::beginStandardPaymentCheckout(
-        $user->id,
-        $order->trade_no,
-        $standardPayment
+    expectCheckoutRejected(
+        fn () => OrderService::beginStandardPaymentCheckout($user->id, $order->trade_no, $standardPayment),
+        'A standard gateway started while a READY CoinPayments invoice was payable.'
     );
-    checkoutAssert($standardCheckout['amount'] === 105, 'Standard gateway handling fee was not frozen.');
+    expectCheckoutRejected(
+        fn () => (new OrderService(Order::findOrFail($order->id)))->cancel(),
+        'A user-facing cancellation abandoned a READY payable invoice.'
+    );
 
-    // A customer may pay the first CoinPayments invoice after switching to a
-    // gateway with a different fee. The signed callback must use payment one's
-    // durable 100 + 3 claim, not the order's mutable standard-gateway 100 + 5.
-    $webhookUrl = 'https://payments.example.test/coinpayments/late';
+    // Rotate/disable the payment record after invoice creation. The late
+    // callback must still use the immutable encrypted snapshot.
+    $webhookUrl = coinPaymentsSmokeConfig($paymentOne->uuid)['coinpayments_webhook_url'];
+    $paymentOne->config = array_replace(coinPaymentsSmokeConfig($paymentOne->uuid), [
+        'coinpayments_client_id' => 'rotated-client',
+        'coinpayments_client_secret' => 'rotated-secret',
+        'coinpayments_invoice_currency_id' => '9999',
+        'coinpayments_cny_invoice_rate' => 9,
+    ]);
+    $paymentOne->enable = false;
+    $paymentOne->saveOrFail();
     $timestamp = gmdate('Y-m-d\TH:i:s');
     $webhookPayload = json_encode([
-        'id' => 'late-invoice-' . bin2hex(random_bytes(4)),
+        'id' => 'late-event-' . bin2hex(random_bytes(4)),
         'type' => 'InvoiceCompleted',
         'invoice' => [
+            'id' => 'smoke-provider-invoice-one',
             'state' => 'Completed',
             'customData' => ['trade_no' => $order->trade_no],
             'amount' => ['currencyId' => '5057', 'total' => 1.03],
@@ -214,18 +260,21 @@ try {
     $coinPaymentsPlugin = new CoinPaymentsPlugin('coin_payments');
     $coinPaymentsPlugin->setConfig([
         'id' => $paymentOne->id,
-        'coinpayments_client_id' => 'checkout-smoke-client',
-        'coinpayments_client_secret' => 'checkout-smoke-secret',
-        'coinpayments_invoice_currency_id' => '5057',
-        'coinpayments_cny_invoice_rate' => 1,
-        'coinpayments_webhook_url' => $webhookUrl,
-        'coinpayments_webhook_max_age' => 300,
+        'uuid' => $paymentOne->uuid,
+        'coinpayments_client_id' => 'rotated-client',
+        'coinpayments_client_secret' => 'rotated-secret',
+        'coinpayments_invoice_currency_id' => '9999',
+        'coinpayments_cny_invoice_rate' => 9,
+        'coinpayments_webhook_url' => 'https://rotated.example.test/webhook',
+        'coinpayments_webhook_max_age' => 60,
     ]);
     $lateVerification = $coinPaymentsPlugin->notify([]);
     checkoutAssert(
         is_array($lateVerification) && $lateVerification['trade_no'] === $order->trade_no,
-        'Gateway switching made a valid late CoinPayments webhook fail its durable amount check.'
+        'Credential rotation made a valid late CoinPayments webhook fail its durable snapshot check.'
     );
+    $paymentOne->enable = true;
+    $paymentOne->saveOrFail();
     $switchedBack = OrderService::beginCoinPaymentsCheckout($user->id, $order->trade_no, $paymentOne);
     checkoutAssert($switchedBack['cached'], 'Switching back did not reuse the original payment result.');
     checkoutAssert($providerCalls === 1, 'Payment switching created a duplicate invoice for the original payment.');
@@ -288,12 +337,18 @@ try {
         $tamperedOrder->id,
         $paymentOne->id,
         $tampered['claim_token'],
-        ['type' => 1, 'data' => 'https://checkout.coinpayments.example/original']
+        [
+            'type' => 1,
+            'data' => 'https://checkout.coinpayments.net/original',
+            'provider_invoice_id' => 'tampered-provider-invoice',
+            'provider_expires_at' => time() + 3600,
+            'expected_amount' => '9.27000000',
+        ]
     );
     DB::table('v2_order_payment_checkout')
         ->where('order_id', $tamperedOrder->id)
         ->where('payment_id', $paymentOne->id)
-        ->update(['response_data' => json_encode('http://checkout.coinpayments.example/tampered')]);
+        ->update(['response_data' => json_encode('http://checkout.coinpayments.net/tampered')]);
     expectCheckoutRejected(
         fn () => OrderService::beginCoinPaymentsCheckout($user->id, $tamperedOrder->trade_no, $paymentOne),
         'A non-HTTPS cached checkout URL was returned.'

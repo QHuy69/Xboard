@@ -17,7 +17,12 @@ class PaymentController extends Controller
     {
         HookManager::call('payment.notify.before', [$method, $uuid, $request]);
         try {
-            $paymentService = new PaymentService($method, null, $uuid);
+            $paymentService = new PaymentService(
+                $method,
+                null,
+                $uuid,
+                $method === 'CoinPayments'
+            );
             $verify = $paymentService->notify($request->input());
             if (!$verify) {
                 HookManager::call('payment.notify.failed', [$method, $uuid, $request]);
@@ -29,6 +34,13 @@ class PaymentController extends Controller
                 return $verify;
             }
             HookManager::call('payment.notify.verified', $verify);
+            if ($method === 'CoinPayments' && isset($verify['event'])) {
+                $outcome = OrderService::handleCoinPaymentsNotification($verify);
+                if ($outcome['transitioned']) {
+                    HookManager::call('payment.notify.success', $outcome['order']);
+                }
+                return (isset($verify['custom_result']) ? $verify['custom_result'] : 'success');
+            }
             if (!$this->handle($verify['trade_no'], $verify['callback_no'])) {
                 return $this->fail([400, __('Unable to process payment notification.')]);
             }

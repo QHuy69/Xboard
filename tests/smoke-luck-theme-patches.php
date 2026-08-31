@@ -43,7 +43,7 @@ $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'DSCv3-VU', '-managed
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'BBIEjj8f', '-auth-v3');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'q_WC3BFv', '-register-v2');
 $entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'ByaxWMaA', '-localized');
-$entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'C0KnXkt1', '-payment-v3');
+$entry = LuckThemeAssetPatcher::rewriteAssetImport($entry, 'C0KnXkt1', '-payment-v4');
 $entry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry);
 $entry = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry);
 $entry = LuckThemeAssetPatcher::versionPortableIconAssetImports($entry);
@@ -55,8 +55,8 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'BBIEjj8f-v3-fresh-auth-v3.js')
 	|| !str_contains($entry, 'q_WC3BFv-v3-fresh-register-v2.js')
 	|| !str_contains($entry, 'ByaxWMaA-v3-fresh-localized.js')
-	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v3.js')
-	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v4.js')
+	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v4.js')
+	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v5.js')
 	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
 	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=3')
 	|| str_contains($entry, 'DM1yaN1X-v3-fresh.js?v=3')
@@ -83,7 +83,7 @@ $genericRoute = 'import("./BBbuoBq5-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-p
 $genericRoute = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($genericRoute);
 $genericRoute = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($genericRoute);
 if (!str_contains($genericRoute, 'BBbuoBq5-v3-fresh-runtime-v3.js')
-    || !str_contains($genericRoute, 'C6e3mGRa-v3-fresh-payment-v4.js')
+    || !str_contains($genericRoute, 'C6e3mGRa-v3-fresh-payment-v5.js')
     || str_contains($genericRoute, 'payment-v3.js')) {
     fwrite(STDERR, "Luck generic route can still revive a cached shared runtime or payment-v3 dialog.\n");
     exit(1);
@@ -94,7 +94,7 @@ foreach ([
     'C6e3mGRa-v3-fresh-payment-v3.js',
     'C6e3mGRa-v3-fresh-payment-v3-payment-v4.js',
 ] as $subscriptionDialogAsset) {
-    if (LuckThemeAssetPatcher::subscriptionDialogAssetName($subscriptionDialogAsset) !== 'C6e3mGRa-v3-fresh-payment-v4.js') {
+    if (LuckThemeAssetPatcher::subscriptionDialogAssetName($subscriptionDialogAsset) !== 'C6e3mGRa-v3-fresh-payment-v5.js') {
         fwrite(STDERR, "Luck subscription-dialog asset normalization failed.\n");
         exit(1);
     }
@@ -312,7 +312,7 @@ if ($entryAsset && is_file($entryAsset)) {
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'BBIEjj8f', '-auth-v3');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'q_WC3BFv', '-register-v2');
     $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'ByaxWMaA', '-localized');
-    $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'C0KnXkt1', '-payment-v3');
+    $productionEntry = LuckThemeAssetPatcher::rewriteAssetImport($productionEntry, 'C0KnXkt1', '-payment-v4');
     $productionEntry = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($productionEntry);
     $productionEntry = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($productionEntry);
     $productionEntry = LuckThemeAssetPatcher::versionPortableIconAssetImports($productionEntry);
@@ -321,7 +321,7 @@ if ($entryAsset && is_file($entryAsset)) {
         || !str_contains($productionEntry, 'lsrL0SOU-v3-fresh.js?v=2')
         || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
         || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
-        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v4.js')
+        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v5.js')
         || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
         || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=3#', $productionEntry)
         || str_contains($productionEntry, 'DM1yaN1X-v3-fresh.js?v=3')) {
@@ -519,6 +519,11 @@ JS;
 $payment = LuckThemeAssetPatcher::patchPaymentMessages($payment);
 if (!str_contains($payment, 'const rawPaymentResult =')
     || !str_contains($payment, 'Number(paymentResult.type) === 1')
+    || !str_contains($payment, '__LUCK_OPEN_COINPAYMENTS_PAYMENT__')
+    || !str_contains($payment, 'String(method && method.payment || "").toLowerCase() === "coinpayments"')
+    || !str_contains($payment, 'window.location.pathname + window.location.search + window.location.hash !== initialRoute')
+    || !str_contains($payment, '@media(max-height:520px) and (orientation:landscape)')
+    || !str_contains($payment, 'overlay.dir = selectedLocale === "fa-IR" ? "rtl" : "ltr"')
     || substr_count($payment, 'window.location.assign(paymentResult.data)') !== 2
     || !str_contains($payment, '__LUCK_T__("未知的支付类型，请重试")')) {
     fwrite(STDERR, "Luck checkout normalization and redirect patch failed.\n");

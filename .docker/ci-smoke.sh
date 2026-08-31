@@ -14,6 +14,87 @@ cleanup() {
 }
 trap cleanup EXIT
 
+verify_coinpayments_checkout_schema() {
+  local target_container="$1"
+  local schema_state
+
+  schema_state="$(docker exec "$target_container" sqlite3 /www/.docker/.data/database.sqlite "
+    SELECT printf('%d:%d:%d',
+      (
+        SELECT COUNT(*)
+        FROM pragma_table_info('v2_order_payment_checkout')
+        WHERE \"notnull\" = 0
+          AND (
+            (name IN ('payment_uuid', 'provider_invoice_id', 'expected_amount') AND upper(type) LIKE 'VARCHAR%')
+            OR (name = 'config_snapshot' AND upper(type) = 'TEXT')
+            OR (name = 'provider_expires_at' AND upper(type) = 'INTEGER')
+          )
+      ),
+      (
+        SELECT
+          CASE WHEN (
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('order_payment_checkout_payment_state_idx')
+              ORDER BY seqno
+            )
+          ) = 'payment_id,state'
+            AND COALESCE((
+              SELECT \"unique\"
+              FROM pragma_index_list('v2_order_payment_checkout')
+              WHERE name = 'order_payment_checkout_payment_state_idx'
+            ), -1) = 0
+          THEN 1 ELSE 0 END
+          + CASE WHEN (
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('order_payment_checkout_uuid_state_idx')
+              ORDER BY seqno
+            )
+          ) = 'payment_uuid,state'
+            AND COALESCE((
+              SELECT \"unique\"
+              FROM pragma_index_list('v2_order_payment_checkout')
+              WHERE name = 'order_payment_checkout_uuid_state_idx'
+            ), -1) = 0
+          THEN 1 ELSE 0 END
+          + CASE WHEN (
+            SELECT group_concat(name, ',')
+            FROM (
+              SELECT name
+              FROM pragma_index_info('order_payment_checkout_provider_invoice_unique')
+              ORDER BY seqno
+            )
+          ) = 'provider,provider_invoice_id'
+            AND COALESCE((
+              SELECT \"unique\"
+              FROM pragma_index_list('v2_order_payment_checkout')
+              WHERE name = 'order_payment_checkout_provider_invoice_unique'
+            ), -1) = 1
+          THEN 1 ELSE 0 END
+      ),
+      (
+        SELECT COUNT(*)
+        FROM v2_order_payment_checkout
+        WHERE provider = 'CoinPayments'
+          AND state = 'ready'
+          AND (
+            trim(COALESCE(provider_invoice_id, '')) = ''
+            OR provider_expires_at IS NULL
+            OR provider_expires_at <= 0
+          )
+      )
+    );
+  ")" || return 1
+
+  if [ "$schema_state" != '5:3:0' ]; then
+    echo "CoinPayments migration 000005 schema gate failed (columns:indexes:invalid-ready=$schema_state)." >&2
+    return 1
+  fi
+}
+
 mkdir -p \
   "$smoke_dir/data" \
   "$smoke_dir/logs" \
@@ -268,7 +349,7 @@ case "$shared_runtime_asset" in
 esac
 shared_runtime_js="$(curl --fail --silent --show-error \
   "http://127.0.0.1:${host_port}/theme/Luck/assets/${shared_runtime_asset#./}")"
-grep -aEq '\./C6e3mGRa[^"?]*-payment-v4\.js' <<<"$shared_runtime_js" || {
+grep -aEq '\./C6e3mGRa[^"?]*-payment-v5\.js' <<<"$shared_runtime_js" || {
   echo "Published shared runtime does not select the Vue-owned dialog chunk." >&2
   exit 1
 }
@@ -278,7 +359,7 @@ if grep -aEq '\./C6e3mGRa[^"?]*-payment-v3\.js' <<<"$shared_runtime_js"; then
 fi
 subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$subscription_dialog_asset" in
-  ./C6e3mGRa*-payment-v4.js) ;;
+  ./C6e3mGRa*-payment-v5.js) ;;
   *)
     echo "Published Luck entry has no normalized subscription-dialog module: $subscription_dialog_asset" >&2
     exit 1
@@ -290,7 +371,10 @@ for subscription_dialog_marker in \
   'T as Teleport' \
   'name: "PortalledSubscriptionDialog"' \
   'inheritAttrs: false' \
-  'createVNode(Teleport, { to: "body" }'; do
+  'createVNode(Teleport, { to: "body" }' \
+  'window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__' \
+  'clipboard-read; clipboard-write; payment' \
+  'const statusUrl = "/payment/status/"'; do
   grep -aFq "$subscription_dialog_marker" <<<"$subscription_dialog_js" || {
     echo "Published Luck subscription dialog is missing Vue Teleport marker: $subscription_dialog_marker" >&2
     exit 1
@@ -300,7 +384,7 @@ subscription_dialog_tmp="$(mktemp --suffix=.mjs)"
 printf '%s\n' "$subscription_dialog_js" >"$subscription_dialog_tmp"
 node --check "$subscription_dialog_tmp"
 rm -f "$subscription_dialog_tmp"
-echo "[smoke] Vue-owned subscription dialog Teleport passed"
+echo "[smoke] Vue-owned subscription dialog and CoinPayments checkout passed"
 
 node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$node_route_asset" in
@@ -482,11 +566,13 @@ echo "[smoke] Scheduler registration passed"
 migration_status="$(docker exec "$container_name" php /www/artisan migrate:status --no-ansi)"
 grep -q '2026_08_29_000003_enable_email_verification_and_set_admin_path.*Ran' <<<"$migration_status"
 grep -q '2026_08_30_000004_create_order_payment_checkouts.*Ran' <<<"$migration_status"
+grep -q '2026_08_31_000005_add_coinpayments_checkout_snapshot.*Ran' <<<"$migration_status"
 if grep -q 'Pending' <<<"$migration_status"; then
   echo "One or more migrations remain pending." >&2
   printf '%s\n' "$migration_status" >&2
   exit 1
 fi
+verify_coinpayments_checkout_schema "$container_name"
 echo "[smoke] Required migrations passed with no pending migration"
 
 integrity="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')"
