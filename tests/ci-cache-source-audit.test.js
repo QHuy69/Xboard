@@ -18,6 +18,11 @@ assert(!workflow.includes('path: ~/.composer/cache/files'),
   'workflow still uses the stale Composer cache path that GitHub cannot save');
 assert(workflow.includes('cache-from: type=gha') && workflow.includes('cache-to: type=gha,mode=max'),
   'GitHub Actions BuildKit cache must remain enabled');
+assert(
+  workflow.includes('run_smoke tests/smoke-custom-backend.php') &&
+    workflow.indexOf('run_smoke tests/smoke-custom-backend.php') < workflow.indexOf('- name: Set up QEMU'),
+  'the custom backend smoke must fail fast before the expensive multi-platform image build'
+);
 
 const candidateMetadata = workflow.indexOf('- name: Extract unique smoke-candidate metadata');
 const releaseMetadata = workflow.indexOf('- name: Extract tested release tags');

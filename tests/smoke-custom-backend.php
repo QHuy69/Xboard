@@ -291,14 +291,21 @@ expectSource('plugins-core/Telegram/Plugin.php', [
     "'/nodes'",
     "'/setreportgroup'",
     "'/reseller'",
-    '(float) $coupon->value !== 100.0',
-    "Log::notice('Telegram reseller created customer'",
     'if (!$actor || (!$actor->is_admin && !$actor->is_staff))',
     "listen('order.open.after'",
     "'/backupdb'",
     "Cache::lock('telegram:database-backup'",
     "app(EncryptedDatabaseBackupService::class)->create",
     'Schedule registration does not call boot()',
+]);
+
+expectSource('app/Services/TelegramResellerService.php', [
+    '(float) $coupon->value !== 100.0',
+    "\$this->audit('customer_created'",
+    "Log::notice('Telegram reseller action'",
+    "\$this->claimOperation('create'",
+    "\$this->claimOperation('purchase'",
+    "\$this->claimOperation('reset'",
 ]);
 
 expectSource('app/Services/TelegramService.php', [
