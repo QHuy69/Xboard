@@ -226,7 +226,7 @@ post_deploy_checks() {
   curl --fail --silent --show-error http://127.0.0.1:7001/api/v1/guest/comm/config >/dev/null || return 1
   dashboard_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/dashboard)" || return 1
   admin_html="$(curl --fail --silent --show-error http://127.0.0.1:7001/Huy2006)" || return 1
-  grep -q 'luck-overrides.css?v=25' <<<"$dashboard_html" || {
+  grep -q 'luck-overrides.css?v=26' <<<"$dashboard_html" || {
     echo "The deployed dashboard did not publish Luck CSS v24." >&2
     return 1
   }
@@ -243,7 +243,7 @@ post_deploy_checks() {
     return 1
   }
   for asset_url in \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=25' \
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=26' \
     'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
@@ -255,7 +255,7 @@ post_deploy_checks() {
   done
 
   override_css="$(curl --fail --silent --show-error \
-    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=25')" || return 1
+    'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=26')" || return 1
   grep -Fq '.subscription-dialog-overlay' <<<"$override_css" || {
     echo "The deployed Luck CSS is missing the subscription viewport rule." >&2
     return 1

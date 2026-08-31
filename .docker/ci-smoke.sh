@@ -195,7 +195,7 @@ assert_http_status() {
   fi
 }
 
-theme_asset_url="http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=25"
+theme_asset_url="http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=26"
 assert_http_status 200 "Theme asset without browser metadata" "$theme_asset_url"
 assert_http_status 200 "Same-origin theme asset" \
   --header 'Host: panel.example.test' \
@@ -270,7 +270,7 @@ for luck_dashboard_template in \
   docker exec "$container_name" test -f "$luck_dashboard_template"
   for dashboard_asset_marker in \
     'id="luck-overrides-stylesheet"' \
-    'luck-overrides.css?v=25' \
+    'luck-overrides.css?v=26' \
     'BBbuoBq5-fresh.js?v=63' \
     'i18n-v18.js?v=61' \
     'data-luck-icon="language"'; do
@@ -310,7 +310,7 @@ verify_packaged_luck_asset \
   '/www/public/theme/Luck/assets/luck-overrides.css' \
   '/www/storage/theme/Luck/assets/luck-overrides.css' \
   '/tmp/luck-custom/luck-overrides.css' \
-  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=25"
+  "http://127.0.0.1:${host_port}/theme/Luck/assets/luck-overrides.css?v=26"
 verify_packaged_luck_asset \
   '/www/public/theme/Luck/i18n-v18.js' \
   '/www/storage/theme/Luck/i18n-v18.js' \

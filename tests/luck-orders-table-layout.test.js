@@ -21,6 +21,11 @@ assert.match(
 );
 assert.match(
   css,
+  /\.orders-page\[data-v-95571e5b\]\s*\{[\s\S]*?width:\s*100%\s*!important[\s\S]*?max-width:\s*none\s*!important[\s\S]*?margin-inline:\s*0\s*!important/,
+  'wide order ledgers must expand into all available content space before horizontal scrolling is used'
+);
+assert.match(
+  css,
   /\.orders-table-container\[data-v-95571e5b\]::-(?:webkit|moz)-scrollbar|\.orders-table-container\[data-v-95571e5b\]::-webkit-scrollbar/,
   'the order ledger scrollbar must remain visibly styled'
 );

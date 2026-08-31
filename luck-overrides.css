@@ -229,6 +229,13 @@ button {
   overflow: hidden !important;
 }
 
+.orders-page[data-v-95571e5b] {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
 .orders-page[data-v-95571e5b] .filter-tabs[data-v-95571e5b] {
   flex-wrap: nowrap !important;
   max-width: 100% !important;
