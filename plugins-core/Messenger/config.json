@@ -4,7 +4,7 @@
     "type": "feature",
     "version": "1.0.0",
     "description": "Display a Messenger support button on the customer dashboard using the plugin configuration.",
-    "author": "XBoard Team",
+    "author": "ZaoGuang Service",
     "config": {
         "page_username": {
             "type": "string",

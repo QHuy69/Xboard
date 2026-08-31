@@ -4,7 +4,7 @@
     "type": "feature",
     "version": "1.0.0",
     "description": "Display Crisp Chat on the customer dashboard using the plugin configuration.",
-    "author": "XBoard Team",
+    "author": "ZaoGuang Service",
     "config": {
         "website_id": {
             "type": "string",

@@ -3,7 +3,7 @@
     "code": "telegram",
     "version": "2.1.0",
     "description": "Multilingual Telegram bot with menus, notifications, node reports, and reseller tools.",
-    "author": "XBoard Team",
+    "author": "ZaoGuang Service",
     "require": {
         "xboard": ">=1.0.0"
     },

@@ -35,6 +35,7 @@ function isLocalizable(value) {
 const metadataKeys = new Set();
 for (const { file, value: manifest } of manifests) {
   assert.strictEqual(manifest.type || 'feature', 'feature', `${file} is not a feature plugin`);
+  assert.strictEqual(manifest.author, 'ZaoGuang Service', `${file} has incorrect author branding`);
   for (const value of [manifest.name, manifest.description]) {
     if (isLocalizable(value)) metadataKeys.add(value);
   }
