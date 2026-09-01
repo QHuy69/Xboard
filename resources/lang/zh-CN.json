@@ -415,5 +415,22 @@
     "Batch user generation succeeded": "批量生成用户成功",
     "Email :email already exists": "邮箱 :email 已存在",
     "User processing failed": "用户处理失败",
-    "User deletion failed": "删除用户失败"
+    "User deletion failed": "删除用户失败",
+    "China-wallet provider": "中国钱包服务商",
+    "Not connected yet": "尚未连接",
+    "Choose the provider after your merchant account has been approved.": "商户账户审核通过后再选择服务商。",
+    "Wallets shown to customers": "向客户显示的钱包",
+    "Alipay and WeChat Pay": "支付宝和微信支付",
+    "Alipay only": "仅支付宝",
+    "WeChat Pay only": "仅微信支付",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "在人民币结账页显示支付宝、微信支付或两者。",
+    "Merchant label": "商户名称",
+    "Customer-facing merchant name shown on the checkout page.": "结账页向客户显示的商户名称。",
+    "The selected China-wallet provider is invalid.": "所选中国钱包服务商无效。",
+    "The selected China-wallet option is invalid.": "所选中国钱包选项无效。",
+    "China-wallet merchant label must be text.": "中国钱包商户名称必须是文本。",
+    "China-wallet merchant label must not exceed 80 characters.": "中国钱包商户名称不得超过80个字符。",
+    "Choose an approved China-wallet provider before enabling this payment method.": "启用此付款方式前，请选择已获批准的中国钱包服务商。",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": ":provider 中国钱包适配器尚未接入。在安装服务商集成前请保持此付款方式关闭。",
+    "China Wallet is not connected to a payment provider yet.": "中国钱包尚未连接支付服务商。"
 }

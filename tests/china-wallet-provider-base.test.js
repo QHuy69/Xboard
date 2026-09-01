@@ -10,6 +10,9 @@ const files = {
   webhook: fs.readFileSync('app/Payments/ChinaWallet/ChinaWalletWebhookResult.php', 'utf8'),
   catalog: fs.readFileSync('config/china-wallet-providers.php', 'utf8'),
   docs: fs.readFileSync('docs/china-wallet-qr-checkout.md', 'utf8'),
+  plugin: fs.readFileSync('plugins-core/ChinaWallet/Plugin.php', 'utf8'),
+  pluginConfig: fs.readFileSync('plugins-core/ChinaWallet/config.json', 'utf8'),
+  pluginModel: fs.readFileSync('app/Models/Plugin.php', 'utf8'),
 };
 
 for (const method of ['create(', 'query(', 'verifyWebhook(', 'refund(']) {
@@ -67,4 +70,23 @@ for (const providerField of [
 assert(files.docs.includes('VPN/proxy business category'), 'Go-live checklist must require written business-category approval.');
 assert(files.docs.includes('untouched webhook body'), 'Provider guide must preserve raw-body signature verification.');
 
-console.log('China-wallet provider base defines normalized CNY requests, actions, statuses, signed webhooks and five researched driver profiles.');
+const pluginConfig = JSON.parse(files.pluginConfig);
+assert.strictEqual(pluginConfig.code, 'china_wallet', 'China Wallet must use a stable plugin code.');
+assert.strictEqual(pluginConfig.type, 'payment', 'China Wallet must install as a payment plugin.');
+assert.strictEqual(pluginConfig.auto_enable, true, 'China Wallet gateway should be visible after a deploy.');
+assert.strictEqual(pluginConfig.author, 'ZaoGuang Service', 'China Wallet plugin author is incorrect.');
+for (const marker of [
+  "methods['ChinaWallet']",
+  "'plugin_code' => $this->getPluginCode()",
+  "'china_wallet_provider'",
+  "'china_wallet_wallet_mode'",
+  'validatePaymentConfigurationShape',
+  'validatePaymentConfiguration',
+  'adapter is not connected yet',
+]) {
+  assert(files.plugin.includes(marker), `China Wallet payment plugin is missing ${marker}`);
+}
+assert(files.plugin.includes('usesGlobalPaymentConfiguration(): bool'), 'China Wallet credentials must stay isolated per payment record.');
+assert(files.pluginModel.includes("'china_wallet'"), 'China Wallet core plugin must be protected from deletion.');
+
+console.log('China-wallet provider base and protected payment-method plugin are present and fail closed until a provider adapter is connected.');

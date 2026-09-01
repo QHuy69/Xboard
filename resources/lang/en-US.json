@@ -412,5 +412,22 @@
     "Batch user generation succeeded": "Batch user generation succeeded",
     "Email :email already exists": "Email :email already exists",
     "User processing failed": "User processing failed",
-    "User deletion failed": "User deletion failed"
+    "User deletion failed": "User deletion failed",
+    "China-wallet provider": "China-wallet provider",
+    "Not connected yet": "Not connected yet",
+    "Choose the provider after your merchant account has been approved.": "Choose the provider after your merchant account has been approved.",
+    "Wallets shown to customers": "Wallets shown to customers",
+    "Alipay and WeChat Pay": "Alipay and WeChat Pay",
+    "Alipay only": "Alipay only",
+    "WeChat Pay only": "WeChat Pay only",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "Show Alipay, WeChat Pay, or both on the CNY checkout page.",
+    "Merchant label": "Merchant label",
+    "Customer-facing merchant name shown on the checkout page.": "Customer-facing merchant name shown on the checkout page.",
+    "The selected China-wallet provider is invalid.": "The selected China-wallet provider is invalid.",
+    "The selected China-wallet option is invalid.": "The selected China-wallet option is invalid.",
+    "China-wallet merchant label must be text.": "China-wallet merchant label must be text.",
+    "China-wallet merchant label must not exceed 80 characters.": "China-wallet merchant label must not exceed 80 characters.",
+    "Choose an approved China-wallet provider before enabling this payment method.": "Choose an approved China-wallet provider before enabling this payment method.",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.",
+    "China Wallet is not connected to a payment provider yet.": "China Wallet is not connected to a payment provider yet."
 }

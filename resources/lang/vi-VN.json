@@ -417,5 +417,22 @@
     "Batch user generation succeeded": "Đã tạo hàng loạt người dùng thành công",
     "Email :email already exists": "Email :email đã tồn tại",
     "User processing failed": "Xử lý người dùng thất bại",
-    "User deletion failed": "Xóa người dùng thất bại"
+    "User deletion failed": "Xóa người dùng thất bại",
+    "China-wallet provider": "Nhà cung cấp ví Trung Quốc",
+    "Not connected yet": "Chưa kết nối",
+    "Choose the provider after your merchant account has been approved.": "Chọn nhà cung cấp sau khi tài khoản người bán của bạn được phê duyệt.",
+    "Wallets shown to customers": "Ví hiển thị cho khách hàng",
+    "Alipay and WeChat Pay": "Alipay và WeChat Pay",
+    "Alipay only": "Chỉ Alipay",
+    "WeChat Pay only": "Chỉ WeChat Pay",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "Hiển thị Alipay, WeChat Pay hoặc cả hai trên trang thanh toán CNY.",
+    "Merchant label": "Tên người bán",
+    "Customer-facing merchant name shown on the checkout page.": "Tên người bán hiển thị cho khách hàng trên trang thanh toán.",
+    "The selected China-wallet provider is invalid.": "Nhà cung cấp ví Trung Quốc đã chọn không hợp lệ.",
+    "The selected China-wallet option is invalid.": "Tùy chọn ví Trung Quốc đã chọn không hợp lệ.",
+    "China-wallet merchant label must be text.": "Tên người bán của ví Trung Quốc phải là văn bản.",
+    "China-wallet merchant label must not exceed 80 characters.": "Tên người bán của ví Trung Quốc không được vượt quá 80 ký tự.",
+    "Choose an approved China-wallet provider before enabling this payment method.": "Hãy chọn nhà cung cấp ví Trung Quốc đã được phê duyệt trước khi bật phương thức thanh toán này.",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": "Bộ kết nối ví Trung Quốc :provider chưa được tích hợp. Hãy giữ phương thức thanh toán này ở trạng thái tắt cho đến khi hoàn tất tích hợp nhà cung cấp.",
+    "China Wallet is not connected to a payment provider yet.": "Ví Trung Quốc chưa được kết nối với nhà cung cấp thanh toán."
 }

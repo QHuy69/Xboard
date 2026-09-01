@@ -412,5 +412,22 @@
     "Batch user generation succeeded": "کاربران با موفقیت به‌صورت گروهی ساخته شدند",
     "Email :email already exists": "ایمیل :email از قبل وجود دارد",
     "User processing failed": "پردازش کاربران ناموفق بود",
-    "User deletion failed": "حذف کاربر ناموفق بود"
+    "User deletion failed": "حذف کاربر ناموفق بود",
+    "China-wallet provider": "ارائه‌دهنده کیف پول چین",
+    "Not connected yet": "هنوز متصل نشده",
+    "Choose the provider after your merchant account has been approved.": "پس از تأیید حساب فروشندگی، ارائه‌دهنده را انتخاب کنید.",
+    "Wallets shown to customers": "کیف پول‌های نمایش‌داده‌شده به مشتری",
+    "Alipay and WeChat Pay": "Alipay و WeChat Pay",
+    "Alipay only": "فقط Alipay",
+    "WeChat Pay only": "فقط WeChat Pay",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "Alipay، WeChat Pay یا هر دو را در صفحه پرداخت یوان نمایش دهید.",
+    "Merchant label": "نام فروشنده",
+    "Customer-facing merchant name shown on the checkout page.": "نام فروشنده‌ای که در صفحه پرداخت به مشتری نمایش داده می‌شود.",
+    "The selected China-wallet provider is invalid.": "ارائه‌دهنده انتخاب‌شده کیف پول چین معتبر نیست.",
+    "The selected China-wallet option is invalid.": "گزینه انتخاب‌شده کیف پول چین معتبر نیست.",
+    "China-wallet merchant label must be text.": "نام فروشنده کیف پول چین باید متن باشد.",
+    "China-wallet merchant label must not exceed 80 characters.": "نام فروشنده کیف پول چین نباید بیش از ۸۰ نویسه باشد.",
+    "Choose an approved China-wallet provider before enabling this payment method.": "پیش از فعال‌کردن این روش پرداخت، یک ارائه‌دهنده تأییدشده کیف پول چین انتخاب کنید.",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": "رابط کیف پول چین :provider هنوز متصل نیست. تا نصب اتصال ارائه‌دهنده، این روش پرداخت را غیرفعال نگه دارید.",
+    "China Wallet is not connected to a payment provider yet.": "کیف پول چین هنوز به ارائه‌دهنده پرداخت متصل نشده است."
 }

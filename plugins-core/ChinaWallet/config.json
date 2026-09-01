@@ -1,0 +1,9 @@
+{
+    "name": "China Wallet",
+    "code": "china_wallet",
+    "type": "payment",
+    "version": "1.0.0",
+    "description": "Provider-neutral Alipay and WeChat Pay payment method for CNY QR checkout",
+    "author": "ZaoGuang Service",
+    "auto_enable": true
+}

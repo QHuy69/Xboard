@@ -412,5 +412,22 @@
     "Batch user generation succeeded": "ユーザーを一括作成しました",
     "Email :email already exists": "メールアドレス :email は既に存在します",
     "User processing failed": "ユーザー処理に失敗しました",
-    "User deletion failed": "ユーザーを削除できませんでした"
+    "User deletion failed": "ユーザーを削除できませんでした",
+    "China-wallet provider": "中国向けウォレット事業者",
+    "Not connected yet": "未接続",
+    "Choose the provider after your merchant account has been approved.": "加盟店アカウントの承認後に事業者を選択してください。",
+    "Wallets shown to customers": "顧客に表示するウォレット",
+    "Alipay and WeChat Pay": "AlipayとWeChat Pay",
+    "Alipay only": "Alipayのみ",
+    "WeChat Pay only": "WeChat Payのみ",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "人民元の決済画面にAlipay、WeChat Pay、または両方を表示します。",
+    "Merchant label": "加盟店名",
+    "Customer-facing merchant name shown on the checkout page.": "決済画面で顧客に表示される加盟店名です。",
+    "The selected China-wallet provider is invalid.": "選択した中国向けウォレット事業者は無効です。",
+    "The selected China-wallet option is invalid.": "選択した中国向けウォレット設定は無効です。",
+    "China-wallet merchant label must be text.": "中国向けウォレットの加盟店名は文字列で指定してください。",
+    "China-wallet merchant label must not exceed 80 characters.": "中国向けウォレットの加盟店名は80文字以内にしてください。",
+    "Choose an approved China-wallet provider before enabling this payment method.": "この支払い方法を有効にする前に、承認済みの事業者を選択してください。",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": ":provider の中国向けウォレット連携はまだ接続されていません。事業者連携の導入までこの支払い方法を無効のままにしてください。",
+    "China Wallet is not connected to a payment provider yet.": "中国向けウォレットはまだ決済事業者に接続されていません。"
 }

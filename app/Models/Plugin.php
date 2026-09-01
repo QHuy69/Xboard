@@ -35,6 +35,7 @@ class Plugin extends Model
         'btcpay',         // BTCPay
         'coinbase',       // Coinbase
         'coin_payments',  // CoinPayments
+        'china_wallet',   // Alipay / WeChat Pay provider-neutral checkout
         'mgate',          // MGate
         'sepay',          // SePay
         'telegram',       // Telegram

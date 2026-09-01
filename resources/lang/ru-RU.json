@@ -412,5 +412,22 @@
     "Batch user generation succeeded": "Пользователи успешно созданы",
     "Email :email already exists": "Адрес :email уже существует",
     "User processing failed": "Не удалось обработать пользователей",
-    "User deletion failed": "Не удалось удалить пользователя"
+    "User deletion failed": "Не удалось удалить пользователя",
+    "China-wallet provider": "Провайдер китайских кошельков",
+    "Not connected yet": "Ещё не подключён",
+    "Choose the provider after your merchant account has been approved.": "Выберите провайдера после одобрения торгового аккаунта.",
+    "Wallets shown to customers": "Кошельки для клиентов",
+    "Alipay and WeChat Pay": "Alipay и WeChat Pay",
+    "Alipay only": "Только Alipay",
+    "WeChat Pay only": "Только WeChat Pay",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "Показывать Alipay, WeChat Pay или оба варианта на странице оплаты в CNY.",
+    "Merchant label": "Название продавца",
+    "Customer-facing merchant name shown on the checkout page.": "Название продавца, отображаемое клиенту на странице оплаты.",
+    "The selected China-wallet provider is invalid.": "Выбран неверный провайдер китайских кошельков.",
+    "The selected China-wallet option is invalid.": "Выбран неверный вариант китайского кошелька.",
+    "China-wallet merchant label must be text.": "Название продавца должно быть текстом.",
+    "China-wallet merchant label must not exceed 80 characters.": "Название продавца не должно превышать 80 символов.",
+    "Choose an approved China-wallet provider before enabling this payment method.": "Перед включением способа оплаты выберите одобренного провайдера китайских кошельков.",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": "Адаптер китайского кошелька :provider ещё не подключён. Не включайте этот способ оплаты до установки интеграции провайдера.",
+    "China Wallet is not connected to a payment provider yet.": "Китайский кошелёк ещё не подключён к платёжному провайдеру."
 }

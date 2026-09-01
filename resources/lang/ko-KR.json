@@ -412,5 +412,22 @@
     "Batch user generation succeeded": "사용자를 일괄 생성했습니다",
     "Email :email already exists": "이메일 :email은(는) 이미 존재합니다",
     "User processing failed": "사용자 처리에 실패했습니다",
-    "User deletion failed": "사용자 삭제에 실패했습니다"
+    "User deletion failed": "사용자 삭제에 실패했습니다",
+    "China-wallet provider": "중국 지갑 제공업체",
+    "Not connected yet": "아직 연결되지 않음",
+    "Choose the provider after your merchant account has been approved.": "판매자 계정이 승인된 후 제공업체를 선택하세요.",
+    "Wallets shown to customers": "고객에게 표시할 지갑",
+    "Alipay and WeChat Pay": "Alipay 및 WeChat Pay",
+    "Alipay only": "Alipay만",
+    "WeChat Pay only": "WeChat Pay만",
+    "Show Alipay, WeChat Pay, or both on the CNY checkout page.": "CNY 결제 페이지에 Alipay, WeChat Pay 또는 둘 다 표시합니다.",
+    "Merchant label": "판매자 이름",
+    "Customer-facing merchant name shown on the checkout page.": "결제 페이지에서 고객에게 표시되는 판매자 이름입니다.",
+    "The selected China-wallet provider is invalid.": "선택한 중국 지갑 제공업체가 올바르지 않습니다.",
+    "The selected China-wallet option is invalid.": "선택한 중국 지갑 옵션이 올바르지 않습니다.",
+    "China-wallet merchant label must be text.": "중국 지갑 판매자 이름은 텍스트여야 합니다.",
+    "China-wallet merchant label must not exceed 80 characters.": "중국 지갑 판매자 이름은 80자를 초과할 수 없습니다.",
+    "Choose an approved China-wallet provider before enabling this payment method.": "이 결제 수단을 활성화하기 전에 승인된 중국 지갑 제공업체를 선택하세요.",
+    "The :provider China-wallet adapter is not connected yet. Keep this payment method disabled until the provider integration is installed.": ":provider 중국 지갑 어댑터가 아직 연결되지 않았습니다. 제공업체 연동이 설치될 때까지 이 결제 수단을 비활성화하세요.",
+    "China Wallet is not connected to a payment provider yet.": "중국 지갑이 아직 결제 제공업체에 연결되지 않았습니다."
 }
