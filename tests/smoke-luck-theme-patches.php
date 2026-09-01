@@ -56,7 +56,7 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'q_WC3BFv-v3-fresh-register-v2.js')
 	|| !str_contains($entry, 'ByaxWMaA-v3-fresh-localized.js')
 	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v4.js')
-	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v5.js')
+	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v6.js')
 	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
 	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=3')
 	|| str_contains($entry, 'DM1yaN1X-v3-fresh.js?v=3')
@@ -83,7 +83,7 @@ $genericRoute = 'import("./BBbuoBq5-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-p
 $genericRoute = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($genericRoute);
 $genericRoute = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($genericRoute);
 if (!str_contains($genericRoute, 'BBbuoBq5-v3-fresh-runtime-v3.js')
-    || !str_contains($genericRoute, 'C6e3mGRa-v3-fresh-payment-v5.js')
+    || !str_contains($genericRoute, 'C6e3mGRa-v3-fresh-payment-v6.js')
     || str_contains($genericRoute, 'payment-v3.js')) {
     fwrite(STDERR, "Luck generic route can still revive a cached shared runtime or payment-v3 dialog.\n");
     exit(1);
@@ -94,10 +94,19 @@ foreach ([
     'C6e3mGRa-v3-fresh-payment-v3.js',
     'C6e3mGRa-v3-fresh-payment-v3-payment-v4.js',
 ] as $subscriptionDialogAsset) {
-    if (LuckThemeAssetPatcher::subscriptionDialogAssetName($subscriptionDialogAsset) !== 'C6e3mGRa-v3-fresh-payment-v5.js') {
+    if (LuckThemeAssetPatcher::subscriptionDialogAssetName($subscriptionDialogAsset) !== 'C6e3mGRa-v3-fresh-payment-v6.js') {
         fwrite(STDERR, "Luck subscription-dialog asset normalization failed.\n");
         exit(1);
     }
+}
+
+$stockClashIcon = 'const icon = "https://files.afeicloud.de/20250306201806786.webp";';
+$localClashIcon = LuckThemeAssetPatcher::patchClashIcon($stockClashIcon);
+if (str_contains($localClashIcon, 'files.afeicloud.de')
+    || !str_contains($localClashIcon, '/theme/Luck/assets/luck-clash.svg?v=2')
+    || LuckThemeAssetPatcher::patchClashIcon($localClashIcon) !== $localClashIcon) {
+    fwrite(STDERR, "Luck Clash icon localization is missing or not idempotent.\n");
+    exit(1);
 }
 
 $loadingAnimationSources = [
@@ -321,7 +330,7 @@ if ($entryAsset && is_file($entryAsset)) {
         || !str_contains($productionEntry, 'lsrL0SOU-v3-fresh.js?v=2')
         || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
         || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
-        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v5.js')
+        || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v6.js')
         || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
         || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=3#', $productionEntry)
         || str_contains($productionEntry, 'DM1yaN1X-v3-fresh.js?v=3')) {

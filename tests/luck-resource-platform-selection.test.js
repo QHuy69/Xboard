@@ -17,6 +17,30 @@ const platformScript = dashboard.slice(platformScriptStart, platformScriptEnd)
   .replace('@json($luckDonatePlanIds)', '[]');
 assert.doesNotThrow(() => new vm.Script(platformScript), 'Luck five-platform browser enhancement must remain valid JavaScript');
 
+const scheduleRefreshMatch = platformScript.match(/var scheduleRefresh = (function \(\) \{[\s\S]*?\n      \});/);
+assert(scheduleRefreshMatch, 'the dashboard lifecycle refresh scheduler is missing');
+const refreshCallbacks = [];
+const refreshCounts = { clash: 0, icons: 0, placement: 0, eligibility: 0 };
+const refreshContext = {
+  refreshTimer: 0,
+  window: { setTimeout(callback) { refreshCallbacks.push(callback); return refreshCallbacks.length; } },
+  runRefresh() {
+    refreshCounts.clash += 1;
+    refreshCounts.icons += 1;
+    refreshCounts.placement += 1;
+    refreshCounts.eligibility += 1;
+  }
+};
+const scheduleRefresh = vm.runInNewContext(`(${scheduleRefreshMatch[1]})`, refreshContext);
+scheduleRefresh();
+assert.deepStrictEqual(refreshCounts, { clash: 1, icons: 1, placement: 1, eligibility: 1 }, 'the first Vue mutation must hydrate the dashboard immediately');
+scheduleRefresh();
+assert.deepStrictEqual(refreshCounts, { clash: 1, icons: 1, placement: 1, eligibility: 1 }, 'a mutation burst must be throttled instead of endlessly re-debounced');
+assert.strictEqual(refreshCallbacks.length, 1, 'a mutation burst needs exactly one bounded trailing refresh');
+refreshCallbacks.shift()();
+assert.deepStrictEqual(refreshCounts, { clash: 2, icons: 2, placement: 2, eligibility: 2 }, 'the bounded trailing refresh must catch nodes mounted during hydration');
+assert(!scheduleRefreshMatch[1].includes('clearTimeout'), 'continuous Vue mutations must not starve dashboard hydration');
+
 const downloadAnchor = dashboard.match(/<a id="luck-app-download"[\s\S]*?<\/a>/);
 assert(downloadAnchor, 'Luck dashboard resources CTA is missing');
 assert(!/\btarget="_blank"/.test(downloadAnchor[0]), 'Resources must open in the same tab so browser Back returns to the dashboard');
@@ -192,6 +216,7 @@ assert(
 
 for (const releaseGate of [ciSmoke, deploy]) {
   assert(releaseGate.includes("var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];"), 'release gate is missing the exact five-platform marker');
+  assert(releaseGate.includes('if (refreshTimer) return;'), 'release gate must keep the starvation-safe dashboard scheduler');
   assert(releaseGate.includes("target.searchParams.set('platform', platform);"), 'release gate is missing the Resources query handoff marker');
   assert(releaseGate.includes('data-selected-platform="{{ $selectedPlatform }}"'), 'release gate is missing the filtered Resources view marker');
   assert(releaseGate.includes("'empty_platform' =>"), 'release gate is missing the localized zero-download marker');

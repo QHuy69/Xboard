@@ -78,6 +78,9 @@ for (const marker of [
   assert(patcher.includes(marker), `compiled Luck icon patcher is missing ${marker}`);
 }
 assert(routes.includes('LuckThemeAssetPatcher::patchPortableUnicodeIcons($loadingPatchedContents)'), 'every published Luck JavaScript chunk must receive portable icons');
+assert(patcher.includes('public static function patchClashIcon'), 'compiled Luck chunks need a local Clash icon patch');
+assert(patcher.includes('/theme/Luck/assets/luck-clash.svg?v=2'), 'the compiled Clash icon must use the packaged SVG with a fresh cache key');
+assert(routes.includes('LuckThemeAssetPatcher::patchClashIcon($loadingPatchedContents)'), 'every published Luck JavaScript chunk must reject the dead Clash CDN URL');
 assert(routes.includes('LuckThemeAssetPatcher::versionPortableIconAssetImports($fixedContents)'), 'portable-icon lazy routes need fresh browser URLs');
 
 console.log('Luck user icons have deterministic contrast, inline SVGs, image fallbacks and local node flags.');

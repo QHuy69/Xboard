@@ -390,6 +390,8 @@ for luck_dashboard_template in \
     'BBbuoBq5-fresh.js?v=63' \
     'i18n-v18.js?v=61' \
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
+    'if (refreshTimer) return;' \
+    '/theme/{{$theme}}/assets/luck-clash.svg?v=2' \
     "target.searchParams.set('platform', platform);" \
     "target.hash = 'platform-' + platform;" \
     'data-luck-icon="language"'; do
@@ -513,7 +515,7 @@ case "$shared_runtime_asset" in
 esac
 shared_runtime_js="$(curl --fail --silent --show-error \
   "http://127.0.0.1:${host_port}/theme/Luck/assets/${shared_runtime_asset#./}")"
-grep -aEq '\./C6e3mGRa[^"?]*-payment-v5\.js' <<<"$shared_runtime_js" || {
+grep -aEq '\./C6e3mGRa[^"?]*-payment-v6\.js' <<<"$shared_runtime_js" || {
   echo "Published shared runtime does not select the Vue-owned dialog chunk." >&2
   exit 1
 }
@@ -523,7 +525,7 @@ if grep -aEq '\./C6e3mGRa[^"?]*-payment-v3\.js' <<<"$shared_runtime_js"; then
 fi
 subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$subscription_dialog_asset" in
-  ./C6e3mGRa*-payment-v5.js) ;;
+  ./C6e3mGRa*-payment-v6.js) ;;
   *)
     echo "Published Luck entry has no normalized subscription-dialog module: $subscription_dialog_asset" >&2
     exit 1
@@ -538,12 +540,17 @@ for subscription_dialog_marker in \
   'createVNode(Teleport, { to: "body" }' \
   'window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__' \
   'clipboard-read; clipboard-write; payment' \
-  'const statusUrl = "/payment/status/"'; do
+  'const statusUrl = "/payment/status/"' \
+  '/theme/Luck/assets/luck-clash.svg?v=2'; do
   grep -aFq "$subscription_dialog_marker" <<<"$subscription_dialog_js" || {
     echo "Published Luck subscription dialog is missing Vue Teleport marker: $subscription_dialog_marker" >&2
     exit 1
   }
 done
+if grep -aFq 'files.afeicloud.de' <<<"$subscription_dialog_js"; then
+  echo "Published Luck subscription dialog still depends on the dead Clash icon host." >&2
+  exit 1
+fi
 subscription_dialog_tmp="$(mktemp --suffix=.mjs)"
 printf '%s\n' "$subscription_dialog_js" >"$subscription_dialog_tmp"
 node --check "$subscription_dialog_tmp"

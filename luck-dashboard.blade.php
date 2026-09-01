@@ -157,7 +157,7 @@
       banner.dataset.bound = '1';
       var TARGET_PLAN_IDS = @json($luckDonatePlanIds);
       var ELIGIBILITY_ENDPOINT = '/api/v1/user/getSubscribe';
-      var CLASH_ICON = '/theme/{{$theme}}/assets/luck-clash.svg?v=1';
+      var CLASH_ICON = '/theme/{{$theme}}/assets/luck-clash.svg?v=2';
       var lang = (window.V2BOARD_CONFIG && window.V2BOARD_CONFIG.LANGUAGE) || document.documentElement.lang || 'vi-VN';
       var labels = {
         'vi-VN': 'Ủng hộ', 'en-US': 'Donate', 'zh-CN': '捐赠', 'zh-TW': '捐贈',
@@ -581,14 +581,22 @@
         if (event.key === 'Escape' && !modal.hidden) dismiss();
       });
       var refreshTimer = 0;
+      var runRefresh = function () {
+        syncClashIcons();
+        syncIconVisibility();
+        syncDownloadPlacement();
+        checkEligibility(false);
+      };
       var scheduleRefresh = function () {
-        window.clearTimeout(refreshTimer);
+        if (refreshTimer) return;
+        /* Run once at the leading edge so a continuously mutating Vue tree
+           cannot postpone macOS/Linux and local icon hydration forever. The
+           bounded trailing pass catches nodes appended during that run. */
         refreshTimer = window.setTimeout(function () {
-          syncClashIcons();
-          syncIconVisibility();
-          syncDownloadPlacement();
-          checkEligibility(false);
+          refreshTimer = 0;
+          runRefresh();
         }, 120);
+        runRefresh();
       };
       if (document.body && window.MutationObserver) {
         /* Vue Teleport mounts subscription dialogs beside #app. Observe body
@@ -602,9 +610,7 @@
         if (event.key === 'v2board_token') checkEligibility(true);
       });
       window.setTimeout(function () {
-        syncClashIcons();
-        syncIconVisibility();
-        syncDownloadPlacement();
+        scheduleRefresh();
         checkEligibility(true);
       }, 0);
     }());

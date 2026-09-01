@@ -472,6 +472,8 @@ post_deploy_checks() {
   }
   for dashboard_platform_marker in \
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
+    'if (refreshTimer) return;' \
+    '/theme/Luck/assets/luck-clash.svg?v=2' \
     "target.searchParams.set('platform', platform);" \
     "target.hash = 'platform-' + platform;"; do
     grep -Fq "$dashboard_platform_marker" <<<"$dashboard_html" || {
@@ -564,7 +566,7 @@ post_deploy_checks() {
   esac
   shared_runtime_js="$(curl --fail --silent --show-error \
     "http://127.0.0.1:7001/theme/Luck/assets/${shared_runtime_asset#./}")" || return 1
-  grep -aEq '\./C6e3mGRa[^"?]*-payment-v5\.js' <<<"$shared_runtime_js" || {
+  grep -aEq '\./C6e3mGRa[^"?]*-payment-v6\.js' <<<"$shared_runtime_js" || {
     echo "The deployed shared runtime does not select the Vue-owned dialog chunk." >&2
     return 1
   }
@@ -574,7 +576,7 @@ post_deploy_checks() {
   fi
   subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$subscription_dialog_asset" in
-    ./C6e3mGRa*-payment-v5.js) ;;
+    ./C6e3mGRa*-payment-v6.js) ;;
     *)
       echo "The deployed Luck entry has no normalized subscription-dialog module: $subscription_dialog_asset" >&2
       return 1
@@ -592,12 +594,17 @@ post_deploy_checks() {
     'createVNode(Teleport, { to: "body" }' \
     'window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__' \
     'clipboard-read; clipboard-write; payment' \
-    'const statusUrl = "/payment/status/"'; do
+    'const statusUrl = "/payment/status/"' \
+    '/theme/Luck/assets/luck-clash.svg?v=2'; do
     grep -aFq "$subscription_dialog_marker" <<<"$subscription_dialog_js" || {
       echo "The deployed subscription dialog is missing Vue Teleport marker: $subscription_dialog_marker" >&2
       return 1
     }
   done
+  if grep -aFq 'files.afeicloud.de' <<<"$subscription_dialog_js"; then
+    echo "The deployed subscription dialog still depends on the dead Clash icon host." >&2
+    return 1
+  fi
 
   node_route_asset="$(grep -oE '\./oPGsis9D[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$node_route_asset" in

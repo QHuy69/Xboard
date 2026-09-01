@@ -82,7 +82,7 @@ final class LuckThemeAssetPatcher
     /**
      * Point every subscription-dialog lazy import at one normalized physical
      * chunk. Persistent Luck volumes can contain an older generated payment
-     * suffix, so appending blindly would create payment-v4-payment-v5 chains.
+     * suffix, so appending blindly would create payment-v4-payment-v6 chains.
      */
     public static function rewriteSubscriptionDialogAssetImport(string $contents): string
     {
@@ -97,7 +97,7 @@ final class LuckThemeAssetPatcher
     {
         $name = preg_replace('/(?:-payment(?:-v\d+)?)+\.js$/', '.js', basename($assetName)) ?? basename($assetName);
 
-        return preg_replace('/\.js$/', '-payment-v5.js', $name) ?? $name;
+        return preg_replace('/\.js$/', '-payment-v6.js', $name) ?? $name;
     }
 
     /**
@@ -257,6 +257,21 @@ JS,
         ];
 
         return str_replace(array_keys($replacements), array_values($replacements), $contents);
+    }
+
+    /**
+     * Keep the Clash subscription icon inside the packaged Luck theme. The
+     * stock generated chunk points at a third-party hostname which can vanish
+     * independently of Xboard; patching the VNode source also prevents a
+     * broken-image flash before the dashboard enhancement observer runs.
+     */
+    public static function patchClashIcon(string $contents): string
+    {
+        return str_replace(
+            'https://files.afeicloud.de/20250306201806786.webp',
+            '/theme/Luck/assets/luck-clash.svg?v=2',
+            $contents
+        );
     }
 
     public static function patchTrafficChart(string $contents): string

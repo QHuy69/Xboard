@@ -123,7 +123,7 @@ for (const [name, source] of [
   ['published-image smoke', ciSmoke],
   ['production deploy gate', deploy],
 ]) {
-  assert(source.includes('payment-v5'), `${name} must select the cache-busted CoinPayments-capable dialog chunk`);
+  assert(source.includes('payment-v6'), `${name} must select the cache-busted CoinPayments-capable dialog chunk`);
 }
 for (const [name, source] of [['published-image smoke', ciSmoke], ['production deploy gate', deploy]]) {
   assert(source.includes('window.__LUCK_OPEN_COINPAYMENTS_PAYMENT__'), `${name} must verify the embedded checkout in the published asset`);
