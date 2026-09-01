@@ -171,14 +171,14 @@
         'ru-RU': 'Скачать приложение', 'ar': 'تنزيل التطبيق', 'ar-SA': 'تنزيل التطبيق'
       };
       var platformCopyByLocale = {
-        'vi-VN': { group: 'Chọn hệ điều hành', macos: 'Máy Mac', linux: 'Máy tính Linux' },
-        'en-US': { group: 'Choose an operating system', macos: 'Mac computer', linux: 'Linux computer' },
-        'zh-CN': { group: '选择操作系统', macos: 'Mac 电脑', linux: 'Linux 电脑' },
-        'zh-TW': { group: '選擇作業系統', macos: 'Mac 電腦', linux: 'Linux 電腦' },
-        'ja-JP': { group: 'OS を選択', macos: 'Mac コンピュータ', linux: 'Linux コンピュータ' },
-        'ko-KR': { group: '운영 체제 선택', macos: 'Mac 컴퓨터', linux: 'Linux 컴퓨터' },
-        'fa-IR': { group: 'انتخاب سیستم‌عامل', macos: 'رایانه Mac', linux: 'رایانه Linux' },
-        'ru-RU': { group: 'Выберите операционную систему', macos: 'Компьютер Mac', linux: 'Компьютер Linux' }
+        'vi-VN': { group: 'Chọn hệ điều hành', macos: 'Máy Mac', linux: 'Máy tính Linux', android: 'Thiết bị Android' },
+        'en-US': { group: 'Choose an operating system', macos: 'Mac computer', linux: 'Linux computer', android: 'Android device' },
+        'zh-CN': { group: '选择操作系统', macos: 'Mac 电脑', linux: 'Linux 电脑', android: 'Android 设备' },
+        'zh-TW': { group: '選擇作業系統', macos: 'Mac 電腦', linux: 'Linux 電腦', android: 'Android 裝置' },
+        'ja-JP': { group: 'OS を選択', macos: 'Mac コンピュータ', linux: 'Linux コンピュータ', android: 'Android デバイス' },
+        'ko-KR': { group: '운영 체제 선택', macos: 'Mac 컴퓨터', linux: 'Linux 컴퓨터', android: 'Android 기기' },
+        'fa-IR': { group: 'انتخاب سیستم‌عامل', macos: 'رایانه Mac', linux: 'رایانه Linux', android: 'دستگاه Android' },
+        'ru-RU': { group: 'Выберите операционную систему', macos: 'Компьютер Mac', linux: 'Компьютер Linux', android: 'Устройство Android' }
       };
       var platformLocaleAliases = { vi: 'vi-VN', en: 'en-US', zh: 'zh-CN', ja: 'ja-JP', ko: 'ko-KR', fa: 'fa-IR', ru: 'ru-RU' };
       var platformLocale = platformCopyByLocale[lang] ? lang :
@@ -432,6 +432,7 @@
       var platformDescription = function (platform) {
         if (platform === 'macos') return platformCopy.macos;
         if (platform === 'linux') return platformCopy.linux;
+        if (platform === 'android') return platformCopy.android;
         return '';
       };
       var scopePlatformTree = function (root) {
@@ -494,6 +495,8 @@
         card.dataset.luckPlatform = platform;
         card.setAttribute('role', 'option');
         var description = card.querySelector('.platform-desc');
+        var localizedDescription = platformDescription(platform);
+        if (description && localizedDescription) description.textContent = localizedDescription;
         card.setAttribute('aria-label', platformName(platform) +
           (description && description.textContent ? ': ' + description.textContent.trim() : ''));
         if (card.dataset.luckPlatformBound === '1') return;

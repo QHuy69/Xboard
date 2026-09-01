@@ -69,6 +69,12 @@ for (const locale of ['vi-VN', 'en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-
     `Resources shell copy is missing ${locale}`
   );
 }
+assert(
+  dashboard.includes("'vi-VN': { group: 'Chọn hệ điều hành', macos: 'Máy Mac', linux: 'Máy tính Linux', android: 'Thiết bị Android' }") &&
+    dashboard.includes("if (platform === 'android') return platformCopy.android;") &&
+    dashboard.includes('if (description && localizedDescription) description.textContent = localizedDescription;'),
+  'the existing Android card must receive the localized device description'
+);
 
 assert(
   dashboard.includes("platformCards.setAttribute('role', 'listbox')") &&
@@ -125,6 +131,7 @@ const scheduled = [];
 const bindPlatformCard = vm.runInNewContext(`(${bindPlatformMatch[1]})`, {
   PLATFORM_ORDER: ['windows', 'macos', 'linux', 'android', 'ios'],
   platformName: (platform) => platform,
+  platformDescription: (platform) => platform === 'android' ? 'Thiết bị Android' : '',
   selectDownloadPlatform: (platform, focus) => selections.push({ platform, focus }),
   window: { setTimeout: (listener) => scheduled.push(listener) }
 });
