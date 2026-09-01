@@ -58,13 +58,26 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v4.js')
 	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v6.js')
 	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v4.js')
-	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=4')
+	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=5')
 	|| str_contains($entry, 'DM1yaN1X-v3-fresh.js?v=3')
 	|| LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::versionDashboardRouteAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::versionPortableIconAssetImports($entry) !== $entry) {
     fwrite(STDERR, "Luck asset cache-busting rewrite failed.\n");
+    exit(1);
+}
+
+$stockLogoBranch = "const handleFallbackError = () => {\n      showFallback.value = false;\n    };\n"
+    . 'logoConfig.value.IMAGE_URL ? (openBlock()';
+$patchedLogoBranch = LuckThemeAssetPatcher::patchDashboardLogoFallback($stockLogoBranch);
+if (!str_contains($patchedLogoBranch, 'logoConfig.value.IMAGE_URL && !showFallback.value ? (openBlock()')
+    || !str_contains($patchedLogoBranch, 'logoConfig.value.IMAGE_URL = "";')
+    || !str_contains($patchedLogoBranch, 'logoConfig.value.FALLBACK_IMAGE_URL = "";')
+    || !str_contains($patchedLogoBranch, 'logoConfig.value.SHOW_TEXT_LOGO = true;')
+    || str_contains($patchedLogoBranch, "const handleFallbackError = () => {\n      showFallback.value = false;")
+    || LuckThemeAssetPatcher::patchDashboardLogoFallback($patchedLogoBranch) !== $patchedLogoBranch) {
+    fwrite(STDERR, "Luck broken-logo fallback patch failed or is not idempotent.\n");
     exit(1);
 }
 
@@ -336,7 +349,7 @@ if ($entryAsset && is_file($entryAsset)) {
         || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
         || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v6.js')
         || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v4.js')
-        || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=4#', $productionEntry)
+        || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=5#', $productionEntry)
         || str_contains($productionEntry, 'DM1yaN1X-v3-fresh.js?v=3')) {
         fwrite(STDERR, "Luck production entry did not select cache-busted login and portable-icon chunks.\n");
         exit(1);
@@ -648,7 +661,9 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
     || !str_contains($dashboardTemplate, 'luck-overrides.css?v=28')
-    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=64')
+    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=65')
+    || !str_contains($dashboardTemplate, 'id="luck-runtime-branding"')
+    || !str_contains($dashboardTemplate, "logoConfig.FALLBACK_IMAGE_URL = String(logoConfig.FALLBACK_IMAGE_URL || '').trim() || '/images/favicon.svg';")
     || !str_contains($dashboardTemplate, 'i18n-v18.js?v=61')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);

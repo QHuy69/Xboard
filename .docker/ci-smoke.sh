@@ -387,7 +387,9 @@ for luck_dashboard_template in \
   for dashboard_asset_marker in \
     'id="luck-overrides-stylesheet"' \
     'luck-overrides.css?v=28' \
-    'BBbuoBq5-fresh.js?v=64' \
+    'BBbuoBq5-fresh.js?v=65' \
+    'id="luck-runtime-branding"' \
+    "logoConfig.FALLBACK_IMAGE_URL = String(logoConfig.FALLBACK_IMAGE_URL || '').trim() || '/images/favicon.svg';" \
     'i18n-v18.js?v=61' \
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
     'if (refreshTimer) return;' \
@@ -490,7 +492,7 @@ if docker exec "$container_name" test -f "$luck_entry_public"; then
   # A reusable image can be started with a pre-populated Luck volume. When the
   # complete distribution is available, keep exercising its published lazy
   # graph exactly as the production deployment gate does.
-  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=64")"
+  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=65")"
 if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$luck_entry_js"; then
   echo "Published Luck entry can still select a pre-v6 subscription dialog." >&2
   exit 1
@@ -501,7 +503,7 @@ if grep -aEq 'DM1yaN1X[^"?]*\.js\?v=3' <<<"$luck_entry_js"; then
 fi
 dashboard_route_asset="$(grep -oE '\./CO5Ntz5l[^"?]+\.js\?v=[0-9]+' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$dashboard_route_asset" in
-  ./CO5Ntz5l*.js?v=4) ;;
+  ./CO5Ntz5l*.js?v=5) ;;
   *)
     echo "Published Luck entry has no cache-busted dashboard route: $dashboard_route_asset" >&2
     exit 1
@@ -509,6 +511,19 @@ case "$dashboard_route_asset" in
 esac
 dashboard_route_js="$(curl --fail --silent --show-error \
   "http://127.0.0.1:${host_port}/theme/Luck/assets/${dashboard_route_asset#./}")"
+grep -aFq 'logoConfig.value.IMAGE_URL && !showFallback.value ? (openBlock()' <<<"$dashboard_route_js" || {
+  echo "Published dashboard route does not activate the logo fallback after an image error." >&2
+  exit 1
+}
+for logo_terminal_fallback_marker in \
+  'logoConfig.value.IMAGE_URL = "";' \
+  'logoConfig.value.FALLBACK_IMAGE_URL = "";' \
+  'logoConfig.value.SHOW_TEXT_LOGO = true;'; do
+  grep -aFq "$logo_terminal_fallback_marker" <<<"$dashboard_route_js" || {
+    echo "Published dashboard route does not clear failed logo images before rendering the wordmark: $logo_terminal_fallback_marker" >&2
+    exit 1
+  }
+done
 if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$dashboard_route_js"; then
   echo "Published dashboard route can still select a pre-v6 subscription dialog." >&2
   exit 1

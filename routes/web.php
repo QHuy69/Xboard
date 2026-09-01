@@ -159,6 +159,7 @@ $renderTheme = function (Request $request) {
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchLoadingAnimations($javascriptContents);
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchPortableUnicodeIcons($loadingPatchedContents);
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchClashIcon($loadingPatchedContents);
+                                $loadingPatchedContents = LuckThemeAssetPatcher::patchDashboardLogoFallback($loadingPatchedContents);
                                 // Every lazy chunk must select the same shared
                                 // runtime. An unchanged nested import can revive
                                 // a browser-cached pre-v6 dialog after the

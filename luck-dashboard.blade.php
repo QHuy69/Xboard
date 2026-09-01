@@ -1,5 +1,10 @@
 {{-- ZaoGuang VPN custom Luck integration layer. Copyright (c) 2026 ZaoGuang VPN. --}}
 @php
+  $luckBrandTitle = trim((string) ($title ?? ''));
+  if ($luckBrandTitle === '') {
+    $luckBrandTitle = 'ZaoGuang Service';
+  }
+  $luckBrandLogoUrl = trim((string) ($logo ?? ''));
   $luckDonatePlanIds = collect(preg_split('/[,\s]+/', (string) env('LUCK_DONATE_PLAN_IDS', '1'), -1, PREG_SPLIT_NO_EMPTY))
     ->map(fn ($id) => (int) $id)
     ->filter(fn ($id) => $id > 0)
@@ -52,7 +57,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=64"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=65"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -111,6 +116,31 @@
   <script>window.LUCK_SERVER_LANGUAGES = @json(request()->getLanguages()); window.LUCK_DEFAULT_LANGUAGE = "vi-VN";</script>
   <script src="/theme/{{$theme}}/clients.js"></script>
   <script src="/theme/{{$theme}}/config.js"></script>
+  <script id="luck-runtime-branding">
+    (function (root, serverBrand) {
+      'use strict';
+      var config = root.V2BOARD_CONFIG = root.V2BOARD_CONFIG || {};
+      var logoConfig = config.LOGO = config.LOGO || {};
+      var title = String(serverBrand.title || '').trim() || 'ZaoGuang Service';
+      var adminLogo = String(serverBrand.logo || '').trim();
+      var themeLogo = String(logoConfig.IMAGE_URL || '').trim();
+      var imageUrl = adminLogo || themeLogo;
+
+      /* Luck normally reads only its static config.js and ignores the logo
+         already supplied by Xboard. Bridge that contract before Vue mounts.
+         A blank admin/theme logo must still produce a real wordmark, while a
+         failed custom image can fall back to the packaged ZaoGuang icon. */
+      config.APP_TITLE = String(config.APP_TITLE || '').trim() || title;
+      logoConfig.IMAGE_URL = imageUrl;
+      logoConfig.FALLBACK_IMAGE_URL = String(logoConfig.FALLBACK_IMAGE_URL || '').trim() || '/images/favicon.svg';
+      logoConfig.ALT_TEXT = String(logoConfig.ALT_TEXT || '').trim() || title;
+      logoConfig.TEXT_LOGO = String(logoConfig.TEXT_LOGO || '').trim() || title;
+      logoConfig.SHOW_TEXT_LOGO = Boolean(logoConfig.SHOW_TEXT_LOGO || !imageUrl);
+    }(window, {
+      title: @json($luckBrandTitle),
+      logo: @json($luckBrandLogoUrl)
+    }));
+  </script>
   <script src="/theme/{{$theme}}/i18n-v18.js?v=61"></script>
   <script>
     (function () {

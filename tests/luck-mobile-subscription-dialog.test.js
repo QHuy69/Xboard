@@ -42,7 +42,7 @@ assert(routes.includes('LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($
 assert(routes.includes('LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($fixedContents)'), 'the main entry must select the normalized dialog chunk');
 assert(routes.includes('LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)'), 'the physical dialog chunk must use the normalized v6 name');
 
-assert(template.includes('BBbuoBq5-fresh.js?v=64'), 'the Teleport entry graph needs a fresh browser/CDN URL');
+assert(template.includes('BBbuoBq5-fresh.js?v=65'), 'the Teleport entry graph needs a fresh browser/CDN URL');
 assert(!template.includes('syncSubscriptionDialogPortal'), 'the dashboard must not manually move Vue-owned overlays');
 assert(!template.includes('document.body.appendChild(overlay)'), 'raw DOM portalling can orphan the dialog on responsive remount');
 assert(template.includes('new MutationObserver(scheduleRefresh).observe(document.body, { childList: true, subtree: true })'), 'teleported dialogs must still receive icon and fallback enhancements');

@@ -75,8 +75,32 @@ final class LuckThemeAssetPatcher
         $pattern = '#(?<prefix>\./|assets/)(?<name>CO5Ntz5l[^"\'\?]*\.js)(?:\?v=\d+)?#';
 
         return preg_replace_callback($pattern, static function (array $match): string {
-            return $match['prefix'] . $match['name'] . '?v=4';
+            return $match['prefix'] . $match['name'] . '?v=5';
         }, $contents) ?? $contents;
+    }
+
+    /**
+     * Let Luck leave a failed primary logo and render its configured fallback.
+     *
+     * The generated conditional used IMAGE_URL as its first branch even after
+     * handleImageError() set showFallback=true, so the broken image remained
+     * selected forever and the fallback branch was unreachable.
+     */
+    public static function patchDashboardLogoFallback(string $contents): string
+    {
+        $contents = str_replace(
+            'logoConfig.value.IMAGE_URL ? (openBlock()',
+            'logoConfig.value.IMAGE_URL && !showFallback.value ? (openBlock()',
+            $contents
+        );
+
+        // If even the secondary image fails, stop retrying both broken URLs
+        // and render the text wordmark as the final, always-visible fallback.
+        return str_replace(
+            "const handleFallbackError = () => {\n      showFallback.value = false;\n    };",
+            "const handleFallbackError = () => {\n      logoConfig.value.IMAGE_URL = \"\";\n      logoConfig.value.FALLBACK_IMAGE_URL = \"\";\n      logoConfig.value.SHOW_TEXT_LOGO = true;\n      showFallback.value = false;\n    };",
+            $contents
+        );
     }
 
     /**

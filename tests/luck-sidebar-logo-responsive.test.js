@@ -1,5 +1,6 @@
 const assert = require('assert');
 const fs = require('fs');
+const vm = require('vm');
 
 const css = fs.readFileSync('luck-overrides.css', 'utf8');
 const dashboard = fs.readFileSync('luck-dashboard.blade.php', 'utf8');
@@ -58,7 +59,51 @@ assert(
   dashboard.includes('luck-overrides.css?v=28'),
   'the dashboard must bust the cached pre-logo-fix stylesheet'
 );
+assert(
+  dashboard.includes('BBbuoBq5-fresh.js?v=65'),
+  'the dashboard route graph must be reloaded after the runtime logo fix'
+);
 assert(!dashboard.includes('logoConfig.MAX_WIDTH'), 'the dashboard must not read a logo dimension that the backend never exposes');
+
+const bridgeMatch = dashboard.match(/<script id="luck-runtime-branding">([\s\S]*?)<\/script>/);
+assert(bridgeMatch, 'the dashboard must bridge the Xboard logo contract into Luck before Vue mounts');
+
+function runBrandBridge(title, logo, initialConfig) {
+  const source = bridgeMatch[1]
+    .replace('@json($luckBrandTitle)', JSON.stringify(title))
+    .replace('@json($luckBrandLogoUrl)', JSON.stringify(logo));
+  const sandbox = { window: { V2BOARD_CONFIG: initialConfig } };
+  vm.runInNewContext(source, sandbox);
+  return sandbox.window.V2BOARD_CONFIG;
+}
+
+const blankBrand = runBrandBridge('ZaoGuang Service', '', {
+  APP_TITLE: '',
+  LOGO: {
+    IMAGE_URL: '',
+    FALLBACK_IMAGE_URL: '',
+    ALT_TEXT: 'Logo',
+    SHOW_TEXT_LOGO: false,
+    TEXT_LOGO: '',
+  },
+});
+assert.strictEqual(blankBrand.APP_TITLE, 'ZaoGuang Service');
+assert.strictEqual(blankBrand.LOGO.IMAGE_URL, '');
+assert.strictEqual(blankBrand.LOGO.FALLBACK_IMAGE_URL, '/images/favicon.svg');
+assert.strictEqual(blankBrand.LOGO.TEXT_LOGO, 'ZaoGuang Service');
+assert.strictEqual(blankBrand.LOGO.SHOW_TEXT_LOGO, true, 'a null production logo must render the app-title wordmark');
+
+const themeBrand = runBrandBridge('ZaoGuang Service', '', {
+  APP_TITLE: '',
+  LOGO: { IMAGE_URL: 'https://theme.example/logo.svg', SHOW_TEXT_LOGO: false },
+});
+assert.strictEqual(themeBrand.LOGO.IMAGE_URL, 'https://theme.example/logo.svg');
+
+const adminBrand = runBrandBridge('ZaoGuang Service', 'https://admin.example/logo.svg', {
+  APP_TITLE: '',
+  LOGO: { IMAGE_URL: 'https://theme.example/logo.svg', SHOW_TEXT_LOGO: false },
+});
+assert.strictEqual(adminBrand.LOGO.IMAGE_URL, 'https://admin.example/logo.svg', 'the Admin site logo must override static theme config');
 
 // Model the accepted desktop rail and the most constrained collapsed rail.
 // The title can occupy two lines in 56px; image logos never exceed the 200px
