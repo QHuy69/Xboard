@@ -442,6 +442,41 @@ Route::domain($resourcesHost)->group(function () {
 
 Route::get('/', $renderTheme);
 
+// Frontend-only preview for the future CNY QR checkout. It is deliberately
+// absent from production route caches until a real provider and signed order
+// flow are connected. The preview never creates an order or a payable QR.
+if (app()->environment(['local', 'testing'])) {
+    Route::get('/_preview/payment/china-wallets', function (Request $request) {
+        $supportedLocales = ['vi-VN', 'en-US', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-RU'];
+        $requestedLocale = str_replace('_', '-', trim((string) $request->input('lang', 'zh-CN')));
+        $locale = collect($supportedLocales)->first(
+            static fn(string $supportedLocale): bool => strtolower($supportedLocale) === strtolower($requestedLocale)
+        ) ?? 'zh-CN';
+        $wallet = strtolower(trim((string) $request->input('wallet', 'wechatpay')));
+        if (!in_array($wallet, ['wechatpay', 'alipay'], true)) {
+            $wallet = 'wechatpay';
+        }
+        $amount = filter_var($request->input('amount', '88.00'), FILTER_VALIDATE_FLOAT);
+        if ($amount === false || $amount <= 0 || $amount > 999999) {
+            $amount = 88.00;
+        }
+
+        return response()
+            ->view('payment.china-wallet-checkout', [
+                'locale' => $locale,
+                'previewMode' => true,
+                'selectedWallet' => $wallet,
+                'amountCny' => number_format((float) $amount, 2, '.', ''),
+                'tradeNo' => 'CN-DEMO-' . now()->format('Ymd'),
+                'returnUrl' => '/orders',
+                'createEndpoint' => '',
+                'expiresAt' => 0,
+                'csrfToken' => '',
+            ])
+            ->header('Cache-Control', 'no-store, private, max-age=0');
+    })->name('preview.payment.china-wallets');
+}
+
 // Dedicated VietQR payment page. The checkout endpoint returns this URL for
 // SePay orders so customers can pay on the banking subdomain.
 Route::get('/pay/{tradeNo}', function (Request $request, string $tradeNo) {

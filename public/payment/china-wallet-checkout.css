@@ -1,0 +1,610 @@
+:root {
+  color-scheme: light;
+  font-family: "Be Vietnam Pro", Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(22, 163, 74, .13), transparent 30rem),
+    radial-gradient(circle at 88% 92%, rgba(2, 119, 255, .12), transparent 34rem),
+    #f4f8fb;
+  color: #172033;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.cn-pay-shell {
+  --wallet-accent: #07c160;
+  --wallet-soft: #eafaf0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+}
+
+.cn-pay-shell[data-wallet="alipay"] {
+  --wallet-accent: #1677ff;
+  --wallet-soft: #eaf3ff;
+}
+
+.cn-pay-card {
+  width: min(1080px, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(202, 215, 229, .82);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 28px 88px rgba(28, 53, 82, .16);
+}
+
+.cn-pay-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 26px;
+  border-bottom: 1px solid #e9eef4;
+}
+
+.cn-pay-brand,
+.cn-pay-security {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.cn-pay-brand {
+  gap: 11px;
+  font-weight: 780;
+  letter-spacing: -.02em;
+}
+
+.cn-pay-brand-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #49bfa7, #2f9ce0);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 8px 22px rgba(47, 156, 224, .23);
+}
+
+.cn-pay-brand-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cn-pay-security {
+  gap: 8px;
+  color: #5d6b7f;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.cn-pay-security::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22b573;
+  box-shadow: 0 0 0 5px rgba(34, 181, 115, .12);
+}
+
+.cn-pay-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, .88fr) minmax(410px, 1.12fr);
+  min-height: 660px;
+}
+
+.cn-pay-details,
+.cn-pay-qr-panel {
+  min-width: 0;
+  padding: clamp(26px, 4vw, 48px);
+}
+
+.cn-pay-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.cn-pay-eyebrow {
+  margin: 0 0 9px;
+  color: #708096;
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.cn-pay-title {
+  margin: 0;
+  font-size: clamp(26px, 3.2vw, 40px);
+  line-height: 1.16;
+  letter-spacing: -.035em;
+}
+
+.cn-pay-subtitle {
+  margin: 13px 0 28px;
+  color: #637087;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.cn-pay-order {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #e7edf3;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.cn-pay-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.cn-pay-label {
+  color: #758297;
+  font-size: 13px;
+}
+
+.cn-pay-value {
+  min-width: 0;
+  color: #263248;
+  font-weight: 720;
+  overflow-wrap: anywhere;
+  text-align: end;
+  unicode-bidi: plaintext;
+}
+
+.cn-pay-amount {
+  color: #172033;
+  font-size: clamp(24px, 3vw, 32px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em;
+}
+
+.cn-pay-section-title {
+  margin: 28px 0 13px;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.cn-pay-wallets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cn-pay-wallet {
+  min-width: 0;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #dfe7ef;
+  border-radius: 16px;
+  background: #fff;
+  color: #263248;
+  cursor: pointer;
+  text-align: start;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+}
+
+.cn-pay-wallet:hover {
+  border-color: #b8c7d8;
+  transform: translateY(-1px);
+}
+
+.cn-pay-wallet[aria-pressed="true"] {
+  border-color: var(--wallet-accent);
+  background: var(--wallet-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wallet-accent) 13%, transparent);
+}
+
+.cn-pay-wallet-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.cn-pay-wallet[data-wallet="wechatpay"] .cn-pay-wallet-mark {
+  background: #07c160;
+}
+
+.cn-pay-wallet[data-wallet="alipay"] .cn-pay-wallet-mark {
+  background: #1677ff;
+}
+
+.cn-pay-wallet-copy {
+  min-width: 0;
+}
+
+.cn-pay-wallet-name,
+.cn-pay-wallet-note {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cn-pay-wallet-name {
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.cn-pay-wallet-note {
+  margin-top: 4px;
+  color: #778398;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.cn-pay-preview-note {
+  margin-top: auto;
+  padding-top: 28px;
+  color: #7a8799;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.cn-pay-qr-panel {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border-left: 1px solid #e7edf3;
+  background:
+    radial-gradient(circle at 50% 35%, var(--wallet-soft), transparent 18rem),
+    linear-gradient(155deg, #fbfdff, #f3f7fb);
+  text-align: center;
+}
+
+.cn-pay-wallet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 18px;
+}
+
+.cn-pay-wallet-heading-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--wallet-accent);
+  color: #fff;
+  font-weight: 800;
+}
+
+.cn-pay-wallet-heading-name {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cn-pay-qr-frame {
+  position: relative;
+  width: min(326px, 78vw);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border: 1px solid #dfe8f1;
+  border-radius: 26px;
+  background: #fff;
+  box-shadow: 0 20px 48px rgba(28, 53, 82, .12);
+}
+
+.cn-pay-qr-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.cn-pay-qr-image[hidden],
+.cn-pay-qr-demo[hidden] {
+  display: none;
+}
+
+.cn-pay-qr-demo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border: 12px solid #172033;
+  background:
+    repeating-conic-gradient(#172033 0 25%, #fff 0 50%) 50% / 22px 22px;
+}
+
+.cn-pay-qr-demo::before,
+.cn-pay-qr-demo::after {
+  content: "";
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border: 13px solid #172033;
+  background: #fff;
+  box-shadow: inset 0 0 0 9px #fff, inset 0 0 0 21px #172033;
+}
+
+.cn-pay-qr-demo::before {
+  top: 12px;
+  left: 12px;
+}
+
+.cn-pay-qr-demo::after {
+  top: 12px;
+  right: 12px;
+}
+
+.cn-pay-demo-badge {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .96);
+  color: #172033;
+  font-size: 12px;
+  font-weight: 820;
+  letter-spacing: .08em;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, .2);
+  white-space: nowrap;
+}
+
+.cn-pay-instruction {
+  max-width: 430px;
+  margin: 20px 0 0;
+  color: #536177;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.cn-pay-state {
+  min-height: 22px;
+  margin-top: 12px;
+  color: #8a6414;
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.cn-pay-countdown {
+  margin-top: 14px;
+  color: #69778b;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cn-pay-actions {
+  width: min(430px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.cn-pay-button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 730;
+}
+
+.cn-pay-button-secondary {
+  background: #eaf0f5;
+  color: #45546a;
+}
+
+.cn-pay-button-primary {
+  background: var(--wallet-accent);
+  color: #fff;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--wallet-accent) 24%, transparent);
+}
+
+.cn-pay-button:disabled {
+  cursor: not-allowed;
+  opacity: .72;
+}
+
+.cn-pay-button:focus-visible,
+.cn-pay-wallet:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--wallet-accent) 32%, transparent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 820px) {
+  .cn-pay-shell {
+    display: block;
+    padding: 0;
+  }
+
+  .cn-pay-card {
+    min-height: 100vh;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .cn-pay-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cn-pay-details,
+  .cn-pay-qr-panel {
+    padding: 26px clamp(18px, 5vw, 34px);
+  }
+
+  .cn-pay-qr-panel {
+    border-top: 1px solid #e7edf3;
+    border-left: 0;
+  }
+
+  .cn-pay-preview-note {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .cn-pay-topbar {
+    padding: max(13px, env(safe-area-inset-top)) 16px 13px;
+  }
+
+  .cn-pay-security span {
+    display: none;
+  }
+
+  .cn-pay-details {
+    padding-top: 24px;
+    padding-bottom: 22px;
+  }
+
+  .cn-pay-subtitle {
+    margin-bottom: 22px;
+  }
+
+  .cn-pay-row {
+    gap: 12px;
+  }
+
+  .cn-pay-wallet {
+    min-height: 76px;
+    gap: 9px;
+    padding: 11px;
+  }
+
+  .cn-pay-wallet-mark {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 12px;
+  }
+
+  .cn-pay-wallet-name {
+    font-size: 13px;
+  }
+
+  .cn-pay-wallet-note {
+    font-size: 10px;
+  }
+
+  .cn-pay-qr-panel {
+    padding-top: 30px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+
+  .cn-pay-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .cn-pay-button-primary {
+    grid-row: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .cn-pay-wallets {
+    gap: 8px;
+  }
+
+  .cn-pay-wallet {
+    align-items: flex-start;
+  }
+
+  .cn-pay-wallet-note {
+    white-space: normal;
+  }
+}
+
+@media (max-height: 620px) and (orientation: landscape) and (min-width: 821px) {
+  .cn-pay-shell {
+    place-items: start center;
+  }
+
+  .cn-pay-grid {
+    min-height: 0;
+  }
+
+  .cn-pay-details,
+  .cn-pay-qr-panel {
+    padding-block: 24px;
+  }
+
+  .cn-pay-title {
+    font-size: 28px;
+  }
+
+  .cn-pay-subtitle {
+    margin-bottom: 16px;
+  }
+
+  .cn-pay-section-title {
+    margin-top: 18px;
+  }
+
+  .cn-pay-preview-note {
+    padding-top: 14px;
+  }
+
+  .cn-pay-qr-frame {
+    width: min(240px, 42vh);
+  }
+
+  .cn-pay-instruction {
+    margin-top: 10px;
+  }
+
+  .cn-pay-actions {
+    margin-top: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
