@@ -30,6 +30,10 @@ assert.match(imageRule, /max-height:\s*var\(--luck-logo-max-height,\s*82px\)\s*!
 assert.match(imageRule, /object-fit:\s*contain\s*!important/, 'logo must never use a cropping object-fit mode');
 assert.match(imageRule, /aspect-ratio:\s*auto\s*!important/, 'logo must preserve its source aspect ratio');
 
+const expandedTextRule = ruleBody('.sidebar:not(.collapsed) .logo-section .text-logo-content');
+assert.match(expandedTextRule, /color:\s*#f8fafc\s*!important/, 'expanded text logo must contrast with the dark sidebar header');
+assert.match(expandedTextRule, /text-shadow:\s*0 1px 2px rgba\(0,\s*0,\s*0,\s*\.35\)\s*!important/, 'text logo needs a stable edge on the translucent header');
+
 const collapsedSidebar = ruleBody('.sidebar.collapsed');
 for (const marker of ['flex: 0 0 80px', 'width: 80px', 'min-width: 80px', 'max-width: 80px']) {
   assert(collapsedSidebar.includes(marker), `collapsed sidebar is missing ${marker}`);
@@ -56,7 +60,7 @@ assert(
 );
 
 assert(
-  dashboard.includes('luck-overrides.css?v=28'),
+  dashboard.includes('luck-overrides.css?v=29'),
   'the dashboard must bust the cached pre-logo-fix stylesheet'
 );
 assert(

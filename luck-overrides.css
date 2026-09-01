@@ -659,6 +659,15 @@ button {
   text-align: center !important;
 }
 
+/* The expanded brand sits on the sidebar's dark translucent header. Luck's
+   stock text-logo color is nearly black, so a server-title fallback can be
+   present in the DOM yet look missing. Keep the wordmark readable without
+   changing the collapsed badge or image-logo colors. */
+.sidebar:not(.collapsed) .logo-section .text-logo-content {
+  color: #f8fafc !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .35) !important;
+}
+
 @media (min-width: 769px) {
   /* Fix the rail itself as well as its declared width. flex min-content sizing
      otherwise allows a long translated/app title to defeat the 80px state. */
