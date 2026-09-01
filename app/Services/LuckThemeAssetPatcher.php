@@ -64,7 +64,7 @@ final class LuckThemeAssetPatcher
     {
         $name = preg_replace('/(?:-runtime-v\d+)+\.js$/', '.js', basename($assetName)) ?? basename($assetName);
 
-        return preg_replace('/\.js$/', '-runtime-v3.js', $name) ?? $name;
+        return preg_replace('/\.js$/', '-runtime-v4.js', $name) ?? $name;
     }
 
     /** Cache-bust only the dashboard route that imports the shared runtime.
@@ -75,7 +75,7 @@ final class LuckThemeAssetPatcher
         $pattern = '#(?<prefix>\./|assets/)(?<name>CO5Ntz5l[^"\'\?]*\.js)(?:\?v=\d+)?#';
 
         return preg_replace_callback($pattern, static function (array $match): string {
-            return $match['prefix'] . $match['name'] . '?v=3';
+            return $match['prefix'] . $match['name'] . '?v=4';
         }, $contents) ?? $contents;
     }
 

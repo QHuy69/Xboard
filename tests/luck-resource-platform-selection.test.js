@@ -40,6 +40,8 @@ assert.strictEqual(refreshCallbacks.length, 1, 'a mutation burst needs exactly o
 refreshCallbacks.shift()();
 assert.deepStrictEqual(refreshCounts, { clash: 2, icons: 2, placement: 2, eligibility: 2 }, 'the bounded trailing refresh must catch nodes mounted during hydration');
 assert(!scheduleRefreshMatch[1].includes('clearTimeout'), 'continuous Vue mutations must not starve dashboard hydration');
+assert(platformScript.includes('window.setTimeout(scheduleRefresh, 0);'), 'initial hydration must reuse the single lifecycle scheduler');
+assert(!platformScript.includes('scheduleRefresh();\n        checkEligibility(true);'), 'initial hydration must not send duplicate subscription requests');
 
 const downloadAnchor = dashboard.match(/<a id="luck-app-download"[\s\S]*?<\/a>/);
 assert(downloadAnchor, 'Luck dashboard resources CTA is missing');

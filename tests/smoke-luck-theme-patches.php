@@ -57,8 +57,8 @@ if (!str_contains($entry, 'lsrL0SOU-v3-fresh.js?v=2')
 	|| !str_contains($entry, 'ByaxWMaA-v3-fresh-localized.js')
 	|| !str_contains($entry, 'C0KnXkt1-v3-fresh-payment-v4.js')
 	|| !str_contains($entry, 'C6e3mGRa-v3-fresh-payment-v6.js')
-	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
-	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=3')
+	|| !str_contains($entry, 'BBbuoBq5-v3-fresh-runtime-v4.js')
+	|| !str_contains($entry, 'CO5Ntz5l-v3-fresh.js?v=4')
 	|| str_contains($entry, 'DM1yaN1X-v3-fresh.js?v=3')
 	|| LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($entry) !== $entry
 	|| LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($entry) !== $entry
@@ -72,8 +72,10 @@ foreach ([
     'BBbuoBq5-v3-fresh.js',
     'BBbuoBq5-v3-fresh-runtime-v2.js',
     'BBbuoBq5-v3-fresh-runtime-v2-runtime-v3.js',
+    'BBbuoBq5-v3-fresh-runtime-v3.js',
+    'BBbuoBq5-v3-fresh-runtime-v4.js',
 ] as $sharedRuntimeAsset) {
-    if (LuckThemeAssetPatcher::sharedRuntimeAssetName($sharedRuntimeAsset) !== 'BBbuoBq5-v3-fresh-runtime-v3.js') {
+    if (LuckThemeAssetPatcher::sharedRuntimeAssetName($sharedRuntimeAsset) !== 'BBbuoBq5-v3-fresh-runtime-v4.js') {
         fwrite(STDERR, "Luck shared-runtime asset normalization failed.\n");
         exit(1);
     }
@@ -82,10 +84,10 @@ foreach ([
 $genericRoute = 'import("./BBbuoBq5-v3-fresh.js"); import("./C6e3mGRa-v3-fresh-payment-v3.js");';
 $genericRoute = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($genericRoute);
 $genericRoute = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($genericRoute);
-if (!str_contains($genericRoute, 'BBbuoBq5-v3-fresh-runtime-v3.js')
+if (!str_contains($genericRoute, 'BBbuoBq5-v3-fresh-runtime-v4.js')
     || !str_contains($genericRoute, 'C6e3mGRa-v3-fresh-payment-v6.js')
-    || str_contains($genericRoute, 'payment-v3.js')) {
-    fwrite(STDERR, "Luck generic route can still revive a cached shared runtime or payment-v3 dialog.\n");
+    || preg_match('/payment-v[1-5]\.js/', $genericRoute)) {
+    fwrite(STDERR, "Luck generic route can still revive a cached shared runtime or pre-v6 dialog.\n");
     exit(1);
 }
 
@@ -93,6 +95,8 @@ foreach ([
     'C6e3mGRa-v3-fresh.js',
     'C6e3mGRa-v3-fresh-payment-v3.js',
     'C6e3mGRa-v3-fresh-payment-v3-payment-v4.js',
+    'C6e3mGRa-v3-fresh-payment-v5.js',
+    'C6e3mGRa-v3-fresh-payment-v6.js',
 ] as $subscriptionDialogAsset) {
     if (LuckThemeAssetPatcher::subscriptionDialogAssetName($subscriptionDialogAsset) !== 'C6e3mGRa-v3-fresh-payment-v6.js') {
         fwrite(STDERR, "Luck subscription-dialog asset normalization failed.\n");
@@ -331,13 +335,13 @@ if ($entryAsset && is_file($entryAsset)) {
         || !str_contains($productionEntry, 'BR9H_Zte-v3-fresh-localized.js?v=2')
         || !str_contains($productionEntry, 'DSCv3-VU-v3-fresh-managed.js?v=2')
         || !str_contains($productionEntry, 'C6e3mGRa-v3-fresh-payment-v6.js')
-        || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v3.js')
-        || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=3#', $productionEntry)
+        || !str_contains($productionEntry, 'BBbuoBq5-v3-fresh-runtime-v4.js')
+        || !preg_match('#\./CO5Ntz5l[^"\']+\.js\?v=4#', $productionEntry)
         || str_contains($productionEntry, 'DM1yaN1X-v3-fresh.js?v=3')) {
         fwrite(STDERR, "Luck production entry did not select cache-busted login and portable-icon chunks.\n");
         exit(1);
     }
-    file_put_contents(sys_get_temp_dir() . '/luck-entry-runtime-v3-check.js', $productionEntry);
+    file_put_contents(sys_get_temp_dir() . '/luck-entry-runtime-v4-check.js', $productionEntry);
 }
 
 $login = <<<'JS'
@@ -373,7 +377,7 @@ if (!str_contains($login, 'error.response.status !== 422')
     || !str_contains($login, 'router.currentRoute.value.path !== "/dashboard"')
     || !str_contains($login, 'router.currentRoute.value.path !== "/register"')
     || str_contains($login, 'router.push("/dashboard")')
-    || !str_contains($login, 'BBbuoBq5-v3-fresh-runtime-v3.js')) {
+    || !str_contains($login, 'BBbuoBq5-v3-fresh-runtime-v4.js')) {
     fwrite(STDERR, "Luck login-error classification patch failed.\n");
     exit(1);
 }
@@ -575,7 +579,7 @@ if ($loginAsset && is_file($loginAsset)) {
     $productionLogin = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($productionLogin);
     if (!str_contains($productionLogin, 'error.response.status !== 422')
         || !str_contains($productionLogin, 'serverMessage')
-        || !str_contains($productionLogin, 'BBbuoBq5-v3-fresh-runtime-v3.js')) {
+        || !str_contains($productionLogin, 'BBbuoBq5-v3-fresh-runtime-v4.js')) {
         fwrite(STDERR, "Luck production login chunk was not patched.\n");
         exit(1);
     }
@@ -644,7 +648,7 @@ if (!str_contains($overrideCss, '.world-map-container .country-tooltip')
     || !str_contains($overrideCss, '.world-map-container .map-svg .country.online:hover')
     || !str_contains($overrideCss, 'stroke-width: 0.8px !important;')
     || !str_contains($dashboardTemplate, 'luck-overrides.css?v=27')
-    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=63')
+    || !str_contains($dashboardTemplate, 'BBbuoBq5-fresh.js?v=64')
     || !str_contains($dashboardTemplate, 'i18n-v18.js?v=61')) {
     fwrite(STDERR, "Luck world-map flicker guard or cache version is missing.\n");
     exit(1);

@@ -42,7 +42,7 @@ assert(routes.includes('LuckThemeAssetPatcher::patchSubscriptionDialogTeleport($
 assert(routes.includes('LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($fixedContents)'), 'the main entry must select the normalized dialog chunk');
 assert(routes.includes('LuckThemeAssetPatcher::subscriptionDialogAssetName($runtimeFile)'), 'the physical dialog chunk must use the normalized v6 name');
 
-assert(template.includes('BBbuoBq5-fresh.js?v=63'), 'the Teleport entry graph needs a fresh browser/CDN URL');
+assert(template.includes('BBbuoBq5-fresh.js?v=64'), 'the Teleport entry graph needs a fresh browser/CDN URL');
 assert(!template.includes('syncSubscriptionDialogPortal'), 'the dashboard must not manually move Vue-owned overlays');
 assert(!template.includes('document.body.appendChild(overlay)'), 'raw DOM portalling can orphan the dialog on responsive remount');
 assert(template.includes('new MutationObserver(scheduleRefresh).observe(document.body, { childList: true, subtree: true })'), 'teleported dialogs must still receive icon and fallback enhancements');
@@ -51,7 +51,7 @@ for (const [name, source] of [['published-image smoke', ciSmoke], ['production d
   assert(source.includes('subscription_dialog_asset'), `${name} must resolve the lazy subscription-dialog chunk`);
   assert(source.includes('shared_runtime_asset'), `${name} must reject a cached nested shared runtime`);
   assert(source.includes('dashboard_route_asset'), `${name} must open the cache-busted dashboard route graph`);
-  assert(source.includes('./BBbuoBq5*-runtime-v3.js'), `${name} must require shared runtime v3`);
+  assert(source.includes('./BBbuoBq5*-runtime-v4.js'), `${name} must require shared runtime v4`);
   assert(source.includes('./C6e3mGRa*-payment-v6.js'), `${name} must require the normalized v6 dialog chunk`);
   assert(source.includes('PortalledSubscriptionDialog'), `${name} must require the Vue-owned Teleport wrapper`);
   assert(source.includes('T as Teleport'), `${name} must require the Vue Teleport runtime import`);

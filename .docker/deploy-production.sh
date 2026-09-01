@@ -462,8 +462,8 @@ post_deploy_checks() {
     echo "The deployed dashboard still manually reparents the Vue subscription overlay." >&2
     return 1
   fi
-  grep -q 'BBbuoBq5-fresh.js?v=63' <<<"$dashboard_html" || {
-    echo "The deployed dashboard did not publish Luck entry JS v63." >&2
+  grep -q 'BBbuoBq5-fresh.js?v=64' <<<"$dashboard_html" || {
+    echo "The deployed dashboard did not publish Luck entry JS v64." >&2
     return 1
   }
   grep -q 'i18n-v18.js?v=61' <<<"$dashboard_html" || {
@@ -524,7 +524,7 @@ post_deploy_checks() {
   }
   for asset_url in \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-overrides.css?v=27' \
-    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63' \
+    'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=64' \
     'http://127.0.0.1:7001/theme/Luck/i18n-v18.js?v=61' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-clash.svg' \
     'http://127.0.0.1:7001/theme/Luck/assets/luck-flags.svg?v=1'; do
@@ -541,14 +541,18 @@ post_deploy_checks() {
     return 1
   }
 
-  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=63')" || return 1
+  luck_entry_js="$(curl --fail --silent --show-error 'http://127.0.0.1:7001/theme/Luck/assets/BBbuoBq5-fresh.js?v=64')" || return 1
+  if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$luck_entry_js"; then
+    echo "The deployed Luck entry can still select a pre-v6 subscription dialog." >&2
+    return 1
+  fi
   if grep -aEq 'DM1yaN1X[^"?]*\.js\?v=3' <<<"$luck_entry_js"; then
     echo "The deployed Luck entry creates a duplicate cache-keyed Vue runtime." >&2
     return 1
   fi
   dashboard_route_asset="$(grep -oE '\./CO5Ntz5l[^"?]+\.js\?v=[0-9]+' <<<"$luck_entry_js" | sort -u | head -n 1)"
   case "$dashboard_route_asset" in
-    ./CO5Ntz5l*.js?v=*) ;;
+    ./CO5Ntz5l*.js?v=4) ;;
     *)
       echo "The deployed Luck entry has no cache-busted dashboard route: $dashboard_route_asset" >&2
       return 1
@@ -556,9 +560,13 @@ post_deploy_checks() {
   esac
   dashboard_route_js="$(curl --fail --silent --show-error \
     "http://127.0.0.1:7001/theme/Luck/assets/${dashboard_route_asset#./}")" || return 1
+  if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$dashboard_route_js"; then
+    echo "The deployed dashboard route can still select a pre-v6 subscription dialog." >&2
+    return 1
+  fi
   shared_runtime_asset="$(grep -oE '\./BBbuoBq5[^"?]+\.js' <<<"$dashboard_route_js" | sort -u | head -n 1)"
   case "$shared_runtime_asset" in
-    ./BBbuoBq5*-runtime-v3.js) ;;
+    ./BBbuoBq5*-runtime-v4.js) ;;
     *)
       echo "The deployed Luck entry has no cache-busted shared runtime: $shared_runtime_asset" >&2
       return 1
@@ -570,8 +578,8 @@ post_deploy_checks() {
     echo "The deployed shared runtime does not select the Vue-owned dialog chunk." >&2
     return 1
   }
-  if grep -aEq '\./C6e3mGRa[^"?]*-payment-v3\.js' <<<"$shared_runtime_js"; then
-    echo "The deployed shared runtime can still revive the old payment-v3 dialog." >&2
+  if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$shared_runtime_js"; then
+    echo "The deployed shared runtime can still revive a pre-v6 dialog." >&2
     return 1
   fi
   subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"

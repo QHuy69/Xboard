@@ -387,7 +387,7 @@ for luck_dashboard_template in \
   for dashboard_asset_marker in \
     'id="luck-overrides-stylesheet"' \
     'luck-overrides.css?v=27' \
-    'BBbuoBq5-fresh.js?v=63' \
+    'BBbuoBq5-fresh.js?v=64' \
     'i18n-v18.js?v=61' \
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
     'if (refreshTimer) return;' \
@@ -490,14 +490,18 @@ if docker exec "$container_name" test -f "$luck_entry_public"; then
   # A reusable image can be started with a pre-populated Luck volume. When the
   # complete distribution is available, keep exercising its published lazy
   # graph exactly as the production deployment gate does.
-  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=63")"
+  luck_entry_js="$(curl --fail --silent --show-error "http://127.0.0.1:${host_port}/theme/Luck/assets/BBbuoBq5-fresh.js?v=64")"
+if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$luck_entry_js"; then
+  echo "Published Luck entry can still select a pre-v6 subscription dialog." >&2
+  exit 1
+fi
 if grep -aEq 'DM1yaN1X[^"?]*\.js\?v=3' <<<"$luck_entry_js"; then
   echo "Published Luck entry creates a duplicate cache-keyed Vue runtime." >&2
   exit 1
 fi
 dashboard_route_asset="$(grep -oE '\./CO5Ntz5l[^"?]+\.js\?v=[0-9]+' <<<"$luck_entry_js" | sort -u | head -n 1)"
 case "$dashboard_route_asset" in
-  ./CO5Ntz5l*.js?v=*) ;;
+  ./CO5Ntz5l*.js?v=4) ;;
   *)
     echo "Published Luck entry has no cache-busted dashboard route: $dashboard_route_asset" >&2
     exit 1
@@ -505,9 +509,13 @@ case "$dashboard_route_asset" in
 esac
 dashboard_route_js="$(curl --fail --silent --show-error \
   "http://127.0.0.1:${host_port}/theme/Luck/assets/${dashboard_route_asset#./}")"
+if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$dashboard_route_js"; then
+  echo "Published dashboard route can still select a pre-v6 subscription dialog." >&2
+  exit 1
+fi
 shared_runtime_asset="$(grep -oE '\./BBbuoBq5[^"?]+\.js' <<<"$dashboard_route_js" | sort -u | head -n 1)"
 case "$shared_runtime_asset" in
-  ./BBbuoBq5*-runtime-v3.js) ;;
+  ./BBbuoBq5*-runtime-v4.js) ;;
   *)
     echo "Published Luck entry has no cache-busted shared runtime: $shared_runtime_asset" >&2
     exit 1
@@ -519,8 +527,8 @@ grep -aEq '\./C6e3mGRa[^"?]*-payment-v6\.js' <<<"$shared_runtime_js" || {
   echo "Published shared runtime does not select the Vue-owned dialog chunk." >&2
   exit 1
 }
-if grep -aEq '\./C6e3mGRa[^"?]*-payment-v3\.js' <<<"$shared_runtime_js"; then
-  echo "Published shared runtime can still revive the old payment-v3 dialog." >&2
+if grep -aEq '\./C6e3mGRa[^"?]*-payment-v[1-5]\.js' <<<"$shared_runtime_js"; then
+  echo "Published shared runtime can still revive a pre-v6 dialog." >&2
   exit 1
 fi
 subscription_dialog_asset="$(grep -oE '\./C6e3mGRa[^"?]+\.js' <<<"$luck_entry_js" | sort -u | head -n 1)"

@@ -52,7 +52,7 @@
       } catch (ignore) {}
     }());
   </script>
-  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=63"></script>
+  <script type="module" crossorigin src="/theme/{{$theme}}/assets/BBbuoBq5-fresh.js?v=64"></script>
 </head>
 <body>
   <div id="app"></div>
@@ -609,10 +609,7 @@
       window.addEventListener('storage', function (event) {
         if (event.key === 'v2board_token') checkEligibility(true);
       });
-      window.setTimeout(function () {
-        scheduleRefresh();
-        checkEligibility(true);
-      }, 0);
+      window.setTimeout(scheduleRefresh, 0);
     }());
   </script>
   <script>

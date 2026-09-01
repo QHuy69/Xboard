@@ -161,7 +161,7 @@ $renderTheme = function (Request $request) {
                                 $loadingPatchedContents = LuckThemeAssetPatcher::patchClashIcon($loadingPatchedContents);
                                 // Every lazy chunk must select the same shared
                                 // runtime. An unchanged nested import can revive
-                                // a browser-cached payment-v3 dialog after the
+                                // a browser-cached pre-v6 dialog after the
                                 // entry has already selected payment-v6.
                                 $loadingPatchedContents = LuckThemeAssetPatcher::rewriteSharedRuntimeAssetImport($loadingPatchedContents);
                                 $loadingPatchedContents = LuckThemeAssetPatcher::rewriteSubscriptionDialogAssetImport($loadingPatchedContents);
