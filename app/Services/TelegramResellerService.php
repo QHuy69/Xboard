@@ -21,9 +21,10 @@ class TelegramResellerService
 
     public function canManage(User $actor): bool
     {
-        // Staff access is deliberately not implicit: a staff member who needs
-        // these commercial powers must be explicitly marked as a reseller.
-        return (bool) ($actor->is_reseller || $actor->is_admin);
+        // Administrative and staff roles are deliberately independent from
+        // commercial reseller authority. A privileged operator receives these
+        // tools only after an explicit reseller assignment.
+        return (bool) $actor->is_reseller;
     }
 
     /** @return Collection<int, Plan> */

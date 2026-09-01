@@ -760,8 +760,8 @@ verify_coinpayments_checkout_schema "$container_name"
 verify_telegram_persistence_schema "$container_name"
 telegram_plugin_state="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite \
   "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")"
-if [ "$telegram_plugin_state" != '2.2.0:1' ]; then
-  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.2.0:1." >&2
+if [ "$telegram_plugin_state" != '2.3.0:1' ]; then
+  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.3.0:1." >&2
   exit 1
 fi
 echo "[smoke] Required migrations passed with no pending migration"

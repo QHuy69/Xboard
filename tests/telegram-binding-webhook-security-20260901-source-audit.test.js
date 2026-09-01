@@ -29,17 +29,45 @@ const userController = includesAll('app/Http/Controllers/V1/User/TelegramControl
   "$plugin?->is_enabled",
   "$token !== ''",
   "'linked' => $user->telegram_id !== null",
-  "$data['bind_url'] = 'https://t.me/' . $username",
+  "$data['bind_url'] = 'https://t.me/' . $username . '?start=menu';",
   "if ($user->telegram_id !== null)",
   "$bindingService->issue($user)",
   '$bindingService->revoke($request->user())'
 ]);
 assert(!/'bind_token'\s*=>/.test(userController), 'getBotInfo must not expose a separate bearer token');
 assert(!/'telegram_id'\s*=>/.test(userController), 'getBotInfo must not expose the raw Telegram actor id');
+assert(!/'(?:subscription_url|subscribe_url)'\s*=>/.test(userController),
+  'getBotInfo must not expose a subscription credential');
 assert(
   userController.indexOf('$bindingService->revoke($request->user())') < userController.indexOf('DB::transaction'),
   'outstanding bearer links must be revoked before database unbind'
 );
+
+const adminConfigController = read('app/Http/Controllers/V2/Admin/ConfigController.php');
+const webhookSetup = adminConfigController.slice(
+  adminConfigController.indexOf('public function setTelegramWebhook'),
+  adminConfigController.indexOf('public function fetch')
+);
+for (const tokenContract of [
+  "$submittedToken = trim((string) $request->input('telegram_bot_token', ''));",
+  "$botToken = $submittedToken !== ''",
+  ": trim((string) admin_setting('telegram_bot_token', ''));",
+  "'access_token' => md5($botToken)",
+  '$telegramService = new TelegramService($botToken);',
+  '$commandMenuCleared = $telegramService->registerBotCommands();',
+  "'command_menu_cleared' => $commandMenuCleared",
+  "'command_menu_reconciliation_pending' => !$commandMenuCleared",
+]) {
+  assert(webhookSetup.includes(tokenContract),
+    `Webhook token selection is missing: ${tokenContract}`);
+}
+const selectToken = webhookSetup.indexOf("$botToken = $submittedToken !== ''");
+const hashToken = webhookSetup.indexOf("'access_token' => md5($botToken)");
+const constructService = webhookSetup.indexOf('$telegramService = new TelegramService($botToken);');
+assert(selectToken >= 0 && selectToken < hashToken && hashToken < constructService,
+  'Webhook access hash and Telegram API client are not derived from one selected request-or-stored token.');
+assert(!webhookSetup.includes("md5(admin_setting('telegram_bot_token'"),
+  'Webhook setup can hash a different stored token from the Telegram API client.');
 
 const binding = includesAll('app/Services/TelegramBindingService.php', [
   'public const TOKEN_TTL_SECONDS = 600',
@@ -123,6 +151,7 @@ includesAll('tests/Feature/TelegramBindingWebhookSecurity20260901Test.php', [
 
 const telegramService = read('app/Services/TelegramService.php');
 const sendTelegramJob = read('app/Jobs/SendTelegramJob.php');
+const telegramPlugin = read('plugins-core/Telegram/Plugin.php');
 for (const unsafeLog of [
   "'params' => $params",
   "'error' => $e->getMessage()",
@@ -131,6 +160,12 @@ for (const unsafeLog of [
   assert(!telegramService.includes(unsafeLog), `Telegram logs still expose request data: ${unsafeLog}`);
 }
 includesAll('app/Services/TelegramService.php', [
+  "private const BOT_COMMAND_LANGUAGE_CODES = ['vi', 'en', 'zh', 'ja', 'ko', 'fa', 'ru']",
+  "'all_private_chats'",
+  "'all_group_chats'",
+  "'all_chat_administrators'",
+  "private const BOT_COMMAND_MENU_SCHEMA = 'inline-buttons-v2.3'",
+  "private const BOT_COMMAND_MENU_FINGERPRINT_SETTING = 'telegram_bot_command_menu_fingerprint'",
   "'chat_id' => (string) $chatId",
   "'user_id' => (string) $userId",
   "'error_type' => $e::class",
@@ -139,6 +174,84 @@ includesAll('app/Services/TelegramService.php', [
   'return $retryable ? $request->retry(3, 1000) : $request;',
   "return $this->request('getMe', retryable: true);"
 ]);
+const commandMenuRegistration = telegramService.slice(
+  telegramService.indexOf('public function registerBotCommands'),
+  telegramService.indexOf('public function commandMenuNeedsReconciliation')
+);
+assert(commandMenuRegistration.includes('$this->deleteMyCommands();'),
+  'Webhook setup must clear legacy Telegram command menus');
+assert(!commandMenuRegistration.includes("$this->request('setMyCommands'"),
+  'Webhook setup must not publish slash commands');
+const deleteBeforeFingerprint = commandMenuRegistration.indexOf('$this->deleteMyCommands();');
+const persistFingerprint = commandMenuRegistration.indexOf(
+  'self::BOT_COMMAND_MENU_FINGERPRINT_SETTING => $this->commandMenuFingerprint'
+);
+assert(deleteBeforeFingerprint >= 0 && deleteBeforeFingerprint < persistFingerprint,
+  'A command-menu fingerprint can be persisted before every scope is cleared successfully.');
+assert(commandMenuRegistration.includes('return false;')
+  && commandMenuRegistration.includes('return true;'),
+  'Command-menu cleanup does not expose success/failure for scheduled reconciliation.');
+const menuReconciliation = telegramService.slice(
+  telegramService.indexOf('public function commandMenuNeedsReconciliation'),
+  telegramService.indexOf('public function getMyCommands')
+);
+assert(menuReconciliation.includes('if (!$this->hasBotToken) return false;')
+  && menuReconciliation.includes('admin_setting(self::BOT_COMMAND_MENU_FINGERPRINT_SETTING')
+  && menuReconciliation.includes('!hash_equals($this->commandMenuFingerprint, $stored)'),
+  'Command-menu reconciliation is not bound to the current bot-token fingerprint.');
+const commandMenuDeletion = telegramService.slice(
+  telegramService.indexOf('public function deleteMyCommands'),
+  telegramService.indexOf('public function sendMessageWithAdmin')
+);
+assert(commandMenuDeletion.includes('foreach (self::BOT_COMMAND_SCOPE_TYPES as $scopeType)')
+    && commandMenuDeletion.includes('foreach ([null, ...self::BOT_COMMAND_LANGUAGE_CODES] as $languageCode)'),
+  'Every global chat scope and supported Telegram language scope must have stale commands deleted');
+assert(commandMenuDeletion.includes("'scope' => json_encode(['type' => $scopeType])")
+    && commandMenuDeletion.includes("'language_code' => $languageCode")
+    && commandMenuDeletion.includes("static fn ($value) => $value !== null"),
+  'Command deletion must send the matching global scope while omitting language_code for its default locale');
+assert(commandMenuDeletion.includes('$runPool = function (array $batch, int $concurrency): array')
+    && commandMenuDeletion.includes('return Http::pool(')
+    && commandMenuDeletion.includes('->timeout(10)')
+    && commandMenuDeletion.includes('$responses = $runPool($operations, 8);')
+    && commandMenuDeletion.includes('foreach ($operations as $key => $operation)')
+    && commandMenuDeletion.includes('$failedScopes[$key] = [')
+    && commandMenuDeletion.includes("throw new ApiException('Telegram command menu cleanup was incomplete')"),
+  'A failed scope must be aggregated after the complete finite deletion matrix, not reported as complete');
+assert((commandMenuDeletion.match(/\(\$validated->result \?\? null\) !== true/g) || []).length === 2,
+  'Both first-pass and retry cleanup must require Telegram result === true.');
+for (const rateLimitContract of [
+  "$response->status() === 429",
+  "$response->json('error_code', 0) === 429",
+  '$rateLimitedScopes[$key] = $operation;',
+  "$response->json('parameters.retry_after', 0)",
+  '$boundedDelay = min(15, $retryAfterSeconds);',
+  'if ($boundedDelay > 0) sleep($boundedDelay);',
+  '$retryResponses = $runPool($rateLimitedScopes, 4);',
+  'foreach ($rateLimitedScopes as $key => $operation)',
+  'unset($failedScopes[$key]);',
+]) {
+  assert(commandMenuDeletion.includes(rateLimitContract),
+    `Rate-limited command cleanup contract is missing: ${rateLimitContract}`);
+}
+assert(commandMenuDeletion.indexOf('$responses = $runPool($operations, 8);')
+    < commandMenuDeletion.indexOf('$retryResponses = $runPool($rateLimitedScopes, 4);'),
+  'Affected-scope retry can run before the complete first-pass matrix.');
+const scheduledMenuCleanup = telegramPlugin.slice(
+  telegramPlugin.indexOf('public function schedule'),
+  telegramPlugin.indexOf('public function handleMessage')
+);
+for (const scheduledContract of [
+  '$this->telegramService->commandMenuNeedsReconciliation()',
+  '$this->telegramService->registerBotCommands()',
+  "->name('telegram-command-menu-reconcile')",
+  '->everyFiveMinutes()',
+  '->onOneServer()',
+  '->withoutOverlapping(5)',
+]) {
+  assert(scheduledMenuCleanup.includes(scheduledContract),
+    `Scheduled command-menu retry is missing: ${scheduledContract}`);
+}
 assert(
   telegramService.includes("$this->request('sendMessage', $params);")
     && !telegramService.includes("$this->request('sendMessage', $params, retryable: true)"),
@@ -148,6 +261,19 @@ const constructor = telegramService.slice(
   telegramService.indexOf('public function __construct'),
   telegramService.indexOf('public function sendMessage')
 );
+assert(constructor.includes("$botToken = trim((string) ($token ?? admin_setting('telegram_bot_token', '')));"),
+  'An explicit rotation token does not take precedence over the stored Telegram token.');
+for (const fingerprintPart of [
+  'self::BOT_COMMAND_MENU_SCHEMA,',
+  'implode(\',\', self::BOT_COMMAND_SCOPE_TYPES),',
+  "'default-language,' . implode(',', self::BOT_COMMAND_LANGUAGE_CODES),",
+  '$botToken,',
+]) {
+  assert(constructor.includes(fingerprintPart),
+    `Command-menu fingerprint omits deployed schema input: ${fingerprintPart}`);
+}
+assert(!constructor.includes("admin_setting('telegram_bot_token', $token)"),
+  'TelegramService still treats the explicit rotation token as a fallback default.');
 assert(!constructor.includes('->retry('), 'Shared Telegram HTTP client still carries retry state into sends.');
 assert(sendTelegramJob.includes('public $tries = 1;'),
   'Queued Telegram sends can still retry after an ambiguous successful delivery.');
@@ -155,6 +281,49 @@ assert(sendTelegramJob.includes('public $timeout = 40;'),
   'Telegram job timeout can still kill the worker before the 30-second HTTP attempt returns.');
 assert(sendTelegramJob.includes('public function __construct(int|string $telegramId, string $text)'),
   'Queued Telegram recipients are still narrowed away from their string bigint boundary.');
+assert(sendTelegramJob.includes('if (!TelegramService::runtimeEnabled()) return;'),
+  'A queued Telegram notification can outlive and bypass the current runtime switches.');
+
+const runtimeGate = telegramService.slice(
+  telegramService.indexOf('public static function runtimeEnabled'),
+  telegramService.indexOf('public function sendMessage')
+);
+for (const runtimeContract of [
+  "admin_setting('telegram_bot_enable', false)",
+  'FILTER_VALIDATE_BOOLEAN',
+  "admin_setting('telegram_bot_token', '')",
+  "->where('code', 'telegram')",
+  "->where('is_enabled', true)",
+]) {
+  assert(runtimeGate.includes(runtimeContract),
+    `Central Telegram runtime gate is incomplete: ${runtimeContract}`);
+}
+const runtimeSend = telegramService.slice(
+  telegramService.indexOf('public function sendMessage'),
+  telegramService.indexOf('public function sendDocument')
+);
+assert(runtimeSend.includes('if (!self::runtimeEnabled()) return;'),
+  'Direct Telegram messages can bypass the central runtime gate.');
+const controlPlane = telegramService.slice(
+  telegramService.indexOf('public function getMe'),
+  telegramService.indexOf('public function sendMessageWithAdmin')
+);
+for (const method of ['getMe', 'setWebhook', 'registerBotCommands', 'deleteMyCommands']) {
+  const start = controlPlane.indexOf(`public function ${method}`);
+  assert(start >= 0, `Missing Telegram control-plane method: ${method}`);
+  const next = controlPlane.indexOf('public function ', start + 1);
+  const body = controlPlane.slice(start, next < 0 ? controlPlane.length : next);
+  assert(!body.includes('runtimeEnabled()'),
+    `Control-plane method ${method} is incorrectly blocked by the runtime delivery switch.`);
+}
+
+const backupDelivery = telegramPlugin.slice(
+  telegramPlugin.indexOf('public function sendDatabaseBackup'),
+  telegramPlugin.indexOf('public function handleResellerCommand')
+);
+assert(backupDelivery.indexOf('if (!TelegramService::runtimeEnabled())')
+    < backupDelivery.indexOf('app(EncryptedDatabaseBackupService::class)->create($password)'),
+  'Telegram backup can create a sensitive artifact before the runtime gate.');
 
 includesAll('app/Models/User.php', [
   '@property string|null $telegram_id Telegram ID',

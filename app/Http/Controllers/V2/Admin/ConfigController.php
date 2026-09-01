@@ -58,17 +58,26 @@ class ConfigController extends Controller
         if (blank($hookUrl)) {
             return $this->fail([422, 'Chưa cấu hình địa chỉ Telegram Webhook']);
         }
+        $submittedToken = trim((string) $request->input('telegram_bot_token', ''));
+        $botToken = $submittedToken !== ''
+            ? $submittedToken
+            : trim((string) admin_setting('telegram_bot_token', ''));
+        if ($botToken === '') {
+            return $this->fail([422, 'Chưa cấu hình Telegram Bot Token']);
+        }
         $hookUrl .= '?' . http_build_query([
-            'access_token' => md5(admin_setting('telegram_bot_token', $request->input('telegram_bot_token')))
+            'access_token' => md5($botToken)
         ]);
-        $telegramService = new TelegramService($request->input('telegram_bot_token'));
+        $telegramService = new TelegramService($botToken);
         $telegramService->getMe();
         $telegramService->setWebhook(url: $hookUrl);
-        $telegramService->registerBotCommands();
+        $commandMenuCleared = $telegramService->registerBotCommands();
         return $this->success([
             'success' => true,
             'webhook_url' => $hookUrl,
             'webhook_base_url' => $this->getTelegramWebhookBaseUrl(),
+            'command_menu_cleared' => $commandMenuCleared,
+            'command_menu_reconciliation_pending' => !$commandMenuCleared,
         ]);
     }
 

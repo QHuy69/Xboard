@@ -2,6 +2,8 @@
 
 namespace Plugin\Telegram;
 
+use App\Jobs\SendTelegramJob;
+use App\Jobs\SendTelegramResellerSupportNotificationJob;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\Server;
@@ -21,7 +23,6 @@ use App\Utils\CacheKey;
 use App\Utils\Helper;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -35,6 +36,7 @@ class Plugin extends AbstractPlugin
 
     private const SUPPORTED_LOCALES = ['vi', 'en', 'zh-CN', 'zh-TW', 'ja', 'ko', 'fa', 'ru'];
     private const DELIVERY_TTL_SECONDS = 86400;
+    private const ACTOR_LOCK_TTL_SECONDS = 60;
     private const RESELLER_STATE_TTL_SECONDS = 900;
     private const CONFIRMATION_TTL_SECONDS = 600;
     private const FLOW_NONCE_BYTES = 8;
@@ -44,6 +46,11 @@ class Plugin extends AbstractPlugin
     private const SUPPORT_MESSAGE_MAX_LENGTH = 1000;
     private const SUPPORT_RATE_ATTEMPTS = 6;
     private const SUPPORT_RATE_DECAY_SECONDS = 60;
+    private const SUPPORT_ADMIN_STATE_TTL_SECONDS = 900;
+    private const SUPPORT_CALLBACK_TTL_SECONDS = 900;
+    private const SUPPORT_NOTIFICATION_CALLBACK_TTL_SECONDS = 86400;
+    private const SUPPORT_INBOX_PAGE_SIZE = 5;
+    private const SUPPORT_HISTORY_LIMIT = 6;
     // Leave headroom for TelegramService's final Markdown underscore escaping.
     private const NODE_REPORT_MESSAGE_LIMIT = 2400;
 
@@ -73,7 +80,6 @@ class Plugin extends AbstractPlugin
         foreach ($this->commandConfigs as $command => $config) {
             $this->commands['commands'][$command] = [$this, $config['handler']];
         }
-        $this->commands['replies']['/\nZG-SUPPORT-REF:\s*`?([a-f0-9]{80,1024})`?\s*$/u'] = [$this, 'handleSupportAdminReply'];
         $this->commands['replies']['/(?:ticket|工单|工單|チケット|티켓|تیکت|тикет).*?#?\s*(\d+)/iu'] = [$this, 'handleTicketReply'];
         $this->filter('telegram.message.handle', [$this, 'handleMessage'], 10);
         $this->listen('telegram.message.unhandled', [$this, 'handleUnknownCommand'], 10);
@@ -88,11 +94,31 @@ class Plugin extends AbstractPlugin
         $this->listen('traffic.reset.telegram.after', [$this, 'sendTrafficResetNotify'], 10);
     }
 
+    public function update(string $oldVersion, string $newVersion): void
+    {
+        // Version 2.3 moves every user-facing operation to inline buttons.
+        // Actively clear command scopes during the deploy upgrade so stale
+        // menus disappear without requiring another administrator save.
+        (new TelegramService())->registerBotCommands();
+    }
+
     public function schedule(Schedule $schedule): void
     {
         // Schedule registration does not call boot(), so scheduled callbacks
         // must initialize their own Telegram client.
         if (!isset($this->telegramService)) $this->telegramService = new TelegramService();
+
+        // A partial Telegram API outage must not make a one-time plugin upgrade
+        // the only chance to remove stale slash commands. Retry every five
+        // minutes until the token-specific v2.3 fingerprint is persisted.
+        $schedule->call(function (): void {
+            if ($this->telegramService->commandMenuNeedsReconciliation()) {
+                $this->telegramService->registerBotCommands();
+            }
+        })->name('telegram-command-menu-reconcile')
+            ->everyFiveMinutes()
+            ->onOneServer()
+            ->withoutOverlapping(5);
 
         if ($this->getConfig('enable_node_group_report', false)) {
             $interval = $this->nodeReportInterval();
@@ -138,6 +164,31 @@ class Plugin extends AbstractPlugin
             return true;
         }
 
+        // Serialize every update from one Telegram actor. This is the common
+        // boundary for commands, callbacks and free-form replies, preventing a
+        // fast stale-button callback from replacing or clearing another active
+        // conversational state while its message is being committed.
+        $actorLock = null;
+        $actorId = $this->actorId($msg);
+        if ($actorId !== '') {
+            $actorLock = Cache::lock(
+                'telegram:actor:' . hash('sha256', $actorId),
+                self::ACTOR_LOCK_TTL_SECONDS,
+            );
+            if (!$actorLock->get()) {
+                if ($deliveryKey !== null) Cache::put($deliveryKey, 'done', self::DELIVERY_TTL_SECONDS);
+                try {
+                    if (($msg->message_type ?? '') === 'callback_query'
+                        && isset($msg->callback_query_id)) {
+                        $this->telegramService->answerCallbackQuery((string) $msg->callback_query_id);
+                    }
+                    $this->sendMessage($msg, $this->text('busy', $this->localeForMessage($msg)));
+                } catch (\Throwable) {
+                }
+                return true;
+            }
+        }
+
         try {
             $result = match ((string) ($msg->message_type ?? '')) {
                 'callback_query' => $this->handleCallback($msg),
@@ -163,6 +214,10 @@ class Plugin extends AbstractPlugin
             ], static fn ($value) => $value !== null));
             $this->sendMessage($msg, $this->text('busy', $this->localeForMessage($msg)));
             return true;
+        } finally {
+            if ($actorLock) {
+                try { $actorLock->release(); } catch (\Throwable) {}
+            }
         }
     }
 
@@ -178,7 +233,15 @@ class Plugin extends AbstractPlugin
         }
         if (isset($buttonCommands[$msg->text])) $msg->command = $buttonCommands[$msg->text];
         if (isset($this->commands['commands'][$msg->command])) {
+            // A command is an explicit navigation action, not free-form input
+            // for an unfinished coupon or administrator-reply state.
+            $this->clearResellerState($msg);
+            $this->clearAdminSupportState($msg);
             call_user_func($this->commands['commands'][$msg->command], $msg);
+            return true;
+        }
+        if ($this->adminSupportState($msg)) {
+            $this->handleSupportAdminInput($msg);
             return true;
         }
         if ($this->resellerState($msg)) {
@@ -192,9 +255,17 @@ class Plugin extends AbstractPlugin
     {
         foreach ($this->commands['replies'] ?? [] as $regex => $handler) {
             if (preg_match($regex, $msg->reply_text, $matches)) {
+                // Replying to a legacy ticket notification is also an explicit
+                // context switch; never leave a coupon/admin draft armed.
+                $this->clearResellerState($msg);
+                $this->clearAdminSupportState($msg);
                 call_user_func($handler, $msg, $matches);
                 return true;
             }
+        }
+        if ($this->adminSupportState($msg)) {
+            $this->handleSupportAdminInput($msg);
+            return true;
         }
         // A reseller may naturally use Telegram's Reply gesture while a
         // private coupon/support flow is active. Preserve that text input only
@@ -211,6 +282,21 @@ class Plugin extends AbstractPlugin
         $this->telegramService->answerCallbackQuery($msg->callback_query_id);
         $command = (string) $msg->command;
 
+        // A dual-role account must never carry an unfinished reseller input
+        // flow into the administrator inbox (or the inverse). Otherwise text
+        // entered after a stale button click could be delivered to the wrong
+        // customer or interpreted as a coupon. Treat each menu family as an
+        // explicit context switch before routing its callback.
+        if (str_starts_with($command, 'support:')) {
+            $this->clearResellerState($msg);
+            $this->clearAdminSupportState($msg);
+        } elseif (str_starts_with($command, 'reseller:')) {
+            $this->clearAdminSupportState($msg);
+        } elseif (str_starts_with($command, 'action:')) {
+            $this->clearResellerState($msg);
+            $this->clearAdminSupportState($msg);
+        }
+
         if ($command === 'action:menu') { $this->handleStartCommand($msg); return true; }
         if ($command === 'action:traffic') { $this->handleTrafficCommand($msg); return true; }
         if ($command === 'action:url') { $this->handleGetLatestUrlCommand($msg); return true; }
@@ -221,6 +307,19 @@ class Plugin extends AbstractPlugin
         }
         if ($command === 'action:unbind:yes') return $this->rejectExpiredCallback($msg);
         if ($command === 'action:cancel') { $this->handleCancelCommand($msg); return true; }
+        if (preg_match('/^support:inbox:([1-9][0-9]*)$/', $command, $matches)) {
+            return $this->showSupportInbox($msg, (int) $matches[1]);
+        }
+        if (preg_match('/^support:view:([a-f0-9]{32})$/', $command, $matches)) {
+            return $this->showSupportConversation($msg, $matches[1]);
+        }
+        if (preg_match('/^support:reply:([a-f0-9]{32})$/', $command, $matches)) {
+            return $this->beginSupportAdminReply($msg, $matches[1]);
+        }
+        if ($command === 'support:cancel') {
+            $this->clearAdminSupportState($msg);
+            return $this->showSupportInbox($msg, 1);
+        }
 
         if ($command === 'reseller:menu') { $this->handleResellerCommand($msg); return true; }
         if ($command === 'reseller:new') return $this->startReseller($msg);
@@ -268,6 +367,7 @@ class Plugin extends AbstractPlugin
     {
         if (!$this->privateChat($msg)) return;
         $this->clearResellerState($msg);
+        $this->clearAdminSupportState($msg);
         $this->clearConfirmation($msg, 'unbind');
         $locale = $this->localeForMessage($msg);
         $payload = trim((string) ($msg->args[0] ?? ''));
@@ -307,6 +407,12 @@ class Plugin extends AbstractPlugin
                 $buttons[] = [[
                     'text' => $this->text('button_reseller', $locale),
                     'callback_data' => 'reseller:menu',
+                ]];
+            }
+            if ($this->isAdmin($msg)) {
+                $buttons[] = [[
+                    'text' => $this->text('button_support_inbox', $locale),
+                    'callback_data' => 'support:inbox:1',
                 ]];
             }
         }
@@ -452,17 +558,8 @@ class Plugin extends AbstractPlugin
     public function sendScheduledNodeReport(): void
     {
         if (!$this->getConfig('enable_node_group_report', false)) return;
-        $botEnabled = filter_var(
-            admin_setting('telegram_bot_enable', false),
-            FILTER_VALIDATE_BOOLEAN,
-            FILTER_NULL_ON_FAILURE,
-        ) ?? false;
-        if (!$botEnabled) {
-            Log::warning('Telegram node report skipped: Telegram bot is disabled');
-            return;
-        }
-        if (trim((string) admin_setting('telegram_bot_token', '')) === '') {
-            Log::warning('Telegram node report skipped: bot token is missing');
+        if (!TelegramService::runtimeEnabled()) {
+            Log::warning('Telegram node report skipped: Telegram runtime delivery is disabled');
             return;
         }
         $chatId = $this->nodeReportChatId();
@@ -507,6 +604,13 @@ class Plugin extends AbstractPlugin
 
     public function sendDatabaseBackup(?int $targetChatId = null, string $locale = ''): void
     {
+        // Check every runtime switch before resolving credentials or creating
+        // an encrypted database artifact that cannot be delivered.
+        if (!TelegramService::runtimeEnabled()) {
+            Log::warning('Telegram database backup skipped: Telegram runtime delivery is disabled');
+            return;
+        }
+
         $locale = $locale !== ''
             ? $locale
             : (string) admin_setting('telegram_database_backup_locale', 'vi');
@@ -556,18 +660,17 @@ class Plugin extends AbstractPlugin
         if (!$this->privateChat($msg)) return;
         $actor = $this->resellerActor($msg);
         if (!$actor) return;
+        $this->clearAdminSupportState($msg);
         $this->clearResellerState($msg);
         $locale = $this->localeForUser($actor);
         $keyboard = [
             [['text' => $this->text('button_create', $locale), 'callback_data' => 'reseller:new']],
             [['text' => $this->text('button_customers', $locale), 'callback_data' => 'reseller:customers:1']],
         ];
-        if ($this->supportChatId() !== null) {
-            $keyboard[] = [[
-                'text' => $this->text('button_support', $locale),
-                'callback_data' => 'reseller:support:open',
-            ]];
-        }
+        $keyboard[] = [[
+            'text' => $this->text('button_support', $locale),
+            'callback_data' => 'reseller:support:open',
+        ]];
         $keyboard[] = [[
             'text' => $this->text('button_back', $locale),
             'callback_data' => 'action:menu',
@@ -605,7 +708,7 @@ class Plugin extends AbstractPlugin
         if (!$this->privateChat($msg)) return true;
         $actor = $this->resellerActor($msg); if (!$actor) return true;
         $locale = $this->localeForUser($actor);
-        if ($this->supportChatId() === null) {
+        if (!$this->hasAvailableSupportAdmin($actor)) {
             $this->clearResellerState($msg);
             $this->sendMessage($msg, $this->text('support_unavailable', $locale));
             return true;
@@ -648,7 +751,7 @@ class Plugin extends AbstractPlugin
             $this->sendMessage($msg, $this->text('support_failed', $locale));
             return;
         }
-        if ($this->supportChatId() === null) {
+        if (!$this->hasAvailableSupportAdmin($actor)) {
             $this->clearResellerState($msg);
             $this->sendMessage($msg, $this->text('support_unavailable', $locale));
             return;
@@ -724,20 +827,10 @@ class Plugin extends AbstractPlugin
                 return;
             }
 
-            // TicketService has already committed. A notification listener is
-            // external to that transaction and must never make Telegram retry
-            // the durable message or report it as unsaved.
-            try {
-                HookManager::call($hookName, $ticket);
-            } catch (\Throwable $e) {
-                Log::error('Telegram reseller support post-save hook failed', [
-                    'action' => 'support_post_save_hook',
-                    'operator_user_id' => (int) $actor->id,
-                    'ticket_id' => (int) $ticket->id,
-                    'error_type' => $e::class,
-                ]);
-            }
-
+            // Publish the durable ticket identity to the actor state before
+            // dispatching any notification side effects. A concurrent cancel
+            // can therefore never clear the old waiting state and then be
+            // overwritten by this request after the ticket already exists.
             $currentState['step'] = 'support_active';
             $currentState['ticket_id'] = (int) $ticket->id;
             $stateStored = true;
@@ -747,6 +840,20 @@ class Plugin extends AbstractPlugin
                 $stateStored = false;
                 Log::error('Telegram reseller support state refresh failed', [
                     'action' => 'support_state_refresh',
+                    'operator_user_id' => (int) $actor->id,
+                    'ticket_id' => (int) $ticket->id,
+                    'error_type' => $e::class,
+                ]);
+            }
+
+            // TicketService has already committed and the conversational state
+            // now points at it. Notification listeners enqueue their outbound
+            // network work and must never make Telegram retry the durable text.
+            try {
+                HookManager::call($hookName, $ticket);
+            } catch (\Throwable $e) {
+                Log::error('Telegram reseller support post-save hook failed', [
+                    'action' => 'support_post_save_hook',
                     'operator_user_id' => (int) $actor->id,
                     'ticket_id' => (int) $ticket->id,
                     'error_type' => $e::class,
@@ -1240,6 +1347,7 @@ class Plugin extends AbstractPlugin
     public function handleCancelCommand(object $msg): void
     {
         $this->clearResellerState($msg);
+        $this->clearAdminSupportState($msg);
         $this->clearConfirmation($msg, 'unbind');
         $locale = $this->localeForMessage($msg);
         $this->sendMessage($msg, $this->text('cancelled', $locale), [
@@ -1252,6 +1360,7 @@ class Plugin extends AbstractPlugin
 
     public function sendOrderLifecycleNotify(Order $order): void
     {
+        if (!TelegramService::runtimeEnabled()) return;
         $order->loadMissing(['user', 'plan']); $user = $order->user;
         if (!$user?->telegram_id) return;
         $key = match ((int) $order->type) { Order::TYPE_RENEWAL => 'renewed', Order::TYPE_UPGRADE => 'upgraded', Order::TYPE_RESET_TRAFFIC => 'traffic_reset', default => 'purchased' };
@@ -1267,12 +1376,14 @@ class Plugin extends AbstractPlugin
 
     public function sendSubscriptionResetNotify(array $payload): void
     {
+        if (!TelegramService::runtimeEnabled()) return;
         [$user, $url] = $payload;
         if ($user->telegram_id) $this->telegramService->sendMessage($user->telegram_id, $this->text('url_reset', $this->localeForUser($user), ['url' => $url]));
     }
 
     public function sendTrafficResetNotify(array $payload): void
     {
+        if (!TelegramService::runtimeEnabled()) return;
         [$user, $source] = $payload;
         if ($source === TrafficResetLog::SOURCE_ORDER || !$user->telegram_id) return;
         $this->telegramService->sendMessage($user->telegram_id, $this->text('traffic_reset', $this->localeForUser($user)));
@@ -1280,6 +1391,7 @@ class Plugin extends AbstractPlugin
 
     public function sendPaymentNotify(Order $order): void
     {
+        if (!TelegramService::runtimeEnabled()) return;
         if (!$this->getConfig('enable_payment_notify', true) || !$order->payment) return;
         $this->telegramService->sendMessageWithAdminLocalized(function (User $admin) use ($order) {
             return $this->text('payment_received', $this->localeForUser($admin), [
@@ -1293,6 +1405,7 @@ class Plugin extends AbstractPlugin
 
     public function sendTicketNotify(Ticket $ticket): void
     {
+        if (!TelegramService::runtimeEnabled()) return;
         if ((string) $ticket->subject === self::SUPPORT_TICKET_SUBJECT) {
             $this->sendSupportTicketNotify($ticket);
             return;
@@ -1313,8 +1426,7 @@ class Plugin extends AbstractPlugin
 
     protected function sendSupportTicketNotify(Ticket $ticket): void
     {
-        $chatId = $this->supportChatId();
-        if ($chatId === null || (int) $ticket->status !== Ticket::STATUS_OPENING) return;
+        if ((int) $ticket->status !== Ticket::STATUS_OPENING) return;
         $message = $ticket->messages()->latest()->first();
         $user = User::find($ticket->user_id);
         if (!$message
@@ -1323,41 +1435,255 @@ class Plugin extends AbstractPlugin
             || !$this->resellerService->canManage($user)) {
             return;
         }
-        try {
-            $locale = $this->localeForUser($user);
-            $reference = $this->supportReference($ticket);
-            $body = $this->text('support_admin_relay', $locale, [
-                'message' => Helper::escapeMarkdown((string) $message->message),
-            ]) . "\n\nZG-SUPPORT-REF: `" . $reference . '`';
-            $this->telegramService->sendMessage($chatId, $body, 'markdown');
-        } catch (\Throwable $e) {
-            // The ticket message is durable and remains visible in XBoard.
-            // Never retry the non-idempotent persistence step just because the
-            // external Telegram relay failed.
-            Log::error('Telegram reseller support relay failed', [
-                'action' => 'support_relay',
-                'customer_user_id' => (int) $user->id,
-                'ticket_id' => (int) $ticket->id,
-                'error_type' => $e::class,
-            ]);
+        $adminIds = User::query()
+            ->where('is_admin', true)
+            ->whereNotNull('telegram_id')
+            ->where('id', '!=', $user->id)
+            ->pluck('id');
+        foreach ($adminIds as $adminId) {
+            SendTelegramResellerSupportNotificationJob::dispatch(
+                (int) $adminId,
+                (int) $ticket->id,
+                (int) $message->id,
+            );
         }
     }
 
-    public function handleSupportAdminReply(object $msg, array $matches): void
-    {
-        $chatId = $this->supportChatId();
-        if ($chatId === null || !hash_equals($chatId, trim((string) ($msg->chat_id ?? '')))) return;
-        if ($this->deliveryKey($msg) === null) return;
-        $isPrivate = (bool) ($msg->is_private ?? false);
-        if ((str_starts_with($chatId, '-') && $isPrivate)
-            || (!str_starts_with($chatId, '-') && !$isPrivate)) {
+    /** Revalidate every sensitive recipient and message fact at queue execution. */
+    public function deliverQueuedSupportNotification(
+        int $adminUserId,
+        int $ticketId,
+        int $ticketMessageId,
+    ): void {
+        if (!TelegramService::runtimeEnabled()) return;
+        if (!isset($this->telegramService)) $this->telegramService = new TelegramService();
+        if (!isset($this->resellerService)) {
+            $this->resellerService = app(TelegramResellerService::class);
+        }
+
+        $admin = User::query()
+            ->whereKey($adminUserId)
+            ->where('is_admin', true)
+            ->whereNotNull('telegram_id')
+            ->first();
+        $ticket = Ticket::query()
+            ->whereKey($ticketId)
+            ->where('subject', self::SUPPORT_TICKET_SUBJECT)
+            ->where('status', Ticket::STATUS_OPENING)
+            ->where('user_id', '!=', $adminUserId)
+            ->whereHas('user', fn ($query) => $query->where('is_reseller', true))
+            ->with('user')
+            ->first();
+        $message = $ticket?->messages()
+            ->whereKey($ticketMessageId)
+            ->where('user_id', $ticket?->user_id)
+            ->first();
+        $latestMessageId = $ticket
+            ? (int) ($ticket->messages()->max('id') ?: 0)
+            : 0;
+        if (!$admin || !$ticket || !$ticket->user || !$message
+            || (int) $message->id !== $latestMessageId) {
             return;
         }
 
-        $admin = $this->boundUser($msg, false);
-        $locale = $admin ? $this->localeForUser($admin) : $this->localeForMessage($msg);
-        if (!$admin || !$admin->is_admin) {
-            $this->sendMessage($msg, $this->text('forbidden', $locale));
+        $locale = $this->localeForUser($admin);
+        $token = $this->issueSupportCallback(
+            $admin,
+            'view',
+            (int) $ticket->id,
+            1,
+            self::SUPPORT_NOTIFICATION_CALLBACK_TTL_SECONDS,
+        );
+        $this->telegramService->sendMessage(
+            (string) $admin->telegram_id,
+            $this->text('support_admin_notification', $locale, [
+                'reference' => Helper::escapeMarkdown($this->resellerService->customerReference($ticket->user)),
+                'email' => Helper::escapeMarkdown($this->maskedEmail((string) $ticket->user->email)),
+                'message' => Helper::escapeMarkdown((string) $message->message),
+            ]),
+            'markdown',
+            ['inline_keyboard' => [[[
+                'text' => $this->text('button_view_support', $locale),
+                'callback_data' => 'support:view:' . $token,
+            ]]]],
+        );
+    }
+
+    protected function showSupportInbox(object $msg, int $page = 1): bool
+    {
+        if (!$this->privateChat($msg)) return true;
+        $admin = $this->supportAdminActor($msg); if (!$admin) return true;
+        $this->clearAdminSupportState($msg);
+        $locale = $this->localeForUser($admin);
+        $query = Ticket::query()
+            ->where('subject', self::SUPPORT_TICKET_SUBJECT)
+            ->where('status', Ticket::STATUS_OPENING)
+            ->where('user_id', '!=', $admin->id)
+            ->whereHas('user', fn ($userQuery) => $userQuery->where('is_reseller', true));
+        $total = (clone $query)->count();
+        $pages = max(1, (int) ceil($total / self::SUPPORT_INBOX_PAGE_SIZE));
+        $page = max(1, min($pages, $page));
+        $tickets = $query->with('user')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->forPage($page, self::SUPPORT_INBOX_PAGE_SIZE)
+            ->get();
+
+        if ($tickets->isEmpty()) {
+            $this->sendMessage($msg, $this->text('support_inbox_empty', $locale), [
+                'inline_keyboard' => [[[
+                    'text' => $this->text('button_menu', $locale),
+                    'callback_data' => 'action:menu',
+                ]]],
+            ]);
+            return true;
+        }
+
+        $keyboard = [];
+        foreach ($tickets as $ticket) {
+            $target = $ticket->user;
+            if (!$target) continue;
+            $token = $this->issueSupportCallback($admin, 'view', (int) $ticket->id, $page);
+            $reference = $this->resellerService->customerReference($target);
+            $keyboard[] = [[
+                'text' => '💬 ' . $reference . ' · ' . $this->maskedEmail((string) $target->email),
+                'callback_data' => 'support:view:' . $token,
+            ]];
+        }
+        $navigation = [];
+        if ($page > 1) $navigation[] = [
+            'text' => $this->text('button_previous', $locale),
+            'callback_data' => 'support:inbox:' . ($page - 1),
+        ];
+        if ($page < $pages) $navigation[] = [
+            'text' => $this->text('button_next', $locale),
+            'callback_data' => 'support:inbox:' . ($page + 1),
+        ];
+        if ($navigation !== []) $keyboard[] = $navigation;
+        $keyboard[] = [[
+            'text' => $this->text('button_menu', $locale),
+            'callback_data' => 'action:menu',
+        ]];
+        $this->sendMessage($msg, $this->text('support_inbox_title', $locale, [
+            'page' => $page,
+            'pages' => $pages,
+            'total' => $total,
+        ]), ['inline_keyboard' => $keyboard]);
+        return true;
+    }
+
+    protected function showSupportConversation(object $msg, string $token): bool
+    {
+        if (!$this->privateChat($msg)) return true;
+        $admin = $this->supportAdminActor($msg); if (!$admin) return true;
+        $locale = $this->localeForUser($admin);
+        $callback = $this->consumeSupportCallback($msg, $admin, $token, 'view');
+        if (!$callback) {
+            $this->sendMessage($msg, $this->text('support_inbox_stale', $locale), [
+                'inline_keyboard' => [[[
+                    'text' => $this->text('button_support_inbox', $locale),
+                    'callback_data' => 'support:inbox:1',
+                ]]],
+            ]);
+            return true;
+        }
+
+        $ticket = $this->supportTicketForAdmin((int) $callback['ticket_id']);
+        $target = $ticket?->user;
+        if (!$ticket || !$target || (int) $target->id === (int) $admin->id) {
+            $this->sendMessage($msg, $this->text('support_inbox_stale', $locale));
+            return true;
+        }
+        $history = $ticket->messages()->orderByDesc('id')->limit(self::SUPPORT_HISTORY_LIMIT)->get()->reverse()
+            ->map(function ($ticketMessage) use ($target, $locale): string {
+                $key = (int) $ticketMessage->user_id === (int) $target->id
+                    ? 'support_history_reseller'
+                    : 'support_history_admin';
+                $message = mb_strimwidth(trim((string) $ticketMessage->message), 0, 320, '…');
+                return $this->text($key, $locale, ['message' => Helper::escapeMarkdown($message)]);
+            })->implode("\n");
+        $reference = $this->resellerService->customerReference($target);
+        $status = app(UserService::class)->isAvailable($target)
+            ? $this->text('status_active', $locale)
+            : $this->text($target->banned ? 'status_banned' : 'status_inactive', $locale);
+        $expires = $target->expired_at !== null
+            ? date('Y-m-d H:i:s', (int) $target->expired_at)
+            : $this->text('expires_never', $locale);
+        $replyToken = $this->issueSupportCallback($admin, 'reply', (int) $ticket->id, (int) $callback['page']);
+        $refreshToken = $this->issueSupportCallback($admin, 'view', (int) $ticket->id, (int) $callback['page']);
+        $this->sendMessage($msg, $this->text('support_admin_detail', $locale, [
+            'reference' => Helper::escapeMarkdown($reference),
+            'user_id' => (int) $target->id,
+            'email' => Helper::escapeMarkdown((string) $target->email),
+            'status' => $status,
+            'role' => $this->text('support_role_reseller', $locale),
+            'plan' => Helper::escapeMarkdown((string) ($target->plan?->name ?? $this->text('no_plan', $locale))),
+            'expires' => $expires,
+            'history' => $history,
+        ]), [
+            'inline_keyboard' => [
+                [[
+                    'text' => $this->text('button_reply_support', $locale),
+                    'callback_data' => 'support:reply:' . $replyToken,
+                ], [
+                    'text' => $this->text('button_refresh', $locale),
+                    'callback_data' => 'support:view:' . $refreshToken,
+                ]],
+                [[
+                    'text' => $this->text('button_back', $locale),
+                    'callback_data' => 'support:inbox:' . (int) $callback['page'],
+                ]],
+            ],
+        ]);
+        return true;
+    }
+
+    protected function beginSupportAdminReply(object $msg, string $token): bool
+    {
+        if (!$this->privateChat($msg)) return true;
+        $admin = $this->supportAdminActor($msg); if (!$admin) return true;
+        $locale = $this->localeForUser($admin);
+        $callback = $this->consumeSupportCallback($msg, $admin, $token, 'reply');
+        $ticket = $callback ? $this->supportTicketForAdmin((int) $callback['ticket_id']) : null;
+        if (!$callback || !$ticket || !$ticket->user || (int) $ticket->user_id === (int) $admin->id) {
+            $this->sendMessage($msg, $this->text('support_inbox_stale', $locale));
+            return true;
+        }
+        $state = [
+            'admin_user_id' => (int) $admin->id,
+            'ticket_id' => (int) $ticket->id,
+            'expected_latest_message_id' => (int) ($ticket->messages()->max('id') ?: 0),
+            'page' => (int) $callback['page'],
+            'nonce' => $this->newNonce(),
+            'expires_at' => time() + self::SUPPORT_ADMIN_STATE_TTL_SECONDS,
+        ];
+        $stateKey = $this->adminSupportKey($msg);
+        if ($stateKey === null) return true;
+        Cache::put($stateKey, $state, self::SUPPORT_ADMIN_STATE_TTL_SECONDS);
+        try {
+            $this->sendMessage($msg, $this->text('support_admin_reply_prompt', $locale, [
+                'reference' => Helper::escapeMarkdown($this->resellerService->customerReference($ticket->user)),
+            ]), [
+                'inline_keyboard' => [[[
+                    'text' => $this->text('button_cancel', $locale),
+                    'callback_data' => 'support:cancel',
+                ]]],
+            ]);
+        } catch (\Throwable $e) {
+            Cache::forget($stateKey);
+            throw $e;
+        }
+        return true;
+    }
+
+    protected function handleSupportAdminInput(object $msg): void
+    {
+        if (!$this->privateChat($msg) || $this->deliveryKey($msg) === null) return;
+        $admin = $this->supportAdminActor($msg); if (!$admin) { $this->clearAdminSupportState($msg); return; }
+        $locale = $this->localeForUser($admin);
+        $state = $this->adminSupportStateForActor($msg, $admin);
+        if (!$state) {
+            $this->sendMessage($msg, $this->text('support_inbox_stale', $locale));
             return;
         }
         $message = trim((string) ($msg->text ?? ''));
@@ -1374,61 +1700,61 @@ class Plugin extends AbstractPlugin
         }
         RateLimiter::hit($rateKey, self::SUPPORT_RATE_DECAY_SECONDS);
 
-        $ticketId = $this->ticketIdFromSupportReference((string) ($matches[1] ?? ''));
-        $ticket = $ticketId === null ? null : Ticket::query()
-            ->whereKey($ticketId)
-            ->where('subject', self::SUPPORT_TICKET_SUBJECT)
-            ->where('status', Ticket::STATUS_OPENING)
-            ->with('user')
-            ->first();
-        $target = $ticket?->user;
-        $targetTelegramId = trim((string) ($target?->telegram_id ?? ''));
-        if (!$ticket
-            || !$target
-            || !$this->resellerService->canManage($target)
-            || preg_match('/^[1-9][0-9]{0,19}$/', $targetTelegramId) !== 1) {
-            $this->sendMessage($msg, $this->text('support_reference_invalid', $locale));
+        $nonce = (string) $state['nonce'];
+        $lock = Cache::lock($this->operationLockKey(
+            'support_admin_reply',
+            (int) $admin->id,
+            $nonce,
+        ), 30);
+        if (!$lock->get()) {
+            $this->sendMessage($msg, $this->text('busy', $locale));
             return;
         }
-
-        $latestMessageId = (int) ($ticket->messages()->max('id') ?: 0);
-        $saved = false;
         try {
+            // Re-read only after taking the per-state lock. The first message
+            // consumes the state; a concurrent webhook with identical text can
+            // no longer mistake that durable reply for its own operation.
+            $state = $this->adminSupportStateForActor($msg, $admin);
+            if (!$state || !hash_equals((string) $state['nonce'], $nonce)) {
+                $this->sendMessage($msg, $this->text('support_inbox_stale', $locale));
+                return;
+            }
+
+            $ticket = $this->supportTicketForAdmin((int) $state['ticket_id']);
+            $target = $ticket?->user;
+            $targetTelegramId = trim((string) ($target?->telegram_id ?? ''));
+            if (!$ticket || !$target || (int) $target->id === (int) $admin->id
+                || preg_match('/^[1-9][0-9]{0,19}$/', $targetTelegramId) !== 1) {
+                $this->clearAdminSupportState($msg);
+                $this->sendMessage($msg, $this->text('support_inbox_stale', $locale));
+                return;
+            }
+
             (new TicketService())->replyByAdmin(
                 (int) $ticket->id,
                 $message,
                 (int) $admin->id,
                 self::SUPPORT_TICKET_SUBJECT,
+                (int) $state['expected_latest_message_id'],
             );
-            $saved = true;
+            $this->clearAdminSupportState($msg);
         } catch (\Throwable $e) {
-            // replyByAdmin persists first, then runs hooks and queues email.
-            // Distinguish a true write failure from a post-commit side-effect
-            // failure so Telegram cannot retry and duplicate the reply.
-            try {
-                $saved = $ticket->messages()
-                    ->where('id', '>', $latestMessageId)
-                    ->where('user_id', (int) $admin->id)
-                    ->where('message', $message)
-                    ->exists();
-            } catch (\Throwable) {
-                $saved = false;
-            }
-            Log::log($saved ? 'error' : 'warning', $saved
-                ? 'Telegram reseller support admin post-save action failed'
-                : 'Telegram reseller support admin reply rejected', [
-                    'action' => $saved ? 'support_admin_post_save' : 'support_admin_reply',
+            $this->clearAdminSupportState($msg);
+            Log::warning('Telegram reseller support admin reply rejected', [
+                    'action' => 'support_admin_reply',
                     'operator_user_id' => (int) $admin->id,
-                    'ticket_id' => (int) $ticket->id,
+                    'ticket_id' => (int) ($ticket->id ?? 0),
                     'error_type' => $e::class,
-                ]);
-            if (!$saved) {
-                try {
-                    $this->sendMessage($msg, $this->text('support_failed', $locale));
-                } catch (\Throwable) {
-                }
-                return;
-            }
+            ]);
+            $this->sendMessage($msg, $this->text('support_inbox_stale', $locale), [
+                'inline_keyboard' => [[[
+                    'text' => $this->text('button_support_inbox', $locale),
+                    'callback_data' => 'support:inbox:1',
+                ]]],
+            ]);
+            return;
+        } finally {
+            $lock->release();
         }
 
         $delivered = true;
@@ -1451,13 +1777,13 @@ class Plugin extends AbstractPlugin
             ]);
         }
         try {
-            $this->sendMessage(
-                $msg,
-                $this->text($delivered ? 'support_admin_delivered' : 'support_admin_saved', $locale),
-            );
+            $this->sendMessage($msg, $this->text($delivered ? 'support_admin_delivered' : 'support_admin_saved', $locale), [
+                'inline_keyboard' => [[[
+                    'text' => $this->text('button_support_inbox', $locale),
+                    'callback_data' => 'support:inbox:' . (int) $state['page'],
+                ]]],
+            ]);
         } catch (\Throwable $e) {
-            // The ticket reply is already durable. Swallow acknowledgement
-            // failures so Telegram cannot replay and duplicate it.
             Log::error('Telegram reseller support acknowledgement failed', [
                 'action' => 'support_admin_ack',
                 'operator_user_id' => (int) $admin->id,
@@ -1475,8 +1801,8 @@ class Plugin extends AbstractPlugin
         $ticket = $ticketId ? Ticket::find($ticketId) : null;
         if (!$ticket) return;
         // Dedicated reseller-support tickets never accept the legacy numeric
-        // reply path. Even an admin must reply to the opaque reference in the
-        // configured support chat, while staff have no support authority.
+        // reply path. Administrators must use the bound, short-lived inbox
+        // buttons in their private bot chat; staff have no support authority.
         if ((string) $ticket->subject === self::SUPPORT_TICKET_SUBJECT) {
             $this->sendMessage($msg, $this->text('support_reference_invalid', $this->localeForUser($actor)));
             return;
@@ -1502,34 +1828,12 @@ class Plugin extends AbstractPlugin
 
     public function addBotCommands(array $commands): array
     {
-        $descriptions = $this->catalog('en')['commands'];
-        foreach ($this->commandConfigs as $command => $_config) {
-            $name = ltrim($command, '/');
-            $commands[] = ['command' => $name, 'description' => $descriptions[$name]];
-        }
-        return $commands;
+        return [];
     }
 
     public function addLocalizedBotCommands(array $localized): array
     {
-        // Telegram accepts ISO 639-1 codes here, so its command menu has one
-        // generic Chinese slot. Bound users still receive zh-CN or zh-TW body
-        // text and buttons according to their XBoard locale.
-        $telegramLocales = [
-            'vi' => 'vi',
-            'en' => 'en',
-            'zh' => 'zh-CN',
-            'ja' => 'ja',
-            'ko' => 'ko',
-            'fa' => 'fa',
-            'ru' => 'ru',
-        ];
-        foreach ($telegramLocales as $languageCode => $locale) {
-            $localized[$languageCode] = collect($this->catalog($locale)['commands'])->map(
-                fn ($description, $command) => ['command' => $command, 'description' => $description]
-            )->values()->all();
-        }
-        return $localized;
+        return [];
     }
 
     protected function sendMessage(object $msg, string $message, array $replyMarkup = []): void
@@ -1735,14 +2039,13 @@ class Plugin extends AbstractPlugin
         }
     }
 
-    protected function supportChatId(): ?string
+    protected function hasAvailableSupportAdmin(User $requester): bool
     {
-        if (!$this->getConfig('enable_reseller_bot', false)
-            || !$this->getConfig('enable_reseller_support_chat', false)) {
-            return null;
-        }
-        $chatId = trim((string) $this->getConfig('reseller_support_chat_id', ''));
-        return preg_match('/^-?[1-9][0-9]{0,19}$/', $chatId) === 1 ? $chatId : null;
+        return User::query()
+            ->where('is_admin', true)
+            ->whereNotNull('telegram_id')
+            ->where('id', '!=', $requester->id)
+            ->exists();
     }
 
     protected function supportTicketForActor(User $actor, ?int $ticketId = null): ?Ticket
@@ -1759,34 +2062,122 @@ class Plugin extends AbstractPlugin
         return $query->first();
     }
 
-    protected function supportReference(Ticket $ticket): string
+    protected function supportAdminActor(object $msg, bool $notify = true): ?User
     {
-        // APP_KEY-backed authenticated encryption keeps the database id opaque
-        // while remaining resolvable after PHP, queue or host restarts.
-        return bin2hex(Crypt::encryptString('telegram-support:' . (int) $ticket->id));
+        $user = $this->boundUser($msg, false);
+        if (!$user || !$user->is_admin) {
+            if ($notify) {
+                $locale = $user ? $this->localeForUser($user) : $this->localeForMessage($msg);
+                $this->sendMessage($msg, $this->text('forbidden', $locale));
+            }
+            return null;
+        }
+        return $user;
     }
 
-    protected function ticketIdFromSupportReference(string $reference): ?int
+    protected function supportTicketForAdmin(int $ticketId): ?Ticket
     {
-        $reference = trim($reference);
-        if (strlen($reference) < 80
-            || strlen($reference) > 1024
-            || strlen($reference) % 2 !== 0
-            || !ctype_xdigit($reference)) {
+        return Ticket::query()
+            ->whereKey($ticketId)
+            ->where('subject', self::SUPPORT_TICKET_SUBJECT)
+            ->where('status', Ticket::STATUS_OPENING)
+            ->whereHas('user', fn ($query) => $query->where('is_reseller', true))
+            ->with('user.plan')
+            ->first();
+    }
+
+    protected function adminSupportKey(object $msg): ?string
+    {
+        $actorId = $this->actorId($msg);
+        return $actorId === '' ? null : 'telegram:support:admin-state:' . $actorId;
+    }
+
+    protected function adminSupportState(object $msg): ?array
+    {
+        $key = $this->adminSupportKey($msg);
+        if ($key === null) return null;
+        $state = Cache::get($key);
+        if (!is_array($state)
+            || (int) ($state['expires_at'] ?? 0) < time()
+            || (int) ($state['admin_user_id'] ?? 0) <= 0
+            || (int) ($state['ticket_id'] ?? 0) <= 0
+            || (int) ($state['expected_latest_message_id'] ?? 0) <= 0
+            || preg_match('/^[a-f0-9]{16}$/', (string) ($state['nonce'] ?? '')) !== 1) {
+            Cache::forget($key);
             return null;
         }
-        try {
-            $encrypted = hex2bin($reference);
-            if ($encrypted === false) return null;
-            $payload = Crypt::decryptString($encrypted);
-        } catch (\Throwable) {
+        return $state;
+    }
+
+    protected function adminSupportStateForActor(object $msg, User $admin): ?array
+    {
+        $state = $this->adminSupportState($msg);
+        return $state && (int) $state['admin_user_id'] === (int) $admin->id ? $state : null;
+    }
+
+    protected function clearAdminSupportState(object $msg): void
+    {
+        $key = $this->adminSupportKey($msg);
+        if ($key !== null) Cache::forget($key);
+    }
+
+    protected function issueSupportCallback(
+        User $admin,
+        string $action,
+        int $ticketId,
+        int $page,
+        int $ttlSeconds = self::SUPPORT_CALLBACK_TTL_SECONDS,
+    ): string
+    {
+        if (!in_array($action, ['view', 'reply'], true)
+            || $ticketId <= 0
+            || preg_match('/^[1-9][0-9]{0,19}$/', trim((string) $admin->telegram_id)) !== 1) {
+            throw new \InvalidArgumentException('Invalid support callback target.');
+        }
+        $ttlSeconds = max(60, min(self::SUPPORT_NOTIFICATION_CALLBACK_TTL_SECONDS, $ttlSeconds));
+        $token = bin2hex(random_bytes(16));
+        Cache::put($this->supportCallbackKey($token), [
+            'admin_user_id' => (int) $admin->id,
+            'telegram_id' => (string) $admin->telegram_id,
+            'action' => $action,
+            'ticket_id' => $ticketId,
+            'page' => max(1, $page),
+            'expires_at' => time() + $ttlSeconds,
+        ], $ttlSeconds);
+        return $token;
+    }
+
+    protected function consumeSupportCallback(object $msg, User $admin, string $token, string $action): ?array
+    {
+        if (preg_match('/^[a-f0-9]{32}$/', $token) !== 1) return null;
+        $key = $this->supportCallbackKey($token);
+        $payload = Cache::get($key);
+        if (!is_array($payload)
+            || (int) ($payload['expires_at'] ?? 0) < time()
+            || (int) ($payload['admin_user_id'] ?? 0) !== (int) $admin->id
+            || !hash_equals((string) ($payload['telegram_id'] ?? ''), $this->actorId($msg))
+            || !hash_equals((string) ($payload['action'] ?? ''), $action)
+            || (int) ($payload['ticket_id'] ?? 0) <= 0) {
             return null;
         }
-        if (preg_match('/^telegram-support:([1-9][0-9]{0,18})$/', $payload, $matches) !== 1) {
-            return null;
-        }
-        $id = (int) $matches[1];
-        return $id > 0 ? $id : null;
+        Cache::forget($key);
+        return $payload;
+    }
+
+    protected function supportCallbackKey(string $token): string
+    {
+        return 'telegram:support:callback:' . hash('sha256', $token);
+    }
+
+    protected function maskedEmail(string $email): string
+    {
+        $email = trim($email);
+        $separator = strrpos($email, '@');
+        if ($separator === false) return '***';
+        $local = substr($email, 0, $separator);
+        $domain = substr($email, $separator + 1);
+        $first = $local === '' ? '*' : mb_substr($local, 0, 1);
+        return $first . '***@' . $domain;
     }
 
     protected function backupPassword(): string

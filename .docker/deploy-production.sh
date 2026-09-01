@@ -799,9 +799,9 @@ post_deploy_checks() {
   telegram_plugin_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite \
     "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")" || return 1
   case "$telegram_plugin_state" in
-    '2.2.0:0'|'2.2.0:1') ;;
+    '2.3.0:0'|'2.3.0:1') ;;
     *)
-      echo "Deployed Telegram plugin state is $telegram_plugin_state; expected version 2.2.0 with a valid admin-controlled enabled state." >&2
+      echo "Deployed Telegram plugin state is $telegram_plugin_state; expected version 2.3.0 with a valid admin-controlled enabled state." >&2
       return 1
       ;;
   esac

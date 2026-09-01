@@ -81,6 +81,11 @@ assert.strictEqual(
   'https://t.me/ZaoGuang_bot?start=bind_once',
   'a server-issued HTTPS t.me deep link must remain usable'
 );
+assert.strictEqual(
+  safeTelegramUrl('https://t.me/ZaoGuang_bot?start=menu'),
+  'https://t.me/ZaoGuang_bot?start=menu',
+  'a linked user must be able to reopen the inline-button menu through a safe deep link'
+);
 for (const unsafeUrl of [
   'http://t.me/ZaoGuang_bot?start=bind_once',
   'https://telegram.me/ZaoGuang_bot?start=bind_once',
@@ -330,18 +335,25 @@ async function verifyRuntimePlacement() {
   const fetch = (url, options) => {
     fetchCount += 1;
     lastRequest = { url, options };
-    return Promise.resolve({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({
-        data: {
+    const data = fetchCount === 1
+      ? {
           enabled: true,
           linked: false,
           bind_url: 'https://t.me/ZaoGuang_bot?start=bind_runtime',
           binding_expires_in: 600,
           capabilities: { reseller: true }
         }
-      })
+      : {
+          enabled: true,
+          linked: true,
+          bind_url: 'https://t.me/ZaoGuang_bot?start=menu',
+          binding_expires_in: null,
+          capabilities: { reseller: true }
+        };
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ data })
     });
   };
 
@@ -382,6 +394,8 @@ async function verifyRuntimePlacement() {
   refresh.listeners.click[0]();
   await new Promise((resolve) => setImmediate(resolve));
   assert.strictEqual(fetchCount, 2, 'the explicit refresh button must issue exactly one replacement link');
+  assert.strictEqual(card.dataset.state, 'linked');
+  assert.strictEqual(primary.href, 'https://t.me/ZaoGuang_bot?start=menu');
 
   window.location.pathname = '/plan';
   windowListeners.popstate[0]();

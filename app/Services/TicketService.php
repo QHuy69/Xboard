@@ -9,6 +9,7 @@ use App\Models\TicketMessage;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Services\Plugin\HookManager;
 
 class TicketService
@@ -48,7 +49,13 @@ class TicketService
         }
     }
 
-    public function replyByAdmin($ticketId, $message, $userId, ?string $expectedSubject = null): void
+    public function replyByAdmin(
+        $ticketId,
+        $message,
+        $userId,
+        ?string $expectedSubject = null,
+        ?int $expectedLatestMessageId = null,
+    ): TicketMessage
     {
         // Closing a ticket and posting an administrator reply must serialize on
         // the same row. Re-check both status and (for Telegram support) subject
@@ -58,7 +65,8 @@ class TicketService
             $ticketId,
             $message,
             $userId,
-            $expectedSubject
+            $expectedSubject,
+            $expectedLatestMessageId,
         ): array {
             $query = Ticket::query()
                 ->whereKey($ticketId)
@@ -70,6 +78,14 @@ class TicketService
             $ticket = $query->lockForUpdate()->first();
             if (!$ticket) {
                 throw new ApiException(__('Ticket does not exist or has been closed'));
+            }
+            if ($expectedLatestMessageId !== null) {
+                $latestMessageId = (int) (TicketMessage::query()
+                    ->where('ticket_id', $ticket->id)
+                    ->max('id') ?: 0);
+                if ($latestMessageId !== $expectedLatestMessageId) {
+                    throw new ApiException(__('Ticket has changed. Refresh it before replying.'));
+                }
             }
 
             $ticketMessage = TicketMessage::query()->create([
@@ -86,8 +102,28 @@ class TicketService
             return [$ticket, $ticketMessage];
         });
 
-        HookManager::call('ticket.reply.admin.after', [$ticket, $ticketMessage]);
-        $this->sendEmailNotify($ticket, $ticketMessage);
+        // The reply is already committed at this point. Notification failures
+        // must not make callers retry and create a duplicate durable message.
+        try {
+            HookManager::call('ticket.reply.admin.after', [$ticket, $ticketMessage]);
+        } catch (\Throwable $e) {
+            Log::error('Ticket administrator reply post-save hook failed', [
+                'ticket_id' => (int) $ticket->id,
+                'message_id' => (int) $ticketMessage->id,
+                'error_type' => $e::class,
+            ]);
+        }
+        try {
+            $this->sendEmailNotify($ticket, $ticketMessage);
+        } catch (\Throwable $e) {
+            Log::error('Ticket administrator reply email notification failed', [
+                'ticket_id' => (int) $ticket->id,
+                'message_id' => (int) $ticketMessage->id,
+                'error_type' => $e::class,
+            ]);
+        }
+
+        return $ticketMessage;
     }
 
     public function createTicket($userId, $subject, $level, $message)

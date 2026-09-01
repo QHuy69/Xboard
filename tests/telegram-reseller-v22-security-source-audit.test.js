@@ -8,6 +8,7 @@ const plugin = read('plugins-core/Telegram/Plugin.php');
 const service = read('app/Services/TelegramResellerService.php');
 const bindingService = read('app/Services/TelegramBindingService.php');
 const pluginManager = read('app/Services/Plugin/PluginManager.php');
+const telegramService = read('app/Services/TelegramService.php');
 const config = JSON.parse(read('plugins-core/Telegram/config.json'));
 const readme = read('plugins-core/Telegram/README.md');
 
@@ -25,9 +26,9 @@ function includesAll(source, needles, contract) {
   }
 }
 
-assert.strictEqual(config.version, '2.2.0', 'Telegram plugin version must expose the reseller schema update.');
+assert.strictEqual(config.version, '2.3.0', 'Telegram plugin version must expose the one-bot reseller/support schema update.');
 assert.strictEqual(config.auto_update_on_deploy, true,
-  'Telegram 2.2 must update the installed plugin record during an image deployment');
+  'Telegram 2.3 must update the installed plugin record during an image deployment');
 const ciGate = fs.readFileSync('.docker/ci-smoke.sh', 'utf8');
 const deployGate = fs.readFileSync('.docker/deploy-production.sh', 'utf8');
 for (const [releaseGate, gate] of [
@@ -37,11 +38,11 @@ for (const [releaseGate, gate] of [
   assert(gate.includes("SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';"),
     `${releaseGate} must verify the installed Telegram plugin record`);
 }
-assert(ciGate.includes('if [ "$telegram_plugin_state" != \'2.2.0:1\' ]; then'),
-  'Fresh CI install must enable the bundled Telegram 2.2 plugin.');
-assert(deployGate.includes("'2.2.0:0'|'2.2.0:1')"),
+assert(ciGate.includes('if [ "$telegram_plugin_state" != \'2.3.0:1\' ]; then'),
+  'Fresh CI install must enable the bundled Telegram 2.3 plugin.');
+assert(deployGate.includes("'2.3.0:0'|'2.3.0:1')"),
   'Deployment must preserve either explicit administrator-controlled Telegram enabled state.');
-assert(!deployGate.includes("'2.2.0:'*)"),
+assert(!deployGate.includes("'2.3.0:'*)"),
   'Deployment accepts an unvalidated Telegram plugin state suffix.');
 assert(config.config.enable_reseller_bot, 'Reseller feature flag is missing.');
 for (const legacyWhitelistKey of ['reseller_telegram_ids', 'reseller_allowed_telegram_ids']) {
@@ -50,15 +51,17 @@ for (const legacyWhitelistKey of ['reseller_telegram_ids', 'reseller_allowed_tel
   assert(!plugin.includes(legacyWhitelistKey),
     `Plugin still reads the legacy Telegram-id whitelist: ${legacyWhitelistKey}`);
 }
-assert(!/staff/i.test(config.config.enable_reseller_bot.description),
-  'Configuration copy still grants every staff account reseller authority.');
-assert(readme.includes('**2.2.0**') && !readme.includes('khai báo Telegram ID được phép'),
+assert(/is_reseller/.test(config.config.enable_reseller_bot.description)
+  && /Administrator and staff roles do not grant reseller access/.test(config.config.enable_reseller_bot.description),
+  'Configuration copy does not make explicit reseller assignment independent from admin/staff roles.');
+assert(readme.includes('**2.3.0**') && !readme.includes('khai báo Telegram ID được phép'),
   'README metadata or reseller authority documentation is stale.');
 
 const canManage = between(service, 'public function canManage', 'public function availablePlans');
-assert(canManage.includes('$actor->is_reseller || $actor->is_admin'),
-  'Reseller authority is not tied to an explicitly privileged bound user.');
-assert(!canManage.includes('$actor->is_staff'), 'Ordinary staff still receive reseller authority.');
+assert(canManage.includes('return (bool) $actor->is_reseller;'),
+  'Reseller authority is not tied exclusively to an explicit is_reseller assignment.');
+assert(!canManage.includes('$actor->is_admin') && !canManage.includes('$actor->is_staff'),
+  'Administrative or staff roles still imply reseller authority.');
 includesAll(plugin, [
   "if (!$this->getConfig('enable_reseller_bot', false)) return false;",
   '$this->resellerService->canManage($user)',
@@ -251,4 +254,30 @@ includesAll(pluginManager, [
   "'version' => $newVersion",
 ], 'Plugin upgrade config preservation');
 
-console.log('Telegram reseller v2.2 menu, authority, ownership, coupon, nonce, idempotency, reset, logging and locale contracts verified.');
+const publicCommands = between(plugin, 'public function addBotCommands', 'protected function sendMessage');
+assert(publicCommands.includes('public function addBotCommands(array $commands): array')
+  && publicCommands.includes('public function addLocalizedBotCommands(array $localized): array')
+  && (publicCommands.match(/return \[\];/g) || []).length === 2,
+  'The public default or localized Telegram slash-command menu is still populated.');
+for (const hiddenHandler of [
+  "'/start' => ['handler' => 'handleStartCommand']",
+  "'/menu' => ['handler' => 'handleStartCommand']",
+  "'/reseller' => ['handler' => 'handleResellerCommand']",
+  "'/setreportgroup' => ['handler' => 'handleSetReportGroupCommand']",
+  "'/backupdb' => ['handler' => 'handleBackupDatabaseCommand']",
+]) {
+  assert(plugin.includes(hiddenHandler), `Internal compatibility/operations handler was removed: ${hiddenHandler}`);
+}
+const commandCleanup = between(
+  telegramService,
+  'public function registerBotCommands',
+  'public function getMyCommands'
+);
+assert(commandCleanup.includes('$this->deleteMyCommands();')
+  && !commandCleanup.includes("$this->request('setMyCommands'"),
+  'Webhook/plugin setup does not clear legacy public command menus.');
+assert(plugin.includes('public function update(string $oldVersion, string $newVersion): void')
+  && plugin.includes('(new TelegramService())->registerBotCommands();'),
+  'The 2.3 upgrade path does not actively clear menus left by an older deployment.');
+
+console.log('Telegram reseller v2.3 button menu, isolated authority, ownership, coupon, nonce, idempotency, reset, logging and locale contracts verified.');

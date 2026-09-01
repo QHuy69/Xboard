@@ -5,6 +5,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const plugin = read('plugins-core/Telegram/Plugin.php');
+const telegramService = read('app/Services/TelegramService.php');
 const config = JSON.parse(read('plugins-core/Telegram/config.json'));
 const readme = read('plugins-core/Telegram/README.md');
 
@@ -55,8 +56,7 @@ assert.strictEqual((schedule.match(/name\('telegram-node-group-report'\)/g) || [
 const dispatch = between(plugin, 'public function sendScheduledNodeReport', 'public function sendDatabaseBackup');
 includesAll(dispatch, [
   "if (!$this->getConfig('enable_node_group_report', false)) return;",
-  "admin_setting('telegram_bot_enable', false)",
-  "admin_setting('telegram_bot_token', '')",
+  'if (!TelegramService::runtimeEnabled())',
   '$chatId = $this->nodeReportChatId();',
   'if ($chatId === null)',
   "Cache::lock('telegram:node-report:dispatch', 300)",
@@ -68,6 +68,15 @@ includesAll(dispatch, [
   "'action' => 'node_report'",
   "'error_type' => $e::class",
 ], 'Guarded scheduled node-report delivery');
+
+const runtimeGate = between(telegramService, 'public static function runtimeEnabled', 'public function sendMessage');
+includesAll(runtimeGate, [
+  "admin_setting('telegram_bot_enable', false)",
+  'FILTER_VALIDATE_BOOLEAN',
+  "admin_setting('telegram_bot_token', '')",
+  "->where('code', 'telegram')",
+  "->where('is_enabled', true)",
+], 'Central Telegram runtime delivery gate');
 assert(!dispatch.includes('(int) admin_setting') && !dispatch.includes('(int) $this->getConfig'),
   'Telegram destination identifiers are cast to platform-sized integers.');
 assert(!dispatch.includes("'chat_id' =>") && !dispatch.includes('->getMessage()'),

@@ -36,7 +36,7 @@ class TelegramController extends Controller
             $pluginConfig['enable_reseller_bot'] ?? false,
             FILTER_VALIDATE_BOOLEAN
         ) === true;
-        $resellerEnabled = $resellerFeatureEnabled && ($user->is_reseller || $user->is_admin);
+        $resellerEnabled = $resellerFeatureEnabled && (bool) $user->is_reseller;
 
         $data = [
             'enabled' => $enabled,
@@ -46,6 +46,7 @@ class TelegramController extends Controller
             'binding_expires_in' => null,
             'capabilities' => [
                 'reseller' => $enabled && $resellerEnabled,
+                'support_admin' => $enabled && (bool) $user->is_admin,
             ],
         ];
 
@@ -66,7 +67,10 @@ class TelegramController extends Controller
 
             $data['username'] = $username;
             if ($user->telegram_id !== null) {
-                $data['bind_url'] = 'https://t.me/' . $username;
+                // Telegram treats the start payload as an internal command,
+                // which rebuilds the bound user's inline-button menu without
+                // exposing any account or subscription credential in the URL.
+                $data['bind_url'] = 'https://t.me/' . $username . '?start=menu';
             } else {
                 $issued = $bindingService->issue($user);
                 $data['binding_expires_in'] = (int) $issued['expires_in'];

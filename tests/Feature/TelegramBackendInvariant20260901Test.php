@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\Plan;
+use App\Models\Plugin;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Services\Plugin\HookManager;
@@ -228,6 +229,33 @@ class TelegramBackendInvariant20260901Test extends TestCase
         $this->assertSame(300, (int) $order->total_amount);
     }
 
+    public function test_reseller_management_requires_an_explicit_reseller_role(): void
+    {
+        $adminOnly = $this->makeUser('telegram-admin-only@example.test', [
+            'is_admin' => true,
+        ]);
+        $staffOnly = $this->makeUser('telegram-staff-only@example.test', [
+            'is_staff' => true,
+        ]);
+        $resellerOnly = $this->makeUser('telegram-reseller-only@example.test', [
+            'is_reseller' => true,
+        ]);
+        $adminReseller = $this->makeUser('telegram-admin-reseller@example.test', [
+            'is_admin' => true,
+            'is_reseller' => true,
+        ]);
+
+        $service = app(TelegramResellerService::class);
+        $this->assertFalse($service->canManage($adminOnly));
+        $this->assertFalse($service->canManage($staffOnly));
+        $this->assertTrue($service->canManage($resellerOnly));
+        $this->assertTrue($service->canManage($adminReseller));
+
+        $resellerOnly->is_reseller = false;
+        $resellerOnly->saveOrFail();
+        $this->assertFalse($service->canManage($resellerOnly->fresh()));
+    }
+
     public function test_telegram_id_unique_migration_fails_closed_on_legacy_duplicates(): void
     {
         $first = $this->makeUser('telegram-duplicate-one@example.test');
@@ -281,6 +309,58 @@ class TelegramBackendInvariant20260901Test extends TestCase
         $this->assertSame(0, $ticket->messages()->count());
     }
 
+    public function test_admin_reply_rejects_a_stale_latest_message_snapshot_without_partial_write(): void
+    {
+        $customer = $this->makeUser('stale-support-customer@example.test', [
+            'is_reseller' => true,
+        ]);
+        $admin = $this->makeUser('stale-support-admin@example.test', [
+            'is_admin' => true,
+        ]);
+        $ticket = Ticket::query()->create([
+            'user_id' => $customer->id,
+            'subject' => '[Telegram reseller support]',
+            'level' => 0,
+            'status' => Ticket::STATUS_OPENING,
+            'reply_status' => Ticket::REPLY_STATUS_WAITING,
+            'last_reply_user_id' => $customer->id,
+        ]);
+        $firstMessage = $ticket->messages()->create([
+            'user_id' => $customer->id,
+            'message' => 'Initial reseller support message.',
+        ]);
+        $expectedLatestMessageId = (int) $firstMessage->id;
+
+        $concurrentReply = (new TicketService())->reply(
+            $ticket,
+            'A newer reseller message arrived.',
+            (int) $customer->id,
+        );
+        $this->assertNotFalse($concurrentReply);
+
+        try {
+            (new TicketService())->replyByAdmin(
+                (int) $ticket->id,
+                'This stale administrator reply must not be saved.',
+                (int) $admin->id,
+                '[Telegram reseller support]',
+                $expectedLatestMessageId,
+            );
+            $this->fail('A stale Telegram support snapshot accepted an administrator reply.');
+        } catch (ApiException $e) {
+            $this->assertNotSame('', trim($e->getMessage()));
+        }
+
+        $this->assertSame(2, $ticket->messages()->count());
+        $this->assertFalse($ticket->messages()
+            ->where('user_id', $admin->id)
+            ->where('message', 'This stale administrator reply must not be saved.')
+            ->exists());
+        $ticket->refresh();
+        $this->assertSame(Ticket::REPLY_STATUS_WAITING, (int) $ticket->reply_status);
+        $this->assertSame((int) $customer->id, (int) $ticket->last_reply_user_id);
+    }
+
     public function test_user_reply_rejects_a_closed_support_ticket_without_inserting_message(): void
     {
         $customer = $this->makeUser('closed-user-support@example.test');
@@ -305,7 +385,21 @@ class TelegramBackendInvariant20260901Test extends TestCase
 
     public function test_send_message_does_not_retry_an_ambiguous_http_failure(): void
     {
-        admin_setting(['telegram_bot_token' => '123456789:no-retry-test-token']);
+        admin_setting([
+            'telegram_bot_enable' => true,
+            'telegram_bot_token' => '123456789:no-retry-test-token',
+        ]);
+        Plugin::query()->updateOrCreate(
+            ['code' => 'telegram'],
+            [
+                'name' => 'Telegram Bot Integration',
+                'version' => '2.3.0',
+                'type' => Plugin::TYPE_FEATURE,
+                'is_enabled' => true,
+                'config' => '{}',
+                'installed_at' => now(),
+            ],
+        );
         Http::fakeSequence()
             ->push(['ok' => false], 500)
             ->push(['ok' => true, 'result' => ['message_id' => 2]], 200);

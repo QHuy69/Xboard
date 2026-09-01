@@ -1,17 +1,18 @@
 # Plugin Telegram cho XBoard
 
-Phiên bản plugin: **2.2.0**.
+Phiên bản plugin: **2.3.0**.
 
-Bot Telegram hỗ trợ 8 ngôn ngữ theo ngôn ngữ tài khoản: tiếng Việt, tiếng Anh, tiếng Trung giản thể, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Ba Tư và tiếng Nga. Khi chưa liên kết tài khoản, bot nhận diện ngôn ngữ Telegram và dùng phương án dự phòng an toàn nếu mã ngôn ngữ không được hỗ trợ. Người dùng có thể thao tác bằng nút bấm hoặc lệnh.
+Bot Telegram hỗ trợ 8 ngôn ngữ theo ngôn ngữ tài khoản: tiếng Việt, tiếng Anh, tiếng Trung giản thể, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Ba Tư và tiếng Nga. Khi chưa liên kết tài khoản, bot nhận diện ngôn ngữ Telegram và dùng phương án dự phòng an toàn nếu mã ngôn ngữ không được hỗ trợ. Toàn bộ luồng người dùng cuối dùng nút bấm; khách hàng và cộng tác viên không phải nhớ hoặc nhập lệnh.
 
 ## Chức năng người dùng
 
-- Liên kết bằng deep link dùng một lần, có thời hạn ngắn, được tạo từ trang XBoard đã đăng nhập; hủy liên kết có bước xác nhận và thu hồi mọi deep link còn hiệu lực.
+- Từ dashboard đã đăng nhập, người dùng bấm `Liên kết ngay` để mở đúng bot bằng deep link dùng một lần, có thời hạn ngắn; không phải sao chép mã hoặc liên kết đăng ký vào Telegram.
+- Sau khi liên kết, bot hiển thị các nút để xem lưu lượng, lấy liên kết đăng ký và quản lý liên kết tài khoản.
 - Xem lưu lượng còn lại và lấy liên kết đăng ký mới nhất.
 - Nhận thông báo khi mua mới, gia hạn, đổi gói, đặt lại liên kết đăng ký hoặc đặt lại lưu lượng.
-- Dùng menu thân thiện thay cho việc phải nhớ lệnh.
+- Hủy liên kết có bước xác nhận và thu hồi mọi deep link còn hiệu lực.
 
-Các lệnh chính: `/start`, `/menu`, `/bind`, `/traffic`, `/getlatesturl`, `/unbind` và `/cancel`.
+Danh sách lệnh công khai của bot được để trống để giao diện luôn hướng người dùng vào menu nút bấm. Một số slash handler có thể vẫn tồn tại ẩn để tương thích ngược hoặc phục vụ vận hành nội bộ, nhưng không phải là một phần của luồng người dùng cuối.
 
 ## Chức năng quản trị và nhóm
 
@@ -26,8 +27,8 @@ Các lệnh chính: `/start`, `/menu`, `/bind`, `/traffic`, `/getlatesturl`, `/u
 
 ## Quy trình cộng tác viên
 
-1. Bật chức năng cộng tác viên trong cấu hình plugin. Chỉ tài khoản XBoard đã liên kết Telegram và có quyền quản trị viên hoặc cờ cộng tác viên mới được dùng.
-2. Cộng tác viên nhấn menu `Cộng tác viên` hoặc dùng `/reseller` trong chat riêng với bot.
+1. Bật chức năng cộng tác viên trong cấu hình plugin. Chỉ tài khoản XBoard đã liên kết Telegram và được đánh dấu rõ ràng bằng `is_reseller` mới được dùng; quyền quản trị viên hoặc nhân viên không tự động cấp quyền cộng tác viên.
+2. Cộng tác viên nhấn nút `Cộng tác viên` trong chat riêng với bot.
 3. Chọn tạo khách hàng ẩn danh, chọn gói cùng chu kỳ, sau đó nhập mã giảm giá.
 4. Bot chỉ chấp nhận mã giảm giá phần trăm đúng 100%, còn hiệu lực và áp dụng được cho gói/chu kỳ đã chọn.
 5. Bot tạo khách hàng ẩn danh, đơn hàng 0đ và kích hoạt gói trong một giao dịch; chỉ mã khách hàng cùng liên kết đăng ký được trả về.
@@ -37,18 +38,18 @@ Mỗi nút chọn gói, chu kỳ, đặt lại bảo mật và hủy liên kết
 
 ## Chat hỗ trợ cộng tác viên
 
-- Khi bật cấu hình chat hỗ trợ và đặt chat Telegram đích, menu cộng tác viên có nút `Chat với quản trị viên`.
+- Cộng tác viên nhấn nút `Chat với quản trị viên` trong menu của chính bot mặc định; không cần bot thứ hai, nhóm hỗ trợ hoặc cấu hình chat ID riêng.
 - Tin nhắn được lưu bằng hệ thống ticket sẵn có của XBoard, nên lịch sử vẫn còn sau khi PHP, hàng đợi hoặc máy chủ khởi động lại và cũng xem được trong trang quản trị ticket.
-- Bot chuyển nội dung vào đúng chat hỗ trợ kèm mã tham chiếu được mã hóa. Bot không đưa Telegram ID của cộng tác viên vào nội dung chuyển tiếp.
-- Quản trị viên phải liên kết Telegram với tài khoản XBoard có cờ `is_admin` và trả lời trực tiếp tin nhắn bot đã chuyển tiếp. Nhân viên thông thường không có quyền trả lời luồng này.
-- Có giới hạn độ dài, tần suất, nút mở/đóng/hủy, kiểm tra chat nguồn, chống xử lý webhook trùng và log chỉ chứa ID nội bộ cùng loại lỗi.
+- Cùng bot đó chuyển nội dung vào hộp thư hỗ trợ riêng của quản trị viên đã liên kết, kèm mã tham chiếu không chứa thông tin cá nhân. Bot không đưa Telegram ID của cộng tác viên vào nội dung chuyển tiếp.
+- Chỉ tài khoản đã liên kết có cờ `is_admin` mới được trả lời hộp thư hỗ trợ; `is_reseller` chỉ cấp công cụ cộng tác viên. Hai vai trò độc lập, và nhân viên thông thường không có quyền trả lời luồng này.
+- Có giới hạn độ dài, tần suất, nút mở/đóng/hủy, kiểm tra người gửi, chống xử lý webhook trùng và log chỉ chứa ID nội bộ cùng loại lỗi.
 
 ## Cấu hình
 
 - Bật/tắt thông báo ticket và thanh toán.
 - Bật/tắt báo cáo node, đặt ID chat/nhóm đích, ngôn ngữ và chu kỳ 5/15/60 phút.
-- Bật/tắt quy trình cộng tác viên; quyền sử dụng lấy từ vai trò quản trị viên hoặc cờ cộng tác viên của tài khoản XBoard đã liên kết.
-- Bật/tắt chat hỗ trợ cộng tác viên và đặt ID chat riêng của quản trị viên hoặc ID âm của nhóm quản trị nhận tin.
+- Bật/tắt quy trình cộng tác viên; quyền sử dụng chỉ lấy từ cờ `is_reseller` của tài khoản XBoard đã liên kết, không suy ra từ quyền quản trị viên hoặc nhân viên.
+- Chat hỗ trợ cộng tác viên dùng cùng bot mặc định và hộp thư riêng của quản trị viên đã liên kết, nên không có bot token, group hoặc chat ID hỗ trợ thứ hai trong cấu hình plugin.
 - Bật/tắt backup database, đặt giờ chạy, dung lượng tối đa và mật khẩu mã hóa tối thiểu 16 ký tự.
 
 Nên đặt mật khẩu trong biến môi trường `TELEGRAM_DATABASE_BACKUP_PASSWORD` thay vì lưu ở cấu hình plugin. File tạm được cấp quyền riêng, luôn bị xóa sau khi gửi hoặc khi có lỗi và tác vụ có khóa chống chạy trùng.

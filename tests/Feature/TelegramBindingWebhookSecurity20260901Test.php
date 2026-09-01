@@ -2,17 +2,26 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendTelegramResellerSupportNotificationJob;
+use App\Jobs\SendTelegramJob;
 use App\Http\Middleware\InitializePlugins;
 use App\Models\Plugin;
+use App\Models\Ticket;
+use App\Models\TicketMessage;
 use App\Models\User;
 use App\Services\Plugin\HookManager;
+use App\Services\Plugin\PluginManager;
+use App\Services\EncryptedDatabaseBackupService;
 use App\Services\TelegramBindingService;
+use App\Services\TelegramService;
+use App\Services\TicketService;
 use App\Utils\Helper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpClientRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -58,7 +67,10 @@ class TelegramBindingWebhookSecurity20260901Test extends TestCase
             ->assertJsonPath('data.username', 'SecureBindingBot')
             ->assertJsonPath('data.binding_expires_in', TelegramBindingService::TOKEN_TTL_SECONDS)
             ->assertJsonPath('data.capabilities.reseller', false)
-            ->assertJsonMissingPath('data.bind_token');
+            ->assertJsonMissingPath('data.bind_token')
+            ->assertJsonMissingPath('data.subscription_url')
+            ->assertJsonMissingPath('data.subscribe_url')
+            ->assertJsonMissingPath('data.token');
 
         $firstPayload = $this->payloadFromDeepLink((string) $first->json('data.bind_url'));
         $this->assertMatchesRegularExpression('/^bind_[A-Za-z0-9_-]{32}$/', $firstPayload);
@@ -90,10 +102,480 @@ class TelegramBindingWebhookSecurity20260901Test extends TestCase
         $linked = $this->getJson('/api/v1/user/telegram/getBotInfo');
         $linked->assertOk()
             ->assertJsonPath('data.linked', true)
-            ->assertJsonPath('data.bind_url', 'https://t.me/SecureBindingBot')
+            ->assertJsonPath('data.bind_url', 'https://t.me/SecureBindingBot?start=menu')
             ->assertJsonPath('data.binding_expires_in', null)
             ->assertJsonMissingPath('data.telegram_id')
-            ->assertJsonMissingPath('data.bind_token');
+            ->assertJsonMissingPath('data.bind_token')
+            ->assertJsonMissingPath('data.subscription_url')
+            ->assertJsonMissingPath('data.subscribe_url')
+            ->assertJsonMissingPath('data.token');
+    }
+
+    public function test_bot_command_menu_is_deleted_for_default_and_every_supported_language_scope(): void
+    {
+        Http::fake([
+            'api.telegram.org/*' => Http::response(['ok' => true, 'result' => true]),
+        ]);
+
+        $telegram = app(TelegramService::class);
+        $this->assertTrue($telegram->commandMenuNeedsReconciliation());
+        $this->assertTrue($telegram->registerBotCommands());
+        $this->assertFalse($telegram->commandMenuNeedsReconciliation());
+
+        $requests = Http::recorded()->map(static fn (array $entry) => $entry[0])->all();
+        $this->assertCount(32, $requests);
+
+        $scopeMatrix = [];
+        foreach ($requests as $request) {
+            $path = (string) parse_url($request->url(), PHP_URL_PATH);
+            $this->assertStringEndsWith('/deleteMyCommands', $path);
+            $data = $request->data();
+            $this->assertArrayNotHasKey('commands', $data);
+            $scopeMatrix[] = [
+                json_decode((string) ($data['scope'] ?? ''), true)['type'] ?? null,
+                $data['language_code'] ?? null,
+            ];
+        }
+
+        $this->assertSame(
+            $this->expectedCommandMenuScopeMatrix(),
+            $scopeMatrix,
+        );
+
+        $rotatedBot = new TelegramService('987654321:rotated-command-menu-token');
+        $this->assertTrue($rotatedBot->commandMenuNeedsReconciliation());
+    }
+
+    public function test_command_menu_cleanup_failure_keeps_fingerprint_pending_and_reaches_later_scopes(): void
+    {
+        Http::fake(static function (HttpClientRequest $request) {
+            $data = $request->data();
+            $scopeType = json_decode((string) ($data['scope'] ?? ''), true)['type'] ?? null;
+            if ($scopeType === 'all_private_chats' && ($data['language_code'] ?? null) === 'zh') {
+                return Http::response(['ok' => false, 'description' => 'temporary scope failure']);
+            }
+            return Http::response(['ok' => true, 'result' => true]);
+        });
+
+        $telegram = app(TelegramService::class);
+        $this->assertTrue($telegram->commandMenuNeedsReconciliation());
+        $this->assertFalse($telegram->registerBotCommands());
+        $this->assertTrue($telegram->commandMenuNeedsReconciliation());
+        $this->assertSame(
+            '',
+            trim((string) admin_setting('telegram_bot_command_menu_fingerprint', '')),
+        );
+
+        $scopeMatrix = Http::recorded()->map(static function (array $entry) {
+            $data = $entry[0]->data();
+            return [
+                json_decode((string) ($data['scope'] ?? ''), true)['type'] ?? null,
+                $data['language_code'] ?? null,
+            ];
+        })->all();
+        $this->assertSame(
+            $this->expectedCommandMenuScopeMatrix(),
+            $scopeMatrix,
+        );
+    }
+
+    public function test_command_menu_retries_only_the_rate_limited_scope_then_persists_fingerprint(): void
+    {
+        $rateLimitedAttempts = 0;
+        Http::fake(static function (HttpClientRequest $request) use (&$rateLimitedAttempts) {
+            $data = $request->data();
+            $scopeType = json_decode((string) ($data['scope'] ?? ''), true)['type'] ?? null;
+            $isTarget = $scopeType === 'all_group_chats'
+                && ($data['language_code'] ?? null) === 'ja';
+            if ($isTarget && ++$rateLimitedAttempts === 1) {
+                return Http::response([
+                    'ok' => false,
+                    'error_code' => 429,
+                    'parameters' => ['retry_after' => 0],
+                ], 429);
+            }
+            return Http::response(['ok' => true, 'result' => true]);
+        });
+
+        $telegram = app(TelegramService::class);
+        $this->assertTrue($telegram->commandMenuNeedsReconciliation());
+        $this->assertTrue($telegram->registerBotCommands());
+        $this->assertFalse($telegram->commandMenuNeedsReconciliation());
+        $this->assertSame(2, $rateLimitedAttempts);
+
+        $scopeMatrix = Http::recorded()->map(static function (array $entry) {
+            $data = $entry[0]->data();
+            return [
+                json_decode((string) ($data['scope'] ?? ''), true)['type'] ?? null,
+                $data['language_code'] ?? null,
+            ];
+        })->all();
+        $this->assertCount(33, $scopeMatrix);
+        $this->assertSame($this->expectedCommandMenuScopeMatrix(), array_slice($scopeMatrix, 0, 32));
+        $this->assertSame(['all_group_chats', 'ja'], $scopeMatrix[32]);
+        $this->assertSame(
+            $this->expectedCommandMenuFingerprint(self::BOT_TOKEN),
+            admin_setting('telegram_bot_command_menu_fingerprint'),
+        );
+    }
+
+    public function test_webhook_reports_pending_when_telegram_returns_ok_with_false_cleanup_result(): void
+    {
+        admin_setting([
+            'telegram_webhook_url' => 'https://panel.example.test',
+            'secure_path' => 'Huy2006',
+        ]);
+        $admin = $this->makeUser('telegram-menu-pending-admin@example.test', [
+            'is_admin' => true,
+        ]);
+        Sanctum::actingAs($admin);
+
+        Http::fake(static function (HttpClientRequest $request) {
+            $path = (string) parse_url($request->url(), PHP_URL_PATH);
+            if (str_ends_with($path, '/getMe')) {
+                return Http::response([
+                    'ok' => true,
+                    'result' => ['username' => 'RotationSecurityBot'],
+                ]);
+            }
+            if (str_ends_with($path, '/deleteMyCommands')) {
+                $data = $request->data();
+                $scopeType = json_decode((string) ($data['scope'] ?? ''), true)['type'] ?? null;
+                if ($scopeType === 'all_chat_administrators'
+                    && ($data['language_code'] ?? null) === 'ru') {
+                    return Http::response(['ok' => true, 'result' => false]);
+                }
+            }
+            return Http::response(['ok' => true, 'result' => true]);
+        });
+
+        $this->postJson('/api/v2/Huy2006/config/setTelegramWebhook', [
+            'telegram_bot_token' => self::BOT_TOKEN,
+        ])->assertOk()
+            ->assertJsonPath('data.success', true)
+            ->assertJsonPath('data.command_menu_cleared', false)
+            ->assertJsonPath('data.command_menu_reconciliation_pending', true);
+
+        $this->assertSame(
+            '',
+            trim((string) admin_setting('telegram_bot_command_menu_fingerprint', '')),
+        );
+        $deleteRequests = Http::recorded()->filter(static function (array $entry): bool {
+            return str_ends_with(
+                (string) parse_url($entry[0]->url(), PHP_URL_PATH),
+                '/deleteMyCommands',
+            );
+        });
+        $this->assertCount(32, $deleteRequests);
+    }
+
+    public function test_reseller_support_notification_queue_payload_contains_only_current_record_ids(): void
+    {
+        Queue::fake([SendTelegramResellerSupportNotificationJob::class]);
+        $reseller = $this->makeUser('queued-support-reseller@example.test', [
+            'is_reseller' => true,
+            'telegram_id' => '4503599627370910',
+        ]);
+        $admins = collect([
+            $this->makeUser('queued-support-admin-one@example.test', [
+                'is_admin' => true,
+                'telegram_id' => '4503599627370911',
+            ]),
+            $this->makeUser('queued-support-admin-two@example.test', [
+                'is_admin' => true,
+                'telegram_id' => '4503599627370912',
+            ]),
+        ])->keyBy(static fn (User $admin): string => (string) $admin->telegram_id);
+        $this->makeUser('queued-support-staff@example.test', [
+            'is_staff' => true,
+            'telegram_id' => '4503599627370913',
+        ]);
+
+        $ticket = (new TicketService())->createTicket(
+            (int) $reseller->id,
+            '[Telegram reseller support]',
+            1,
+            'Please check this customer connection.',
+        );
+        $message = $ticket->messages()->latest()->firstOrFail();
+        $plugin = app(PluginManager::class)->getPlugin('telegram');
+        $this->assertNotNull($plugin);
+        $plugin->boot();
+        $plugin->sendTicketNotify($ticket);
+
+        Queue::assertPushed(SendTelegramResellerSupportNotificationJob::class, 2);
+        $jobs = Queue::pushed(SendTelegramResellerSupportNotificationJob::class);
+        $this->assertCount(2, $jobs);
+        foreach ($jobs as $job) {
+            $adminId = (int) $this->jobProperty($job, 'adminUserId');
+            $this->assertTrue($admins->contains(static fn (User $admin): bool => (int) $admin->id === $adminId));
+            $this->assertSame((int) $ticket->id, $this->jobProperty($job, 'ticketId'));
+            $this->assertSame((int) $message->id, $this->jobProperty($job, 'ticketMessageId'));
+            $reflection = new \ReflectionClass($job);
+            foreach (['telegramId', 'chatId', 'text', 'parseMode', 'replyMarkup'] as $forbiddenProperty) {
+                $this->assertFalse($reflection->hasProperty($forbiddenProperty));
+            }
+        }
+    }
+
+    public function test_runtime_delivery_gate_blocks_direct_hooks_generic_jobs_and_backup_before_creation(): void
+    {
+        $this->configureTelegram('false', true, 'true');
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+        Queue::fake([
+            SendTelegramJob::class,
+            SendTelegramResellerSupportNotificationJob::class,
+        ]);
+
+        $backup = new class extends EncryptedDatabaseBackupService {
+            public bool $called = false;
+
+            public function create(string $password): string
+            {
+                $this->called = true;
+                throw new \RuntimeException('Disabled Telegram runtime must not create a backup.');
+            }
+        };
+        $this->app->instance(EncryptedDatabaseBackupService::class, $backup);
+
+        $admin = $this->makeUser('runtime-gate-admin@example.test', [
+            'is_admin' => true,
+            'telegram_id' => '4503599627370901',
+        ]);
+        $user = $this->makeUser('runtime-gate-user@example.test', [
+            'telegram_id' => '4503599627370902',
+        ]);
+        $ticket = (new TicketService())->createTicket(
+            (int) $user->id,
+            'Runtime-disabled Telegram ticket',
+            1,
+            'This content must not enter the outbound queue.',
+        );
+
+        $plugin = app(PluginManager::class)->getPlugin('telegram');
+        $this->assertNotNull($plugin);
+        $plugin->setConfig([
+            'enable_ticket_notify' => true,
+            'database_backup_password' => 'runtime-gate-password',
+            'database_backup_max_mb' => '20',
+        ]);
+        $plugin->boot();
+        $plugin->sendTicketNotify($ticket);
+        $plugin->sendSubscriptionResetNotify([$user, 'https://panel.example.test/subscription']);
+        $plugin->sendDatabaseBackup((int) $admin->telegram_id, 'vi');
+        (new SendTelegramJob((string) $admin->telegram_id, 'Already queued content'))->handle();
+
+        Queue::assertNotPushed(SendTelegramJob::class);
+        Queue::assertNotPushed(SendTelegramResellerSupportNotificationJob::class);
+        Http::assertNothingSent();
+        $this->assertFalse($backup->called);
+    }
+
+    public function test_generic_queue_runtime_gate_rechecks_token_global_and_plugin_switches(): void
+    {
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+        $job = new SendTelegramJob('4503599627370903', 'Queued before the integration changed.');
+
+        $this->configureTelegram('false', true, 'true');
+        $job->handle();
+        $this->configureTelegram('true', true, 'true', '');
+        $job->handle();
+        $this->configureTelegram('true', false, 'true');
+        $job->handle();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_runtime_gate_does_not_block_webhook_or_command_menu_control_plane(): void
+    {
+        $this->configureTelegram('false', true, 'true');
+        Http::fake(static function (HttpClientRequest $request) {
+            if (str_ends_with((string) parse_url($request->url(), PHP_URL_PATH), '/getMe')) {
+                return Http::response([
+                    'ok' => true,
+                    'result' => ['username' => 'RuntimeGateControlPlaneBot'],
+                ]);
+            }
+            return Http::response(['ok' => true, 'result' => true]);
+        });
+
+        $service = new TelegramService(self::BOT_TOKEN);
+        $service->getMe();
+        $service->setWebhook('https://panel.example.test/api/v1/guest/telegram/webhook');
+        $this->assertTrue($service->registerBotCommands());
+
+        Http::assertSentCount(34);
+        Http::assertSent(static fn (HttpClientRequest $request): bool =>
+            str_ends_with((string) parse_url($request->url(), PHP_URL_PATH), '/getMe')
+        );
+        Http::assertSent(static fn (HttpClientRequest $request): bool =>
+            str_ends_with((string) parse_url($request->url(), PHP_URL_PATH), '/setWebhook')
+        );
+    }
+
+    public function test_support_notification_worker_honors_role_unbind_and_plugin_disable_after_dispatch(): void
+    {
+        [$admin, $ticket, $message] = $this->supportNotificationFixture('worker-revalidation');
+        $manager = app(PluginManager::class);
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+
+        $admin->is_admin = false;
+        $admin->saveOrFail();
+        (new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        ))->handle($manager);
+
+        $admin->is_admin = true;
+        $admin->telegram_id = null;
+        $admin->saveOrFail();
+        (new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        ))->handle($manager);
+
+        $admin->telegram_id = '4503599627370929';
+        $admin->saveOrFail();
+        Plugin::query()->where('code', 'telegram')->update(['is_enabled' => false]);
+        (new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        ))->handle($manager);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_support_notification_worker_honors_global_disable_and_blank_token_after_dispatch(): void
+    {
+        [$admin, $ticket, $message] = $this->supportNotificationFixture('worker-integration-gate');
+        $manager = app(PluginManager::class);
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+
+        $disabledJob = new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        );
+        admin_setting(['telegram_bot_enable' => 'false']);
+        $disabledJob->handle($manager);
+
+        admin_setting([
+            'telegram_bot_enable' => 'true',
+            'telegram_bot_token' => self::BOT_TOKEN,
+        ]);
+        $blankTokenJob = new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        );
+        admin_setting(['telegram_bot_token' => '   ']);
+        $blankTokenJob->handle($manager);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_support_notification_worker_uses_current_admin_chat_and_starts_callback_ttl_at_execution(): void
+    {
+        [$admin, $ticket, $message] = $this->supportNotificationFixture('worker-current-chat');
+        $job = new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        );
+        $admin->telegram_id = '4503599627370939';
+        $admin->saveOrFail();
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+
+        $executionStartedAt = time();
+        $job->handle(app(PluginManager::class));
+
+        Http::assertSentCount(1);
+        Http::assertSent(function (HttpClientRequest $request) use ($admin, $ticket, $executionStartedAt): bool {
+            $this->assertSame((string) $admin->fresh()->telegram_id, $request->data()['chat_id'] ?? null);
+            $this->assertSame('markdown', $request->data()['parse_mode'] ?? null);
+            $markup = json_decode((string) ($request->data()['reply_markup'] ?? ''), true);
+            $callbackData = (string) ($markup['inline_keyboard'][0][0]['callback_data'] ?? '');
+            $this->assertMatchesRegularExpression('/^support:view:[a-f0-9]{32}$/', $callbackData);
+            $token = substr($callbackData, strlen('support:view:'));
+            $payload = Cache::get('telegram:support:callback:' . hash('sha256', $token));
+            $this->assertIsArray($payload);
+            $this->assertSame((int) $admin->id, $payload['admin_user_id'] ?? null);
+            $this->assertSame((string) $admin->telegram_id, $payload['telegram_id'] ?? null);
+            $this->assertSame((int) $ticket->id, $payload['ticket_id'] ?? null);
+            $this->assertGreaterThanOrEqual($executionStartedAt + 86400, (int) ($payload['expires_at'] ?? 0));
+            $this->assertLessThanOrEqual(time() + 86400, (int) ($payload['expires_at'] ?? 0));
+            return true;
+        });
+    }
+
+    public function test_support_notification_worker_rejects_missing_nonlatest_and_closed_ticket_messages(): void
+    {
+        [$admin, $ticket, $message] = $this->supportNotificationFixture('worker-stale-message');
+        $manager = app(PluginManager::class);
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => true])]);
+
+        (new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            2147483647,
+        ))->handle($manager);
+
+        $newerMessage = TicketMessage::query()->create([
+            'user_id' => (int) $ticket->user_id,
+            'ticket_id' => (int) $ticket->id,
+            'message' => 'A newer durable reseller message.',
+        ]);
+        (new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $message->id,
+        ))->handle($manager);
+
+        $ticket->status = Ticket::STATUS_CLOSED;
+        $ticket->saveOrFail();
+        (new SendTelegramResellerSupportNotificationJob(
+            (int) $admin->id,
+            (int) $ticket->id,
+            (int) $newerMessage->id,
+        ))->handle($manager);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_webhook_token_rotation_uses_the_explicit_new_token_for_hash_and_bot_requests(): void
+    {
+        $storedToken = '111111111:stored-old-telegram-token';
+        $submittedToken = '222222222:submitted-new-telegram-token';
+        admin_setting([
+            'telegram_bot_token' => $storedToken,
+            'telegram_webhook_url' => 'https://panel.example.test',
+            'secure_path' => 'Huy2006',
+        ]);
+        $admin = $this->makeUser('telegram-token-rotation-admin@example.test', [
+            'is_admin' => true,
+        ]);
+        Sanctum::actingAs($admin);
+
+        $this->assertWebhookSetupUsesToken($submittedToken, $submittedToken);
+    }
+
+    public function test_blank_webhook_token_submission_falls_back_consistently_to_the_stored_token(): void
+    {
+        $storedToken = '333333333:stored-fallback-telegram-token';
+        admin_setting([
+            'telegram_bot_token' => $storedToken,
+            'telegram_webhook_url' => 'https://panel.example.test',
+            'secure_path' => 'Huy2006',
+        ]);
+        $admin = $this->makeUser('telegram-token-fallback-admin@example.test', [
+            'is_admin' => true,
+        ]);
+        Sanctum::actingAs($admin);
+
+        $this->assertWebhookSetupUsesToken('   ', $storedToken);
     }
 
     public function test_binding_serializes_target_and_actor_ownership_across_distinct_tokens(): void
@@ -372,6 +854,112 @@ class TelegramBindingWebhookSecurity20260901Test extends TestCase
                 'installed_at' => now(),
             ]
         );
+    }
+
+    private function assertWebhookSetupUsesToken(string $submittedToken, string $selectedToken): void
+    {
+        Http::fake(static function (HttpClientRequest $request) {
+            $path = (string) parse_url($request->url(), PHP_URL_PATH);
+            if (str_ends_with($path, '/getMe')) {
+                return Http::response([
+                    'ok' => true,
+                    'result' => ['username' => 'RotationSecurityBot'],
+                ]);
+            }
+            return Http::response(['ok' => true, 'result' => true]);
+        });
+
+        $expectedWebhook = 'https://panel.example.test/api/v1/guest/telegram/webhook'
+            . '?access_token=' . md5($selectedToken);
+        $response = $this->postJson('/api/v2/Huy2006/config/setTelegramWebhook', [
+            'telegram_bot_token' => $submittedToken,
+        ]);
+        $response->assertOk()
+            ->assertJsonPath('data.success', true)
+            ->assertJsonPath('data.webhook_url', $expectedWebhook)
+            ->assertJsonPath('data.command_menu_cleared', true)
+            ->assertJsonPath('data.command_menu_reconciliation_pending', false);
+
+        $requests = Http::recorded()->map(static fn (array $entry) => $entry[0]);
+        $this->assertGreaterThanOrEqual(2, $requests->count());
+        foreach ($requests as $request) {
+            $this->assertStringStartsWith(
+                'https://api.telegram.org/bot' . $selectedToken . '/',
+                $request->url(),
+            );
+        }
+
+        $getMe = $requests->first(static fn (HttpClientRequest $request): bool =>
+            str_ends_with((string) parse_url($request->url(), PHP_URL_PATH), '/getMe'));
+        $setWebhook = $requests->first(static fn (HttpClientRequest $request): bool =>
+            str_ends_with((string) parse_url($request->url(), PHP_URL_PATH), '/setWebhook'));
+        $this->assertNotNull($getMe);
+        $this->assertNotNull($setWebhook);
+
+        $webhookUrl = (string) ($setWebhook->data()['url'] ?? '');
+        parse_str((string) parse_url($webhookUrl, PHP_URL_QUERY), $query);
+        $this->assertSame(md5($selectedToken), $query['access_token'] ?? null);
+        $this->assertSame($expectedWebhook, $webhookUrl);
+    }
+
+    /** @return array{0: User, 1: Ticket, 2: TicketMessage} */
+    private function supportNotificationFixture(string $slug): array
+    {
+        $reseller = $this->makeUser($slug . '-reseller@example.test', [
+            'is_reseller' => true,
+            'telegram_id' => '4503599627370940',
+        ]);
+        $admin = $this->makeUser($slug . '-admin@example.test', [
+            'is_admin' => true,
+            'telegram_id' => '4503599627370941',
+        ]);
+        $ticket = (new TicketService())->createTicket(
+            (int) $reseller->id,
+            '[Telegram reseller support]',
+            1,
+            'A durable reseller support notification.',
+        );
+        $message = $ticket->messages()->latest()->firstOrFail();
+        return [$admin, $ticket, $message];
+    }
+
+    private function expectedCommandMenuFingerprint(string $token): string
+    {
+        return hash('sha256', implode('|', [
+            'inline-buttons-v2.3',
+            implode(',', [
+                'default',
+                'all_private_chats',
+                'all_group_chats',
+                'all_chat_administrators',
+            ]),
+            'default-language,' . implode(',', ['vi', 'en', 'zh', 'ja', 'ko', 'fa', 'ru']),
+            $token,
+        ]));
+    }
+
+    private function jobProperty(object $job, string $name): mixed
+    {
+        $property = new \ReflectionProperty($job, $name);
+        $property->setAccessible(true);
+        return $property->getValue($job);
+    }
+
+    /** @return array<int, array{0: string, 1: ?string}> */
+    private function expectedCommandMenuScopeMatrix(): array
+    {
+        $matrix = [];
+        foreach ([
+            'default',
+            'all_private_chats',
+            'all_group_chats',
+            'all_chat_administrators',
+        ] as $scopeType) {
+            foreach ([null, 'vi', 'en', 'zh', 'ja', 'ko', 'fa', 'ru'] as $languageCode) {
+                $matrix[] = [$scopeType, $languageCode];
+            }
+        }
+        return $matrix;
     }
 
     private function makeUser(string $email, array $overrides = []): User
