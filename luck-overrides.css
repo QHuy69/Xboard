@@ -585,6 +585,155 @@ button {
   }
 }
 
+/* Sidebar branding must never become the flex item's minimum-content width.
+   The upstream collapsed state keeps the complete application title inside an
+   80px rail; without explicit shrink boundaries that title can push the rail
+   wider and its blue badge is then painted outside the visible sidebar. Keep
+   every branding layer measurable, scale image logos with their aspect ratio,
+   and let long text logos wrap rather than crop at narrow/zoomed widths. */
+:where(
+  .main-area,
+  .mobile-top,
+  .sidebar-header,
+  .sidebar-header-content,
+  .logo-section,
+  .logo-section > *,
+  .collapsed-logo,
+  .app-title-full,
+  .text-logo,
+  .text-logo-content,
+  .brand-text,
+  .brand-text-content
+) {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.main-area,
+.mobile-top {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
+.mobile-top {
+  width: 100% !important;
+}
+
+:where(
+  .sidebar-header-content,
+  .logo-section,
+  .collapsed-logo,
+  .text-logo,
+  .brand-text
+) {
+  width: 100% !important;
+}
+
+.logo-section {
+  overflow: visible !important;
+}
+
+.logo-section img.logo-img {
+  display: block !important;
+  flex: 0 1 auto !important;
+  /* A percentage width is required here because the generated image carries
+     an inline `max-width: 200px !important`. `width:auto` lets that inline
+     maximum become the flex min-content width on 240px split/fold views. */
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-width: min(100%, var(--luck-logo-max-width, 200px)) !important;
+  max-height: var(--luck-logo-max-height, 82px) !important;
+  max-height: min(var(--luck-logo-max-height, 82px), max(28px, 10dvh)) !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+}
+
+:where(.text-logo-content, .brand-text-content) {
+  overflow: visible !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal !important;
+  text-align: center !important;
+}
+
+@media (min-width: 769px) {
+  /* Fix the rail itself as well as its declared width. flex min-content sizing
+     otherwise allows a long translated/app title to defeat the 80px state. */
+  .sidebar.collapsed {
+    box-sizing: border-box !important;
+    flex: 0 0 80px !important;
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+  }
+
+  .sidebar.collapsed .sidebar-header {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding-inline: 8px !important;
+  }
+
+  .sidebar.collapsed :where(.sidebar-header-content, .logo-section, .collapsed-logo) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .sidebar.collapsed .logo-section {
+    padding: 4px !important;
+  }
+
+  .sidebar.collapsed .collapsed-logo {
+    padding-inline: 0 !important;
+  }
+
+  .sidebar.collapsed .app-title-full {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 5px 2px !important;
+    font-size: clamp(7px, .625vw, 9px) !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere;
+    word-break: normal !important;
+    text-overflow: clip !important;
+  }
+
+  /* Expanded navigation labels can be considerably longer in German and
+     Russian. The generated 64px item hides overflow while the label keeps its
+     min-content width, clipping the last glyphs even on a wide desktop. */
+  .sidebar:not(.collapsed) .menu-item {
+    box-sizing: border-box !important;
+    height: auto !important;
+    min-height: 64px !important;
+    overflow: visible !important;
+  }
+
+  .sidebar:not(.collapsed) .menu-item-content {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .sidebar:not(.collapsed) .menu-label {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal !important;
+  }
+}
+
 @media (max-width: 768px) {
   .desktop-table[data-v-88d3a2ea] {
     overflow-x: hidden !important;
@@ -603,6 +752,25 @@ button {
   .dashboard-content {
     padding-left: 8px !important;
     padding-right: 8px !important;
+  }
+
+  :where(
+    .user-email-container,
+    .user-email-wrapper,
+    .user-email-display
+  ) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+  }
+
+  :where(.user-email-main, .user-email-domain) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal !important;
   }
 
   .plan-card,
@@ -1435,9 +1603,20 @@ html[dir="rtl"] .luck-language-picker select {
 
 .main-layout[data-v-3709f5eb] {
   display: grid !important;
-  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr) !important;
+  /* The traffic/status cards need a real 520px track to keep both their gauge
+     and value grid readable. A 300px minimum let the track keep shrinking
+     while its fixed inner content was clipped by the page overflow guard. */
+  grid-template-columns: minmax(0, 2fr) minmax(520px, 1fr) !important;
   align-items: start !important;
   gap: clamp(14px, 1.6vw, 24px) !important;
+}
+
+.notice-section[data-v-3709f5eb] > .section-title[data-v-3709f5eb] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal !important;
 }
 
 .left-column[data-v-3709f5eb],
@@ -1469,6 +1648,88 @@ html[dir="rtl"] .luck-language-picker select {
 
 .left-column[data-v-3709f5eb] > * {
   grid-column: 1 / -1 !important;
+}
+
+/* The generated traffic widget keeps a 314px gauge beside a roughly 307px
+   statistics grid. Together with its gap and card padding that composition
+   needs about 700px; flex-shrink alone only paints the statistics outside the
+   card, where the page overflow guard silently clips them. Make the widget
+   respond to its own allocated column and progressively move content down
+   before any label or value disappears. */
+.traffic-dashboard[data-v-3709f5eb] {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  container: luck-traffic / inline-size;
+}
+
+.traffic-dashboard[data-v-3709f5eb] .dashboard-container[data-v-3709f5eb],
+.traffic-dashboard[data-v-3709f5eb] .gauge-chart[data-v-3709f5eb],
+.traffic-dashboard[data-v-3709f5eb] .gauge-container[data-v-3709f5eb],
+.traffic-dashboard[data-v-3709f5eb] .gauge-center[data-v-3709f5eb],
+.traffic-dashboard[data-v-3709f5eb] .traffic-stats-grid[data-v-3709f5eb],
+.traffic-dashboard[data-v-3709f5eb] .stat-item[data-v-3709f5eb],
+.traffic-dashboard[data-v-3709f5eb] .stat-content[data-v-3709f5eb] {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.traffic-dashboard[data-v-3709f5eb] .dashboard-container[data-v-3709f5eb] {
+  width: 100% !important;
+}
+
+.traffic-dashboard[data-v-3709f5eb] .gauge-container[data-v-3709f5eb] {
+  width: 100% !important;
+}
+
+.traffic-dashboard[data-v-3709f5eb] .gauge-center[data-v-3709f5eb] {
+  width: min(200px, 100%) !important;
+}
+
+.traffic-dashboard[data-v-3709f5eb] :where(
+  .gauge-percentage[data-v-3709f5eb],
+  .gauge-label[data-v-3709f5eb],
+  .gauge-sublabel[data-v-3709f5eb]
+) {
+  width: 100% !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.traffic-dashboard[data-v-3709f5eb] .traffic-stats-grid[data-v-3709f5eb] {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.traffic-dashboard[data-v-3709f5eb] :where(
+  .stat-label[data-v-3709f5eb],
+  .stat-value[data-v-3709f5eb]
+) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+@container luck-traffic (max-width: 700px) {
+  .traffic-dashboard[data-v-3709f5eb] .dashboard-container[data-v-3709f5eb] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  .traffic-dashboard[data-v-3709f5eb] .gauge-chart[data-v-3709f5eb],
+  .traffic-dashboard[data-v-3709f5eb] .traffic-stats-grid[data-v-3709f5eb] {
+    width: 100% !important;
+  }
+}
+
+@container luck-traffic (max-width: 380px) {
+  .traffic-dashboard[data-v-3709f5eb] .traffic-stats-grid[data-v-3709f5eb] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
 }
 
 /* One-click Telegram access is the first action inside the dashboard's
@@ -1827,6 +2088,14 @@ body:is(.dark, .dark-mode, [data-theme="dark"]) .luck-telegram-footnote {
    wrapped or modified. */
 .subscription-container[data-v-3709f5eb] {
   padding: 32px !important;
+}
+
+.subscription-container[data-v-3709f5eb] :is(h3, .section-title) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal !important;
 }
 
 .subscription-cards-section[data-v-3709f5eb] {
@@ -2194,8 +2463,9 @@ html[dir="rtl"] .luck-subscription-header .luck-telegram-heading {
   min-width: 0;
   margin-bottom: 16px !important;
   line-height: 1.35 !important;
-  overflow-wrap: normal !important;
-  word-break: keep-all !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere;
+  word-break: normal !important;
 }
 
 .clients-section.luck-download-section[data-v-3709f5eb] > :where(.platform-cards, .client-apps) {
@@ -2285,10 +2555,13 @@ html[dir="rtl"] .luck-subscription-header .luck-telegram-heading {
 }
 
 .platform-card[data-luck-platform][data-v-3709f5eb] .platform-name,
-.platform-card[data-luck-platform][data-v-3709f5eb] .platform-desc {
+.platform-card[data-luck-platform][data-v-3709f5eb] .platform-desc,
+.platform-card[data-v-3709f5eb] b {
+  min-width: 0 !important;
   max-width: 100%;
-  overflow-wrap: normal !important;
-  word-break: keep-all !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal !important;
   writing-mode: horizontal-tb !important;
 }
 
@@ -2554,7 +2827,11 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
   }
 }
 
-@container luck-dashboard (max-width: 920px) {
+/* Keep the accepted two-column desktop composition only while both tracks
+   have enough readable space. At 1440px of actual post-sidebar dashboard
+   width the left content, 520px status track and inter-column gap no longer
+   fit safely, so the complete right column moves below the left one. */
+@container luck-dashboard (max-width: 1440px) {
   .main-layout[data-v-3709f5eb] {
     grid-template-columns: minmax(0, 1fr) !important;
   }
@@ -2562,18 +2839,68 @@ html:is([lang^="zh"], [lang^="ja"], [lang^="ko"]) :where(
 
 /* Only legacy browsers without container queries need viewport fallbacks.
    Modern browsers must respond to the actual dashboard/card width after the
-   sidebar, not stack a perfectly usable 1366/1440px desktop layout early. */
+   sidebar. The viewport fallback includes the typical desktop sidebar width
+   so it reaches the same safe stacking point as the container query. */
 @supports not (container-type: inline-size) {
+  /* Older WebViews cannot evaluate the component-width queries above. Keep
+     their traffic widget readable with conservative viewport fallbacks; a
+     vertical composition is preferable to silently clipping the metrics. */
+  @media (max-width: 2600px) {
+    .traffic-dashboard[data-v-3709f5eb] .dashboard-container[data-v-3709f5eb] {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) !important;
+      align-items: stretch !important;
+    }
+
+    .traffic-dashboard[data-v-3709f5eb] .gauge-chart[data-v-3709f5eb],
+    .traffic-dashboard[data-v-3709f5eb] .traffic-stats-grid[data-v-3709f5eb] {
+      width: 100% !important;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .traffic-dashboard[data-v-3709f5eb] .traffic-stats-grid[data-v-3709f5eb] {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+  }
+
+  @media (max-width: 1760px) {
+    .main-layout[data-v-3709f5eb] {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+  }
+
   @media (max-width: 1500px) {
     .user-main-info[data-v-3709f5eb] {
       grid-template-columns: minmax(0, 1fr) !important;
     }
   }
+}
 
-  @media (max-width: 1180px) {
-    .main-layout[data-v-3709f5eb] {
-      grid-template-columns: minmax(0, 1fr) !important;
-    }
+/* Immediately above the mobile breakpoint the expanded sidebar leaves less
+   than 560px for both desktop header groups. Put those groups on separate rows
+   for this narrow transition band instead of letting the account controls be
+   clipped by the main shell. */
+@media (min-width: 769px) and (max-width: 840px) {
+  .header-content[data-v-3b39f767] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 8px !important;
+  }
+
+  .header-left[data-v-3b39f767],
+  .header-right[data-v-3b39f767] {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .header-right[data-v-3b39f767] {
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
   }
 }
 

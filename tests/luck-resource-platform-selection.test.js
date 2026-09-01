@@ -182,8 +182,8 @@ assert.match(
 );
 assert.match(
   css,
-  /\.platform-card\[data-luck-platform\][\s\S]*?\.platform-desc\s*\{[\s\S]*?word-break:\s*keep-all\s*!important[\s\S]*?writing-mode:\s*horizontal-tb\s*!important/,
-  'OS labels must not stack vertically in translated narrow layouts'
+  /\.platform-card\[data-luck-platform\][\s\S]*?\.platform-desc[\s\S]*?overflow-wrap:\s*anywhere[\s\S]*?word-break:\s*normal\s*!important[\s\S]*?writing-mode:\s*horizontal-tb\s*!important/,
+  'OS labels must wrap only as an emergency instead of clipping or switching writing direction'
 );
 
 assert(

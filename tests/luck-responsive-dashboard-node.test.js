@@ -10,8 +10,8 @@ function expect(pattern, message) {
 }
 
 expect(
-  /\.main-layout\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*2fr\)\s+minmax\(300px,\s*1fr\)/,
-  'desktop dashboard columns must have explicit readable minimums'
+  /\.main-layout\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*2fr\)\s+minmax\(520px,\s*1fr\)/,
+  'desktop dashboard columns must reserve the readable width required by the traffic/status cards'
 );
 expect(
   /\.left-bottom\[data-v-3709f5eb\][\s\S]*?grid-area:\s*auto\s*!important[\s\S]*?width:\s*100%\s*!important/,
@@ -34,12 +34,56 @@ expect(
   'dashboard columns must use their real post-sidebar width as a container'
 );
 expect(
-  /@container luck-dashboard \(max-width:\s*920px\)[\s\S]*?\.main-layout\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
-  'dashboard columns must stack by available content width instead of raw viewport width'
+  /@container luck-dashboard \(max-width:\s*1440px\)[\s\S]*?\.main-layout\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  'dashboard columns must stack before the traffic/status values are clipped'
 );
 expect(
-  /@supports not \(container-type:\s*inline-size\)[\s\S]*?@media \(max-width:\s*1500px\)[\s\S]*?\.user-main-info[\s\S]*?@media \(max-width:\s*1180px\)[\s\S]*?\.main-layout/,
-  'viewport-only desktop stacking must be limited to legacy browsers without container queries'
+  /\.traffic-dashboard\[data-v-3709f5eb\][\s\S]*?container:\s*luck-traffic\s*\/\s*inline-size/,
+  'the traffic widget must respond to its actual allocated column width'
+);
+expect(
+  /@container luck-traffic \(max-width:\s*700px\)[\s\S]*?\.dashboard-container\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)[\s\S]*?\.gauge-chart\[data-v-3709f5eb\][\s\S]*?\.traffic-stats-grid\[data-v-3709f5eb\][\s\S]*?width:\s*100%/,
+  'the fixed gauge and statistics grid must move onto separate rows before they overflow'
+);
+expect(
+  /@container luck-traffic \(max-width:\s*380px\)[\s\S]*?\.traffic-stats-grid\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  'very narrow traffic cards must show every statistic in one readable column'
+);
+expect(
+  /\.gauge-center\[data-v-3709f5eb\][\s\S]*?width:\s*min\(200px,\s*100%\)/,
+  'the fixed gauge caption must shrink with narrow phone cards instead of being clipped'
+);
+expect(
+  /\.sidebar:not\(\.collapsed\) \.menu-label[\s\S]*?flex:\s*1\s+1\s+0\s*!important[\s\S]*?overflow-wrap:\s*anywhere/,
+  'long translated desktop menu labels must wrap inside the expanded sidebar'
+);
+expect(
+  /\.subscription-container\[data-v-3709f5eb\] :is\(h3,\s*\.section-title\)[\s\S]*?white-space:\s*normal\s*!important[\s\S]*?overflow-wrap:\s*anywhere/,
+  'long translated subscription headings must not retain an intrinsic mobile width'
+);
+expect(
+  /\.notice-section\[data-v-3709f5eb\] > \.section-title\[data-v-3709f5eb\][\s\S]*?overflow-wrap:\s*anywhere/,
+  'long translated notice headings must wrap inside the narrow status column'
+);
+expect(
+  /\.platform-card\[data-v-3709f5eb\] b[\s\S]*?overflow-wrap:\s*anywhere[\s\S]*?word-break:\s*normal\s*!important/,
+  'CJK and long platform labels must wrap without clipping the download section'
+);
+expect(
+  /@media \(max-width:\s*380px\)[\s\S]*?\.user-email-main,\s*\.user-email-domain[\s\S]*?overflow-wrap:\s*anywhere/,
+  'email identity must remain visible on 240px split and fold layouts'
+);
+expect(
+  /@media \(min-width:\s*769px\) and \(max-width:\s*840px\)[\s\S]*?\.header-content\[data-v-3b39f767\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)[\s\S]*?\.header-right\[data-v-3b39f767\][\s\S]*?flex-wrap:\s*wrap\s*!important/,
+  'the desktop header must use two rows in the narrow post-mobile transition band'
+);
+expect(
+  /@supports not \(container-type:\s*inline-size\)[\s\S]*?@media \(max-width:\s*1760px\)[\s\S]*?\.main-layout[\s\S]*?@media \(max-width:\s*1500px\)[\s\S]*?\.user-main-info/,
+  'legacy browsers must account for the sidebar before the dashboard values become clipped'
+);
+expect(
+  /@supports not \(container-type:\s*inline-size\)[\s\S]*?@media \(max-width:\s*2600px\)[\s\S]*?\.dashboard-container\[data-v-3709f5eb\][\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)[\s\S]*?@media \(max-width:\s*430px\)[\s\S]*?\.traffic-stats-grid/,
+  'legacy WebViews must receive a non-clipping traffic fallback without container queries'
 );
 expect(
   /@container luck-user-card \(max-width:\s*800px\)[\s\S]*?\.user-main-info[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
@@ -120,11 +164,11 @@ for (const viewport of [
   { name: 'small phone', width: 320, expected: 390 },
   { name: 'compact phone', width: 390, expected: 390 },
   { name: 'phone', width: 430, expected: 620 },
-  { name: 'tablet portrait', width: 768, expected: 1180 },
-  { name: 'tablet landscape', width: 1024, expected: 1180 },
-  { name: 'desktop baseline', width: 1366, expected: 1500 },
-  { name: 'narrow Windows window', width: 1180, expected: 1180 },
-  { name: '16:10 laptop', width: 1440, expected: 1500 },
+  { name: 'tablet portrait', width: 768, expected: 1760 },
+  { name: 'tablet landscape', width: 1024, expected: 1760 },
+  { name: 'desktop baseline', width: 1366, expected: 1760 },
+  { name: 'narrow Windows window', width: 1180, expected: 1760 },
+  { name: '16:10 laptop', width: 1440, expected: 1760 },
   { name: 'desktop', width: 1920, expected: null },
   { name: 'portrait 2K', width: 2560, expected: null },
   { name: 'ultrawide', width: 3440, expected: null },
@@ -142,24 +186,35 @@ for (const viewport of [
 /* Production geometry recorded before the fix. The stale `left-bottom` area
    split each left column into two implicit tracks. The corrected CSS contract
    makes the user card and lower sections span the complete left track while
-   keeping the right column top-aligned. */
+   keeping the right column top-aligned on genuinely wide dashboards. */
 for (const geometry of [
-  { viewport: '1366x768', main: 924, measuredLeft: 601, collapsedUser: 105 },
-  { viewport: '1920x1080', main: 1474, measuredLeft: 967, collapsedUser: 289 },
-  { viewport: '2560x1440', main: 2118, measuredLeft: 1396, collapsedUser: 504 },
-  { viewport: '3440x1440', main: 2998, measuredLeft: 1983, collapsedUser: 797 },
-  { viewport: '3840x2160', main: 3398, measuredLeft: 2249, collapsedUser: 931 }
+  { viewport: '1920x1080', main: 1474, collapsedUser: 289 },
+  { viewport: '2560x1440', main: 2118, collapsedUser: 504 },
+  { viewport: '3440x1440', main: 2998, collapsedUser: 797 },
+  { viewport: '3840x2160', main: 3398, collapsedUser: 931 }
 ]) {
   const available = geometry.main - 24;
-  const right = Math.max(300, available / 3);
+  const right = Math.max(520, available / 3);
   const correctedLeft = available - right;
   assert(geometry.collapsedUser < correctedLeft, `${geometry.viewport} fixture must reproduce the former collapse`);
-  assert(
-    Math.abs(correctedLeft - geometry.measuredLeft) <= 1,
-    `${geometry.viewport} corrected user card must span the complete 2fr left track`
-  );
-  assert(right >= 299, `${geometry.viewport} right column must retain a readable width`);
-  assert(correctedLeft >= right * 1.9, `${geometry.viewport} desktop columns must preserve the intended 2:1 hierarchy`);
+  assert(right >= 520, `${geometry.viewport} right column must retain enough width for every traffic value`);
+  assert(correctedLeft >= 900, `${geometry.viewport} left column must remain readable in the wide composition`);
+}
+
+const dashboardStackBreakpoint = Number(
+  css.match(/@container luck-dashboard \(max-width:\s*(\d+)px\)/)?.[1]
+);
+assert.strictEqual(dashboardStackBreakpoint, 1440, 'the dashboard stack breakpoint must remain content-driven');
+for (const fixture of [
+  { width: 920, expected: 'stacked' },
+  { width: 1180, expected: 'stacked' },
+  { width: 1366, expected: 'stacked' },
+  { width: 1440, expected: 'stacked' },
+  { width: 1441, expected: 'wide' },
+  { width: 1600, expected: 'wide' }
+]) {
+  const mode = fixture.width <= dashboardStackBreakpoint ? 'stacked' : 'wide';
+  assert.strictEqual(mode, fixture.expected, `${fixture.width}px dashboard content uses the wrong column mode`);
 }
 
 assert(patcher.includes('public static function patchNodeFlags'), 'node flag asset patch is missing');
