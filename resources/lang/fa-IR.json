@@ -499,5 +499,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "پرداخت مستقیم USDT TRC20 با رسیدهای نهایی‌شده TRON تأیید می‌شود.",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "در USDT Direct هنوز صورت‌حساب‌هایی نیازمند پایش زنجیره وجود دارد. پیش از غیرفعال‌کردن افزونه آن‌ها را تطبیق دهید.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "صورت‌حساب‌های USDT Direct برای حسابرسی تسویه نگهداری می‌شوند. درگاه این روش پرداخت قابل تغییر نیست.",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "صورت‌حساب‌های USDT Direct برای حسابرسی تسویه نگهداری می‌شوند. این روش پرداخت قابل حذف نیست."
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "صورت‌حساب‌های USDT Direct برای حسابرسی تسویه نگهداری می‌شوند. این روش پرداخت قابل حذف نیست.",
+    "Send a daily commercial summary": "ارسال گزارش تجاری روزانه",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "پس از نیمه‌شب ویتنام، ترافیک، فروش، درآمد، کدهای تخفیف و رتبه‌بندی نودها و کاربران روز کامل قبل به مقصد محافظت‌شده ارسال شود.",
+    "Daily commercial report time": "زمان گزارش تجاری روزانه",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "زمان ویتنام (Asia/Ho_Chi_Minh) با قالب HH:MM. گزارش همیشه روز تقویمی کامل قبلی ویتنام را جمع‌بندی می‌کند.",
+    "Daily commercial report Chat ID": "شناسه چت گزارش تجاری",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "چت خصوصی مدیر یا گروه مورد اعتمادی که مجاز به دریافت درآمد و رتبه‌بندی کاربران به‌صورت پوشانده‌شده است. شناسه گروه تلگرام معمولاً منفی است.",
+    "Reuse the node report group": "استفاده دوباره از گروه گزارش نود",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "اگر شناسه چت تجاری جداگانه تنظیم نشده است، ارسال داده تجاری به گروه گزارش نود را صریحاً مجاز کنید."
 }

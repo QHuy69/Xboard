@@ -1,6 +1,6 @@
 # Plugin Telegram cho XBoard
 
-Phiên bản plugin: **2.3.1**.
+Phiên bản plugin: **2.3.2**.
 
 Bot Telegram hỗ trợ 8 ngôn ngữ theo ngôn ngữ tài khoản: tiếng Việt, tiếng Anh, tiếng Trung giản thể, tiếng Trung phồn thể, tiếng Nhật, tiếng Hàn, tiếng Ba Tư và tiếng Nga. Khi chưa liên kết tài khoản, bot nhận diện ngôn ngữ Telegram và dùng phương án dự phòng an toàn nếu mã ngôn ngữ không được hỗ trợ. Toàn bộ luồng người dùng cuối dùng nút bấm; khách hàng và cộng tác viên không phải nhớ hoặc nhập lệnh.
 
@@ -22,6 +22,8 @@ Danh sách lệnh công khai của bot được để trống để giao diện 
 - Có thể đặt chat/nhóm đích và ngôn ngữ báo cáo ngay trong cấu hình plugin. `/setreportgroup` đồng bộ trực tiếp các trường này để cấu hình cũ không thể âm thầm ghi đè nhóm vừa chọn.
 - Chu kỳ báo cáo node mặc định là 15 phút và chỉ nhận ba lựa chọn an toàn: 5, 15 hoặc 60 phút. Tác vụ Laravel chạy độc lập với webhook, có khóa một máy chủ, chống chạy chồng và khóa theo từng khung thời gian.
 - Số trực tuyến lấy từ cache telemetry người dùng theo node do node gửi lên gần đây. Khi node ngoại tuyến hoặc không có lần push mới, bot ghi rõ dữ liệu không khả dụng thay vì hiển thị số 0 giả; tên và loại node được escape, báo cáo dài được chia thành nhiều tin an toàn.
+- Báo cáo thương mại hằng ngày chạy theo `Asia/Ho_Chi_Minh` sau nửa đêm, tổng kết trọn ngày Việt Nam trước đó: upload/download, tổng lưu lượng, top 10 node, top 10 người dùng (email được che), đơn/gói đã thanh toán, khách mua, tiền thu, số dư, phí xử lý, giảm giá và top 5 mã giảm giá. Báo cáo cảnh báo khi telemetry thiếu/cũ thay vì gọi dữ liệu vắng mặt là 0 GB. Tính năng có chat đích bảo mật riêng, chỉ dùng lại nhóm báo cáo node khi quản trị viên bật rõ tùy chọn này, có khóa chống gửi trùng theo ngày và mặc định tắt.
+- Dữ liệu lưu lượng ngày cũ đã được gom theo múi giờ máy chủ trước đây không thể chia lại chính xác. Ngày đầu chuyển sang giờ Việt Nam có thể là ngày chuyển tiếp thiếu một phần; các ngày đầy đủ sau đó mới là số liệu chuẩn để đối soát.
 - Tự động tạo backup database mỗi ngày, nén và mã hóa AES-256-GCM trước khi gửi vào chat riêng của quản trị viên.
 - `/setbackupchat`: đặt chat riêng hiện tại làm nơi nhận backup; `/backupdb`: chạy thử một bản backup ngay.
 
@@ -48,6 +50,7 @@ Mỗi nút chọn gói, chu kỳ, đặt lại bảo mật và hủy liên kết
 
 - Bật/tắt thông báo ticket và thanh toán.
 - Bật/tắt báo cáo node, đặt ID chat/nhóm đích, ngôn ngữ và chu kỳ 5/15/60 phút.
+- Bật/tắt báo cáo thương mại, đặt giờ Việt Nam và chat quản trị tin cậy; việc dùng lại nhóm báo cáo node là tùy chọn riêng và mặc định tắt.
 - Bật/tắt quy trình cộng tác viên; quyền sử dụng chỉ lấy từ cờ `is_reseller` của tài khoản XBoard đã liên kết, không suy ra từ quyền quản trị viên hoặc nhân viên.
 - Chat hỗ trợ cộng tác viên dùng cùng bot mặc định và hộp thư riêng của quản trị viên đã liên kết, nên không có bot token, group hoặc chat ID hỗ trợ thứ hai trong cấu hình plugin.
 - Bật/tắt backup database, đặt giờ chạy, dung lượng tối đa và mật khẩu mã hóa tối thiểu 16 ký tự.

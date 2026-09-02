@@ -499,5 +499,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "確定済みTRONレシートで直接USDT TRC20決済を検証します。",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "USDT Directにはチェーン監視が必要な請求が残っています。照合を完了してからプラグインを無効にしてください。",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Directの請求は決済監査のため保持されます。この支払い方法のゲートウェイは変更できません。",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Directの請求は決済監査のため保持されます。この支払い方法は削除できません。"
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Directの請求は決済監査のため保持されます。この支払い方法は削除できません。",
+    "Send a daily commercial summary": "日次営業レポートを送信",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "ベトナム時間の深夜以降に、前日の通信量、販売、収入、クーポン、ノードおよびユーザー順位を保護された送信先へ送ります。",
+    "Daily commercial report time": "日次営業レポート時刻",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "ベトナム時間 (Asia/Ho_Chi_Minh) を HH:MM 形式で指定します。常に完了した前日のベトナム暦日を集計します。",
+    "Daily commercial report Chat ID": "営業レポート Chat ID",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "収入とマスク済みユーザー順位を受信できる管理者の個人チャットまたは信頼済みグループです。Telegram のグループ ID は通常負数です。",
+    "Reuse the node report group": "ノード報告グループを再利用",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "専用の営業レポート Chat ID がない場合に、営業データをノード報告グループへ送ることを明示的に許可します。"
 }

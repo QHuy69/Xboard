@@ -504,5 +504,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "Thanh toán USDT TRC20 trực tiếp được xác minh bằng biên nhận TRON đã hoàn tất.",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "USDT Direct vẫn còn hóa đơn cần theo dõi trên chuỗi. Hãy đối soát chúng trước khi tắt plugin.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "Hóa đơn USDT Direct được lưu lại để kiểm toán quyết toán. Phương thức thanh toán này không thể đổi cổng.",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "Hóa đơn USDT Direct được lưu lại để kiểm toán quyết toán. Không thể xóa phương thức thanh toán này."
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "Hóa đơn USDT Direct được lưu lại để kiểm toán quyết toán. Không thể xóa phương thức thanh toán này.",
+    "Send a daily commercial summary": "Gửi báo cáo thương mại hằng ngày",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "Sau nửa đêm giờ Việt Nam, gửi lưu lượng, doanh số, doanh thu, mã giảm giá cùng xếp hạng node và người dùng của ngày hoàn tất trước đó đến nơi nhận được bảo vệ.",
+    "Daily commercial report time": "Giờ gửi báo cáo thương mại",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "Giờ Việt Nam (Asia/Ho_Chi_Minh) theo định dạng HH:MM. Báo cáo luôn tổng kết trọn ngày Việt Nam trước đó.",
+    "Daily commercial report Chat ID": "Chat ID nhận báo cáo thương mại",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "Chat riêng của quản trị viên hoặc nhóm tin cậy được phép nhận doanh thu và xếp hạng người dùng đã che thông tin. ID nhóm Telegram thường là số âm.",
+    "Reuse the node report group": "Dùng lại nhóm báo cáo node",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "Cho phép rõ ràng việc gửi dữ liệu thương mại vào nhóm báo cáo node khi chưa cấu hình Chat ID thương mại riêng."
 }

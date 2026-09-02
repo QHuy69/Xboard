@@ -807,8 +807,8 @@ if [ "$usdt_plugin_state" != '1.0.0:0' ]; then
 fi
 telegram_plugin_state="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite \
   "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")"
-if [ "$telegram_plugin_state" != '2.3.1:1' ]; then
-  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.3.1:1." >&2
+if [ "$telegram_plugin_state" != '2.3.2:1' ]; then
+  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.3.2:1." >&2
   exit 1
 fi
 if ! docker exec "$container_name" sh -lc 'runtime=/www/plugins/Telegram/Plugin.php; [ -f "$runtime" ] || runtime=/www/plugins-core/Telegram/Plugin.php; grep -Fq "PluginConfigService::class)->updateConfig" "$runtime"'; then

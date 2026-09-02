@@ -499,5 +499,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "Прямые платежи USDT TRC20 проверяются по финализированным квитанциям TRON.",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "В USDT Direct ещё есть счета, требующие наблюдения в блокчейне. Сверьте их перед отключением плагина.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "Счета USDT Direct сохраняются для аудита расчётов. Для этого способа оплаты нельзя сменить шлюз.",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "Счета USDT Direct сохраняются для аудита расчётов. Этот способ оплаты нельзя удалить."
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "Счета USDT Direct сохраняются для аудита расчётов. Этот способ оплаты нельзя удалить.",
+    "Send a daily commercial summary": "Отправлять ежедневный коммерческий отчёт",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "После полуночи по Вьетнаму отправлять в защищённый чат трафик, продажи, доход, купоны и рейтинги узлов и пользователей за завершённый предыдущий день.",
+    "Daily commercial report time": "Время ежедневного коммерческого отчёта",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "Время Вьетнама (Asia/Ho_Chi_Minh) в формате HH:MM. Отчёт всегда охватывает завершённый предыдущий календарный день Вьетнама.",
+    "Daily commercial report Chat ID": "Chat ID коммерческого отчёта",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "Личный чат администратора или доверенная группа, где разрешены данные о доходе и рейтинги пользователей с маскировкой. ID групп Telegram обычно отрицательные.",
+    "Reuse the node report group": "Использовать группу отчётов узлов",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "Явно разрешить отправку коммерческих данных в группу отчётов узлов, если отдельный Chat ID не настроен."
 }

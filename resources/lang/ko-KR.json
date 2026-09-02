@@ -499,5 +499,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "확정된 TRON 영수증으로 직접 USDT TRC20 결제를 검증합니다.",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "USDT Direct에 체인 모니터링이 필요한 청구서가 남아 있습니다. 대조를 마친 후 플러그인을 비활성화하세요.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Direct 청구서는 정산 감사를 위해 보관됩니다. 이 결제 수단의 게이트웨이는 변경할 수 없습니다.",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct 청구서는 정산 감사를 위해 보관됩니다. 이 결제 수단은 삭제할 수 없습니다."
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct 청구서는 정산 감사를 위해 보관됩니다. 이 결제 수단은 삭제할 수 없습니다.",
+    "Send a daily commercial summary": "일일 영업 보고서 전송",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "베트남 시간 자정 이후 완료된 전날의 트래픽, 판매, 수익, 쿠폰, 노드 및 사용자 순위를 보호된 대상으로 전송합니다.",
+    "Daily commercial report time": "일일 영업 보고서 시간",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "베트남 시간(Asia/Ho_Chi_Minh)을 HH:MM 형식으로 지정합니다. 보고서는 항상 완료된 이전 베트남 날짜를 집계합니다.",
+    "Daily commercial report Chat ID": "영업 보고서 Chat ID",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "수익과 마스킹된 사용자 순위를 받을 수 있는 관리자 개인 채팅 또는 신뢰할 수 있는 그룹입니다. Telegram 그룹 ID는 일반적으로 음수입니다.",
+    "Reuse the node report group": "노드 보고 그룹 재사용",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "별도의 영업 보고서 Chat ID가 없을 때 영업 데이터를 노드 보고 그룹으로 보내도록 명시적으로 허용합니다."
 }

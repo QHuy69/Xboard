@@ -499,5 +499,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "Direct USDT TRC20 payments verified against solidified TRON receipts.",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted."
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.",
+    "Send a daily commercial summary": "Send a daily commercial summary",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.",
+    "Daily commercial report time": "Daily commercial report time",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.",
+    "Daily commercial report Chat ID": "Daily commercial report Chat ID",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.",
+    "Reuse the node report group": "Reuse the node report group",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured."
 }

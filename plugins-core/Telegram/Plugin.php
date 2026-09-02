@@ -17,6 +17,7 @@ use App\Services\Plugin\HookManager;
 use App\Services\Plugin\PluginConfigService;
 use App\Services\TelegramService;
 use App\Services\TelegramBindingService;
+use App\Services\TelegramDailyBusinessReportService;
 use App\Services\TelegramResellerService;
 use App\Services\TicketService;
 use App\Services\UserService;
@@ -54,6 +55,7 @@ class Plugin extends AbstractPlugin
     private const SUPPORT_HISTORY_LIMIT = 6;
     // Leave headroom for TelegramService's final Markdown underscore escaping.
     private const NODE_REPORT_MESSAGE_LIMIT = 2400;
+    private const BUSINESS_TIMEZONE = TelegramDailyBusinessReportService::TIMEZONE;
 
     public function validateActivation(): void
     {
@@ -61,6 +63,17 @@ class Plugin extends AbstractPlugin
         $chatId = is_scalar($raw) || $raw === null ? trim((string) $raw) : '';
         if ($chatId !== '' && preg_match('/^-?[1-9][0-9]{0,19}$/', $chatId) !== 1) {
             throw new \InvalidArgumentException(__('The Telegram node report Chat ID must contain digits only.'));
+        }
+        $dailyTime = $this->getConfig('daily_business_report_time', '00:30');
+        $dailyTime = is_scalar($dailyTime) || $dailyTime === null ? trim((string) $dailyTime) : '';
+        if (!$this->validDailyBusinessReportTime($dailyTime)) {
+            throw new \InvalidArgumentException(__('The daily business report time must use HH:MM in Vietnam time.'));
+        }
+        if ($this->getConfig('enable_daily_business_report', false)) {
+            $businessChat = $this->dailyBusinessReportChatId();
+            if ($businessChat === null) {
+                throw new \InvalidArgumentException(__('Configure a valid daily business report Chat ID, or explicitly allow reuse of the node report group.'));
+            }
         }
     }
 
@@ -141,6 +154,16 @@ class Plugin extends AbstractPlugin
                 ->onOneServer()
                 ->withoutOverlapping(10);
             match ($interval) { 5 => $event->everyFiveMinutes(), 60 => $event->hourly(), default => $event->everyFifteenMinutes() };
+        }
+
+        if ($this->getConfig('enable_daily_business_report', false)) {
+            $schedule->call(fn () => $this->sendDailyBusinessReport())
+                ->name('telegram-daily-business-report')
+                // A five-minute due check lets a report catch up after a short
+                // scheduler outage instead of losing the whole day forever.
+                ->everyFiveMinutes()
+                ->onOneServer()
+                ->withoutOverlapping(60);
         }
 
         if ($this->getConfig('enable_database_backup', false)) {
@@ -617,6 +640,66 @@ class Plugin extends AbstractPlugin
             // same slot could duplicate the chunks Telegram already accepted.
             Log::error('Telegram scheduled node report failed', [
                 'action' => 'node_report',
+                'error_type' => $e::class,
+            ]);
+        } finally {
+            if ($locked && $lock) {
+                try { $lock->release(); } catch (\Throwable) {}
+            }
+        }
+    }
+
+    public function sendDailyBusinessReport(?string $date = null): void
+    {
+        if (!$this->getConfig('enable_daily_business_report', false)) return;
+        if ($date === null) {
+            $now = \Carbon\CarbonImmutable::now(self::BUSINESS_TIMEZONE);
+            if ($now->format('H:i') < $this->dailyBusinessReportTime()) return;
+        }
+        if (!TelegramService::runtimeEnabled()) {
+            Log::warning('Telegram daily business report skipped: Telegram runtime delivery is disabled');
+            return;
+        }
+        $chatId = $this->dailyBusinessReportChatId();
+        if ($chatId === null) {
+            Log::warning('Telegram daily business report skipped: no valid destination chat configured');
+            return;
+        }
+
+        $reportDate = $date ?: \Carbon\CarbonImmutable::now(self::BUSINESS_TIMEZONE)
+            ->subDay()
+            ->toDateString();
+        $lock = null;
+        $locked = false;
+        try {
+            $lock = Cache::lock('telegram:daily-business-report:dispatch', 3600);
+            $locked = $lock->get();
+            if (!$locked) return;
+
+            // Build the complete immutable payload before claiming the day.
+            // Query/config failures may then be retried safely without risking
+            // duplicate chunks already accepted by Telegram.
+            $summary = app(TelegramDailyBusinessReportService::class)->summarize($reportDate);
+            $chunks = $this->dailyBusinessReportChunks($summary, $this->nodeReportLocale());
+            $claimKey = 'telegram:daily-business-report:date:' . $reportDate;
+            if (!Cache::add($claimKey, 'processing', 172800)) return;
+
+            if (!isset($this->telegramService)) $this->telegramService = new TelegramService();
+            foreach ($chunks as $chunk) {
+                $this->telegramService->sendMessage($chatId, $chunk, 'markdown');
+            }
+            Cache::put($claimKey, 'done', 172800);
+            Log::notice('Telegram daily business report sent', [
+                'action' => 'daily_business_report',
+                'report_date' => $reportDate,
+                'timezone' => self::BUSINESS_TIMEZONE,
+                'chunk_count' => count($chunks),
+                'destination_hash' => substr(hash('sha256', $chatId), 0, 12),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Telegram daily business report failed', [
+                'action' => 'daily_business_report',
+                'report_date' => $reportDate,
                 'error_type' => $e::class,
             ]);
         } finally {
@@ -2303,6 +2386,32 @@ class Plugin extends AbstractPlugin
         return in_array($value, ['5', '15', '60'], true) ? (int) $value : 15;
     }
 
+    protected function validDailyBusinessReportTime(string $value): bool
+    {
+        if (preg_match('/^(\d{2}):(\d{2})$/', trim($value), $matches) !== 1) return false;
+        return (int) $matches[1] <= 23 && (int) $matches[2] <= 59;
+    }
+
+    protected function dailyBusinessReportTime(): string
+    {
+        $raw = $this->getConfig('daily_business_report_time', '00:30');
+        $value = is_scalar($raw) || $raw === null ? trim((string) $raw) : '';
+        return $this->validDailyBusinessReportTime($value) ? $value : '00:30';
+    }
+
+    protected function dailyBusinessReportChatId(): ?string
+    {
+        $raw = $this->getConfig('daily_business_report_chat_id', '');
+        $configured = is_scalar($raw) || $raw === null ? trim((string) $raw) : '';
+        if ($configured !== '') {
+            return preg_match('/^-?[1-9][0-9]{0,19}$/', $configured) === 1 ? $configured : null;
+        }
+        if (!filter_var($this->getConfig('daily_business_report_reuse_node_group', false), FILTER_VALIDATE_BOOLEAN)) {
+            return null;
+        }
+        return $this->nodeReportChatId();
+    }
+
     protected function nodeReportChatId(): ?string
     {
         $raw = $this->getConfig('node_report_chat_id', '');
@@ -2381,6 +2490,165 @@ class Plugin extends AbstractPlugin
     protected function nodeReport(string $locale): string
     {
         return implode("\n", $this->nodeReportLines($locale));
+    }
+
+    /** @param array<string, mixed> $summary @return list<string> */
+    protected function dailyBusinessReportChunks(array $summary, string $locale): array
+    {
+        $locale = $this->language($locale);
+        $safe = static function (mixed $value, int $limit = 120): string {
+            $value = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', trim((string) $value)) ?? '';
+            return Helper::escapeMarkdown(mb_substr($value !== '' ? $value : '-', 0, $limit));
+        };
+        $traffic = is_array($summary['traffic'] ?? null) ? $summary['traffic'] : [];
+        $sales = is_array($summary['sales'] ?? null) ? $summary['sales'] : [];
+        $currency = $safe(admin_setting('currency', 'CNY'), 12);
+        $symbol = $safe(admin_setting('currency_symbol', '¥'), 8);
+        $money = static fn (mixed $minor): string => number_format(((int) $minor) / 100, 2, '.', ',');
+
+        $lines = [
+            $this->text('daily_business_title', $locale, ['date' => $safe($summary['date'] ?? '', 16)]),
+            $this->text('daily_business_timezone', $locale),
+            '',
+            $this->text('daily_business_traffic_title', $locale),
+        ];
+        if (($traffic['has_data'] ?? false) === true) {
+            $lines[] = $this->text('daily_business_traffic_total', $locale, [
+                'total' => $this->formatTrafficBytes((int) ($traffic['total'] ?? 0)),
+            ]);
+            $lines[] = $this->text('daily_business_traffic_split', $locale, [
+                'upload' => $this->formatTrafficBytes((int) ($traffic['upload'] ?? 0)),
+                'download' => $this->formatTrafficBytes((int) ($traffic['download'] ?? 0)),
+            ]);
+        } else {
+            $lines[] = $this->text('daily_business_traffic_unavailable', $locale);
+        }
+        if (is_numeric($traffic['last_updated_at'] ?? null)) {
+            $lines[] = $this->text('daily_business_traffic_latest', $locale, [
+                'time' => $safe(\Carbon\CarbonImmutable::createFromTimestamp(
+                    (int) $traffic['last_updated_at'],
+                    self::BUSINESS_TIMEZONE,
+                )->format('Y-m-d H:i'), 24),
+            ]);
+        }
+        $lines = array_merge($lines, [
+            '',
+            $this->text('daily_business_sales_title', $locale),
+            $this->text('daily_business_sales_overview', $locale, [
+                'orders' => (int) ($sales['order_count'] ?? 0),
+                'buyers' => (int) ($sales['buyer_count'] ?? 0),
+            ]),
+            $this->text('daily_business_sales_types', $locale, [
+                'new' => (int) ($sales['new_purchase'] ?? 0),
+                'renewal' => (int) ($sales['renewal'] ?? 0),
+                'upgrade' => (int) ($sales['upgrade'] ?? 0),
+                'reset' => (int) ($sales['traffic_reset'] ?? 0),
+            ]),
+            $this->text('daily_business_sales_state', $locale, [
+                'activated' => (int) ($sales['activated_count'] ?? 0),
+                'processing' => (int) ($sales['processing_count'] ?? 0),
+            ]),
+            $this->text('daily_business_revenue', $locale, [
+                'symbol' => $symbol,
+                'amount' => $money($sales['recorded_total'] ?? 0),
+                'currency' => $currency,
+            ]),
+            $this->text('daily_business_money_details', $locale, [
+                'cash' => $money($sales['revenue'] ?? 0),
+                'balance' => $money($sales['balance_used'] ?? 0),
+                'fees' => $money($sales['handling_fees'] ?? 0),
+                'discount' => $money($sales['discounts'] ?? 0),
+                'symbol' => $symbol,
+            ]),
+            '',
+            $this->text('daily_business_coupon_title', $locale),
+        ]);
+
+        $coupons = is_array($summary['top_coupons'] ?? null) ? $summary['top_coupons'] : [];
+        foreach ($coupons as $index => $coupon) {
+            $lines[] = $this->text('daily_business_coupon_line', $locale, [
+                'rank' => $index + 1,
+                'code' => $safe($coupon['code'] ?? '', 64),
+                'uses' => (int) ($coupon['uses'] ?? 0),
+                'buyers' => (int) ($coupon['unique_buyers'] ?? 0),
+                'discount' => $money($coupon['discount_amount'] ?? 0),
+                'symbol' => $symbol,
+            ]);
+        }
+        if ($coupons === []) $lines[] = $this->text('daily_business_empty', $locale);
+
+        $lines[] = '';
+        $lines[] = $this->text('daily_business_server_title', $locale);
+        $servers = is_array($summary['top_servers'] ?? null) ? $summary['top_servers'] : [];
+        foreach ($servers as $index => $server) {
+            $lines[] = $this->text('daily_business_server_line', $locale, [
+                'rank' => $index + 1,
+                'name' => $safe($server['name'] ?? '', 100),
+                'type' => $safe($server['type'] ?? '', 24),
+                'traffic' => $this->formatTrafficBytes((int) ($server['total'] ?? 0)),
+            ]);
+        }
+        if ($servers === []) $lines[] = $this->text('daily_business_empty', $locale);
+
+        $lines[] = '';
+        $lines[] = $this->text('daily_business_user_title', $locale);
+        $users = is_array($summary['top_users'] ?? null) ? $summary['top_users'] : [];
+        foreach ($users as $index => $user) {
+            $lines[] = $this->text('daily_business_user_line', $locale, [
+                'rank' => $index + 1,
+                'email' => $safe($this->maskDailyBusinessUser((string) ($user['email'] ?? '')), 100),
+                'traffic' => $this->formatTrafficBytes((int) ($user['total'] ?? 0)),
+            ]);
+        }
+        if ($users === []) $lines[] = $this->text('daily_business_empty', $locale);
+
+        return $this->chunkReportLines($lines);
+    }
+
+    protected function maskDailyBusinessUser(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') return '-';
+        if (str_contains($value, '@')) {
+            [$local, $domain] = array_pad(explode('@', $value, 2), 2, '');
+            $first = mb_substr($local, 0, 1);
+            return ($first !== '' ? $first : '*') . '***@' . ($domain !== '' ? $domain : 'hidden');
+        }
+        return mb_substr($value, 0, 1) . '***';
+    }
+
+    /** @param list<string> $lines @return list<string> */
+    protected function chunkReportLines(array $lines): array
+    {
+        $header = (string) array_shift($lines);
+        $chunks = [];
+        $current = $header;
+        foreach ($lines as $line) {
+            if (mb_strlen($line) > self::NODE_REPORT_MESSAGE_LIMIT - mb_strlen($header) - 3) {
+                $line = rtrim(mb_substr($line, 0, self::NODE_REPORT_MESSAGE_LIMIT - mb_strlen($header) - 4), '\\') . '…';
+            }
+            $candidate = $current . "\n" . $line;
+            if (mb_strlen($candidate) > self::NODE_REPORT_MESSAGE_LIMIT && $current !== $header) {
+                $chunks[] = $current;
+                $current = $header . "\n\n" . $line;
+                continue;
+            }
+            $current = $candidate;
+        }
+        $chunks[] = $current;
+        return $chunks;
+    }
+
+    protected function formatTrafficBytes(int $bytes): string
+    {
+        $value = max(0, $bytes);
+        $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+        $unit = 0;
+        while ($value >= 1024 && $unit < count($units) - 1) {
+            $value /= 1024;
+            $unit++;
+        }
+        return number_format($value, $unit === 0 ? 0 : 2, '.', ',') . ' ' . $units[$unit];
     }
 
     /** @return list<string> */

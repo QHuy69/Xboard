@@ -502,5 +502,13 @@
     "Direct USDT TRC20 payments verified against solidified TRON receipts.": "通过已固化的 TRON 收据验证直接 USDT TRC20 付款。",
     "USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.": "USDT Direct 仍有需要链上监控的账单。请完成对账后再禁用插件。",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Direct 账单会保留用于结算审计，此付款方式无法更换网关。",
-    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct 账单会保留用于结算审计，无法删除此付款方式。"
+    "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct 账单会保留用于结算审计，无法删除此付款方式。",
+    "Send a daily commercial summary": "发送每日经营报告",
+    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "越南时间午夜后，将前一完整日期的流量、销售、收入、优惠码及节点和用户排名发送到受保护的目标。",
+    "Daily commercial report time": "每日经营报告时间",
+    "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "使用越南时间 (Asia/Ho_Chi_Minh)，格式为 HH:MM。报告始终汇总前一个完整的越南日历日。",
+    "Daily commercial report Chat ID": "经营报告 Chat ID",
+    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "可接收收入和脱敏用户排名的管理员私聊或可信群组。Telegram 群组 ID 通常为负数。",
+    "Reuse the node report group": "复用节点报告群组",
+    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "未配置独立经营报告 Chat ID 时，明确允许将经营数据发送到节点报告群组。"
 }

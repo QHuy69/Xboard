@@ -1,7 +1,7 @@
 {
     "name": "Telegram Bot Integration",
     "code": "telegram",
-    "version": "2.3.1",
+    "version": "2.3.2",
     "auto_update_on_deploy": true,
     "description": "Multilingual Telegram bot with menus, notifications, node reports, and reseller tools.",
     "author": "ZaoGuang Service",
@@ -59,6 +59,30 @@
                 {"value": "15", "label": "15 minutes"},
                 {"value": "60", "label": "60 minutes"}
             ]
+        },
+        "enable_daily_business_report": {
+            "type": "boolean",
+            "default": false,
+            "label": "Send a daily commercial summary",
+            "description": "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination."
+        },
+        "daily_business_report_time": {
+            "type": "string",
+            "default": "00:30",
+            "label": "Daily commercial report time",
+            "description": "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day."
+        },
+        "daily_business_report_chat_id": {
+            "type": "string",
+            "default": "",
+            "label": "Daily commercial report Chat ID",
+            "description": "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative."
+        },
+        "daily_business_report_reuse_node_group": {
+            "type": "boolean",
+            "default": false,
+            "label": "Reuse the node report group",
+            "description": "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured."
         },
         "enable_database_backup": {
             "type": "boolean",
