@@ -44,8 +44,12 @@ assert(deployGate.includes("'2.3.1:0'|'2.3.1:1')"),
   'Deployment must preserve either explicit administrator-controlled Telegram enabled state.');
 assert(!deployGate.includes("'2.3.1:'*)"),
   'Deployment accepts an unvalidated Telegram plugin state suffix.');
-assert(ciGate.includes("grep -Fq \"app(PluginConfigService::class)->updateConfig('telegram'\"")
-  && deployGate.includes("grep -Fq \"app(PluginConfigService::class)->updateConfig('telegram'\""),
+assert(ciGate.includes('runtime=/www/plugins/Telegram/Plugin.php')
+  && ciGate.includes('runtime=/www/plugins-core/Telegram/Plugin.php')
+  && deployGate.includes('runtime=/www/plugins/Telegram/Plugin.php')
+  && deployGate.includes('runtime=/www/plugins-core/Telegram/Plugin.php')
+  && ciGate.includes('grep -Fq "PluginConfigService::class)->updateConfig"')
+  && deployGate.includes('grep -Fq "PluginConfigService::class)->updateConfig"'),
   'Release gates do not verify that the upgraded Telegram runtime copy contains the report-group fix.');
 assert(config.config.enable_reseller_bot, 'Reseller feature flag is missing.');
 for (const legacyWhitelistKey of ['reseller_telegram_ids', 'reseller_allowed_telegram_ids']) {

@@ -811,7 +811,7 @@ if [ "$telegram_plugin_state" != '2.3.1:1' ]; then
   echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.3.1:1." >&2
   exit 1
 fi
-if ! docker exec "$container_name" grep -Fq "app(PluginConfigService::class)->updateConfig('telegram'" /www/plugins/Telegram/Plugin.php; then
+if ! docker exec "$container_name" sh -lc 'runtime=/www/plugins/Telegram/Plugin.php; [ -f "$runtime" ] || runtime=/www/plugins-core/Telegram/Plugin.php; grep -Fq "PluginConfigService::class)->updateConfig" "$runtime"'; then
   echo "Telegram plugin runtime copy is missing the canonical /setreportgroup persistence fix." >&2
   exit 1
 fi

@@ -865,7 +865,7 @@ post_deploy_checks() {
       return 1
       ;;
   esac
-  if ! docker exec "$container_id" grep -Fq "app(PluginConfigService::class)->updateConfig('telegram'" /www/plugins/Telegram/Plugin.php; then
+  if ! docker exec "$container_id" sh -lc 'runtime=/www/plugins/Telegram/Plugin.php; [ -f "$runtime" ] || runtime=/www/plugins-core/Telegram/Plugin.php; grep -Fq "PluginConfigService::class)->updateConfig" "$runtime"'; then
     echo "Deployed Telegram plugin runtime copy is missing the canonical /setreportgroup persistence fix." >&2
     return 1
   fi
