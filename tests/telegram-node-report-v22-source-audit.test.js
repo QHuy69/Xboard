@@ -89,10 +89,25 @@ const setReportGroup = between(
 );
 includesAll(setReportGroup, [
   'if (!$this->isAdmin($msg))',
-  "'telegram_node_report_chat_id' => (string) $msg->chat_id",
+  "$chatId = (string) $msg->chat_id;",
+  "app(PluginConfigService::class)->updateConfig('telegram'",
+  "'node_report_chat_id' => $chatId",
+  "'telegram_node_report_chat_id' => $chatId",
 ], 'Admin-only global report destination mutation');
 assert(!setReportGroup.includes('$this->isOperator($msg)'),
   'Ordinary staff can still redirect the global Telegram node-report destination.');
+
+const activationValidation = between(plugin, 'public function validateActivation', 'protected array $commandConfigs');
+includesAll(activationValidation, [
+  "getConfig('node_report_chat_id', '')",
+  "preg_match('/^-?[1-9][0-9]{0,19}$/', $chatId)",
+  'throw new \\InvalidArgumentException',
+], 'Invalid explicit node-report Chat ID rejection');
+includesAll(dispatch, [
+  "Log::notice('Telegram scheduled node report sent'",
+  "'chunk_count' => count($chunks)",
+  "'destination_hash' => substr(hash('sha256', $chatId), 0, 12)",
+], 'Positive privacy-safe node-report delivery evidence');
 
 const interval = between(plugin, 'protected function nodeReportInterval', 'protected function nodeReportChatId');
 includesAll(interval, [

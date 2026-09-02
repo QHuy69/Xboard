@@ -14,6 +14,7 @@ use App\Services\EncryptedDatabaseBackupService;
 use App\Services\OrderService;
 use App\Services\Plugin\AbstractPlugin;
 use App\Services\Plugin\HookManager;
+use App\Services\Plugin\PluginConfigService;
 use App\Services\TelegramService;
 use App\Services\TelegramBindingService;
 use App\Services\TelegramResellerService;
@@ -53,6 +54,15 @@ class Plugin extends AbstractPlugin
     private const SUPPORT_HISTORY_LIMIT = 6;
     // Leave headroom for TelegramService's final Markdown underscore escaping.
     private const NODE_REPORT_MESSAGE_LIMIT = 2400;
+
+    public function validateActivation(): void
+    {
+        $raw = $this->getConfig('node_report_chat_id', '');
+        $chatId = is_scalar($raw) || $raw === null ? trim((string) $raw) : '';
+        if ($chatId !== '' && preg_match('/^-?[1-9][0-9]{0,19}$/', $chatId) !== 1) {
+            throw new \InvalidArgumentException(__('The Telegram node report Chat ID must contain digits only.'));
+        }
+    }
 
     protected array $commandConfigs = [
         '/start' => ['handler' => 'handleStartCommand'],
@@ -521,9 +531,18 @@ class Plugin extends AbstractPlugin
         // redirect scheduled reports to a different Telegram group.
         if (!$this->isAdmin($msg)) { $this->sendMessage($msg, $this->text('forbidden', $locale)); return; }
         if ($msg->is_private) { $this->sendMessage($msg, $this->text('report_group_only', $locale)); return; }
+        $chatId = (string) $msg->chat_id;
+        $language = $this->language($locale);
+        // Keep the canonical plugin configuration and the legacy fallback in
+        // sync. Otherwise a stale explicit value can override this command
+        // while the bot incorrectly confirms that the group was selected.
+        app(PluginConfigService::class)->updateConfig('telegram', [
+            'node_report_chat_id' => $chatId,
+            'node_report_locale' => $language,
+        ]);
         admin_setting([
-            'telegram_node_report_chat_id' => (string) $msg->chat_id,
-            'telegram_node_report_locale' => $this->language($locale),
+            'telegram_node_report_chat_id' => $chatId,
+            'telegram_node_report_locale' => $language,
         ]);
         $this->sendMessage($msg, $this->text('report_group_ok', $locale));
     }
@@ -588,6 +607,11 @@ class Plugin extends AbstractPlugin
                 $this->telegramService->sendMessage($chatId, $chunk, 'markdown');
             }
             Cache::put($claimKey, 'done', ($interval * 60) + 120);
+            Log::notice('Telegram scheduled node report sent', [
+                'action' => 'node_report',
+                'chunk_count' => count($chunks),
+                'destination_hash' => substr(hash('sha256', $chatId), 0, 12),
+            ]);
         } catch (\Throwable $e) {
             // Keep the slot claim after a partial external send. Retrying the
             // same slot could duplicate the chunks Telegram already accepted.

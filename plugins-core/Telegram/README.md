@@ -18,8 +18,8 @@ Danh sách lệnh công khai của bot được để trống để giao diện 
 
 - Thông báo ticket và thanh toán cho tài khoản quản trị đã liên kết Telegram.
 - `/nodes`: xem trạng thái node và số người đang trực tuyến trên từng node.
-- `/setreportgroup`: quản trị viên hoặc nhân viên dùng lệnh này trong nhóm để chọn nhóm nhận báo cáo định kỳ.
-- Có thể đặt chat/nhóm đích và ngôn ngữ báo cáo ngay trong cấu hình plugin; `/setreportgroup` vẫn là phương án tương thích khi trường chat đích để trống.
+- `/setreportgroup`: chỉ quản trị viên XBoard đã liên kết dùng lệnh này trong nhóm để chọn nhóm nhận báo cáo định kỳ.
+- Có thể đặt chat/nhóm đích và ngôn ngữ báo cáo ngay trong cấu hình plugin. `/setreportgroup` đồng bộ trực tiếp các trường này để cấu hình cũ không thể âm thầm ghi đè nhóm vừa chọn.
 - Chu kỳ báo cáo node mặc định là 15 phút và chỉ nhận ba lựa chọn an toàn: 5, 15 hoặc 60 phút. Tác vụ Laravel chạy độc lập với webhook, có khóa một máy chủ, chống chạy chồng và khóa theo từng khung thời gian.
 - Số trực tuyến lấy từ cache telemetry người dùng theo node do node gửi lên gần đây. Khi node ngoại tuyến hoặc không có lần push mới, bot ghi rõ dữ liệu không khả dụng thay vì hiển thị số 0 giả; tên và loại node được escape, báo cáo dài được chia thành nhiều tin an toàn.
 - Tự động tạo backup database mỗi ngày, nén và mã hóa AES-256-GCM trước khi gửi vào chat riêng của quản trị viên.
