@@ -9,9 +9,15 @@ use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\TrafficResetLog;
 use App\Models\User;
+use App\Models\UsdtDirectInvoice;
+use App\Models\UsdtDirectTransfer;
 use App\Services\Plugin\HookManager;
 use App\Utils\Helper;
+use Brick\Math\BigDecimal;
+use Brick\Math\BigInteger;
+use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -357,6 +363,22 @@ class OrderService
                 if ((int) $order->status !== Order::STATUS_PENDING) {
                     return [$order, false];
                 }
+                // Self-custody transfers must cross the chain-bound settlement
+                // boundary below. Letting a generic gateway callback call
+                // paid() would bypass amount, destination and log-identity
+                // checks while a USDT invoice is still payable/reconcilable.
+                if (Schema::hasTable('v2_usdt_direct_invoice')
+                    && UsdtDirectInvoice::query()
+                        ->where('order_id', $order->id)
+                        ->whereIn('state', [
+                            UsdtDirectInvoice::STATE_AWAITING,
+                            UsdtDirectInvoice::STATE_SEEN,
+                            UsdtDirectInvoice::STATE_MANUAL_REVIEW,
+                        ])
+                        ->lockForUpdate()
+                        ->exists()) {
+                    throw new ApiException(__('USDT payment verification is still in progress.'));
+                }
 
                 $order->status = Order::STATUS_PROCESSING;
                 $order->paid_at = time();
@@ -435,6 +457,40 @@ class OrderService
     public static function hasActiveCoinPaymentsCheckoutForPayment(int $paymentId): bool
     {
         return self::hasActiveCoinPaymentsCheckout($paymentId);
+    }
+
+    /** @return list<string> */
+    private static function monitoredUsdtDirectInvoiceStates(): array
+    {
+        // Expired invoices remain monitored: a transfer mined after the
+        // checkout deadline must still be attached for manual reconciliation.
+        return [
+            UsdtDirectInvoice::STATE_AWAITING,
+            UsdtDirectInvoice::STATE_SEEN,
+            UsdtDirectInvoice::STATE_EXPIRED,
+            UsdtDirectInvoice::STATE_MANUAL_REVIEW,
+        ];
+    }
+
+    public static function hasMonitoredUsdtDirectInvoice(?int $paymentId = null): bool
+    {
+        if (!Schema::hasTable('v2_usdt_direct_invoice')) {
+            return false;
+        }
+
+        $query = UsdtDirectInvoice::query()
+            ->whereIn('state', self::monitoredUsdtDirectInvoiceStates());
+        if ($paymentId !== null) {
+            $query->where('payment_id', $paymentId);
+        }
+
+        return $query->exists();
+    }
+
+    public static function hasUsdtDirectInvoiceForPayment(int $paymentId): bool
+    {
+        return Schema::hasTable('v2_usdt_direct_invoice')
+            && UsdtDirectInvoice::query()->where('payment_id', $paymentId)->exists();
     }
 
     /**
@@ -682,7 +738,7 @@ class OrderService
                 $freshPayment = Payment::whereKey($payment->id)->lockForUpdate()->first();
                 if (!$freshPayment
                     || !(bool) $freshPayment->enable
-                    || $freshPayment->payment === 'CoinPayments') {
+                    || in_array((string) $freshPayment->payment, ['CoinPayments', 'UsdtDirect'], true)) {
                     throw new ApiException(__('Payment method is not available'));
                 }
 
@@ -1224,6 +1280,1011 @@ class OrderService
         return $outcome;
     }
 
+    /**
+     * Create or reuse one self-custody USDT invoice for an order.
+     *
+     * This operation performs no remote POST. Address/amount allocation and
+     * the checkout transition can therefore be committed together, while a
+     * global allocation lock serializes the exact-amount discriminator across
+     * users on SQLite deployments.
+     *
+     * @return array{cached: bool, order: Order, payment: Payment, invoice: UsdtDirectInvoice, type: int, data: string, amount_raw: string}
+     */
+    public static function beginUsdtDirectCheckout(
+        int $userId,
+        string $tradeNo,
+        Payment $payment
+    ): array {
+        $allocationLock = Cache::lock('usdt-direct-invoice-allocation', 15);
+        if (!$allocationLock->get()) {
+            throw new ApiException(__('Request failed, please try again later'));
+        }
+        $orderLock = Cache::lock(self::paymentCheckoutLockKey($userId, $tradeNo), 15);
+        if (!$orderLock->get()) {
+            $allocationLock->release();
+            throw new ApiException(__('Request failed, please try again later'));
+        }
+
+        try {
+            return DB::transaction(function () use ($userId, $tradeNo, $payment): array {
+                $order = Order::query()
+                    ->where('trade_no', $tradeNo)
+                    ->where('user_id', $userId)
+                    ->lockForUpdate()
+                    ->first();
+                if (!$order || (int) $order->status !== Order::STATUS_PENDING) {
+                    throw new ApiException(__('Order does not exist or has been paid'));
+                }
+                if ((int) $order->total_amount <= 0) {
+                    throw new ApiException(__('Order amount is invalid'));
+                }
+
+                $freshPayment = Payment::query()->whereKey($payment->id)->lockForUpdate()->first();
+                if (!$freshPayment || (string) $freshPayment->payment !== 'UsdtDirect') {
+                    throw new ApiException(__('Payment method is not available'));
+                }
+
+                $existingInvoice = UsdtDirectInvoice::query()
+                    ->where('order_id', $order->id)
+                    ->lockForUpdate()
+                    ->first();
+                $checkout = DB::table(self::CHECKOUT_TABLE)
+                    ->where('order_id', $order->id)
+                    ->where('payment_id', $freshPayment->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingInvoice && $checkout
+                    && (int) $existingInvoice->checkout_id === (int) $checkout->id
+                    && (int) $existingInvoice->payment_id === (int) $freshPayment->id
+                    && hash_equals((string) $existingInvoice->payment_uuid, (string) $freshPayment->uuid)
+                    && in_array((string) $existingInvoice->state, [
+                        UsdtDirectInvoice::STATE_AWAITING,
+                        UsdtDirectInvoice::STATE_SEEN,
+                    ], true)
+                    && in_array((string) $checkout->state, [
+                        self::CHECKOUT_CREATING,
+                        self::CHECKOUT_READY,
+                        self::CHECKOUT_UNCERTAIN,
+                    ], true)) {
+                    $snapshot = self::decryptUsdtDirectSnapshot((string) $existingInvoice->config_snapshot);
+                    if ((int) ($snapshot['payment_id'] ?? 0) !== (int) $existingInvoice->payment_id
+                        || !hash_equals((string) $existingInvoice->payment_uuid, (string) ($snapshot['payment_uuid'] ?? ''))
+                        || !hash_equals((string) $existingInvoice->public_token_hash, (string) ($snapshot['public_token_hash'] ?? ''))
+                        || !hash_equals((string) $existingInvoice->expected_amount_raw, (string) ($snapshot['expected_amount_raw'] ?? ''))
+                        || !hash_equals((string) $existingInvoice->receiving_address, (string) ($snapshot['receiving_address'] ?? ''))
+                        || !self::usdtDirectCheckoutMatchesInvoice($existingInvoice, $checkout, $order)) {
+                        throw new ApiException(__('USDT invoice configuration could not be verified.'), 409);
+                    }
+                    $checkoutUrl = source_base_url('/pay/usdt/' . rawurlencode($snapshot['public_token']));
+                    DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                        'state' => self::CHECKOUT_READY,
+                        'claim_token' => null,
+                        'provider_invoice_id' => (string) $existingInvoice->public_token_hash,
+                        'provider_expires_at' => (int) $existingInvoice->expires_at,
+                        'expected_amount' => (string) $existingInvoice->expected_amount_raw,
+                        'response_type' => 1,
+                        // The raw capability token belongs only in the
+                        // encrypted snapshot and the immediate API response.
+                        'response_data' => null,
+                        'updated_at' => time(),
+                    ]);
+                    $order->payment_id = $freshPayment->id;
+                    $order->handling_amount = $checkout->handling_amount;
+                    $order->saveOrFail();
+
+                    return [
+                        'cached' => true,
+                        'order' => $order,
+                        'payment' => $freshPayment,
+                        'invoice' => $existingInvoice,
+                        'type' => 1,
+                        'data' => $checkoutUrl,
+                        'amount_raw' => (string) $existingInvoice->expected_amount_raw,
+                    ];
+                }
+                if ($existingInvoice) {
+                    throw new ApiException(__('This USDT invoice requires manual reconciliation before it can be replaced.'), 409);
+                }
+                if (!(bool) $freshPayment->enable) {
+                    throw new ApiException(__('Payment method is not available'));
+                }
+                // New allocations freeze the currently enabled method. Reuse
+                // above deliberately needs only the encrypted snapshot: a
+                // later config rotation/disable must not orphan an invoice the
+                // customer already received.
+                (new PaymentService($freshPayment->payment, $freshPayment->id))
+                    ->validateConfiguration();
+
+                $anotherActiveCheckout = DB::table(self::CHECKOUT_TABLE)
+                    ->where('order_id', $order->id)
+                    ->whereIn('state', self::activeCoinPaymentsStates())
+                    ->exists();
+                if ($anotherActiveCheckout) {
+                    throw new ApiException(__('Payment verification is still in progress. Do not retry or cancel this order. Please contact support if it does not update.'));
+                }
+
+                $config = is_array($freshPayment->config) ? $freshPayment->config : [];
+                $network = strtolower(self::usdtDirectConfigText($config, 'usdt_network', 'tron'));
+                $contract = self::usdtDirectConfigText(
+                    $config,
+                    'usdt_token_contract',
+                    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
+                );
+                $address = self::usdtDirectConfigText($config, 'usdt_receive_address');
+                $rate = self::usdtDirectConfigText($config, 'usdt_cny_usdt_rate');
+                if ($network !== 'tron' || $contract === '' || $address === '' || $rate === '') {
+                    throw new ApiException(__('USDT payment configuration is incomplete.'), 400);
+                }
+                $ttlMinutes = self::usdtDirectConfigInteger(
+                    $config,
+                    'usdt_invoice_ttl_minutes',
+                    30,
+                    5,
+                    120
+                );
+                $requiredConfirmations = self::usdtDirectConfigInteger(
+                    $config,
+                    'usdt_required_confirmations',
+                    20,
+                    1,
+                    100
+                );
+                $handlingAmount = null;
+                if ($freshPayment->handling_fee_fixed || $freshPayment->handling_fee_percent) {
+                    $handlingAmount = (int) round(
+                        ($order->total_amount * ($freshPayment->handling_fee_percent / 100))
+                        + $freshPayment->handling_fee_fixed
+                    );
+                }
+                $baseAmountRaw = self::usdtDirectExpectedAmountRaw(
+                    (int) $order->total_amount + (int) ($handlingAmount ?? 0),
+                    $rate
+                );
+                $expectedAmountRaw = self::allocateUsdtDirectAmountRaw(
+                    $network,
+                    $contract,
+                    $address,
+                    $baseAmountRaw,
+                    (string) $order->trade_no
+                );
+                $now = time();
+                $expiresAt = $now + ($ttlMinutes * 60);
+                $publicToken = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+                $publicTokenHash = hash('sha256', $publicToken);
+                $snapshot = [
+                    'snapshot_version' => 1,
+                    'payment_id' => (int) $freshPayment->id,
+                    'payment_uuid' => (string) $freshPayment->uuid,
+                    'network' => $network,
+                    'token_contract' => $contract,
+                    'receiving_address' => $address,
+                    'expected_amount_raw' => $expectedAmountRaw,
+                    'exchange_rate' => $rate,
+                    'required_confirmations' => $requiredConfirmations,
+                    'expires_at' => $expiresAt,
+                    'public_token' => $publicToken,
+                    'public_token_hash' => $publicTokenHash,
+                ];
+                $encryptedSnapshot = Crypt::encryptString(json_encode(
+                    $snapshot,
+                    JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+                ));
+                $checkoutValues = [
+                    'provider' => 'UsdtDirect',
+                    'payment_uuid' => (string) $freshPayment->uuid,
+                    'config_snapshot' => $encryptedSnapshot,
+                    'provider_invoice_id' => $publicTokenHash,
+                    'provider_expires_at' => $expiresAt,
+                    'expected_amount' => $expectedAmountRaw,
+                    'state' => self::CHECKOUT_READY,
+                    'claim_token' => null,
+                    'base_amount' => (int) $order->total_amount,
+                    'handling_amount' => $handlingAmount,
+                    'response_type' => 1,
+                    'attempted_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+                $checkoutUrl = source_base_url('/pay/usdt/' . rawurlencode($publicToken));
+                // Never persist the raw capability URL in the generic
+                // checkout row. Retry reconstructs it from config_snapshot,
+                // which is encrypted with APP_KEY.
+                $checkoutValues['response_data'] = null;
+
+                if ($checkout) {
+                    DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update($checkoutValues);
+                    $checkoutId = (int) $checkout->id;
+                } else {
+                    $checkoutId = (int) DB::table(self::CHECKOUT_TABLE)->insertGetId($checkoutValues + [
+                        'order_id' => $order->id,
+                        'payment_id' => $freshPayment->id,
+                    ]);
+                }
+
+                $invoice = UsdtDirectInvoice::query()->create([
+                    'order_id' => $order->id,
+                    'checkout_id' => $checkoutId,
+                    'payment_id' => $freshPayment->id,
+                    'payment_uuid' => (string) $freshPayment->uuid,
+                    'public_token_hash' => $publicTokenHash,
+                    'network' => $network,
+                    'token_contract' => $contract,
+                    'receiving_address' => $address,
+                    'expected_amount_raw' => $expectedAmountRaw,
+                    'exchange_rate' => $rate,
+                    'required_confirmations' => $requiredConfirmations,
+                    'state' => UsdtDirectInvoice::STATE_AWAITING,
+                    'expires_at' => $expiresAt,
+                    'config_snapshot' => $encryptedSnapshot,
+                ]);
+                $order->payment_id = $freshPayment->id;
+                $order->handling_amount = $handlingAmount;
+                $order->saveOrFail();
+
+                return [
+                    'cached' => false,
+                    'order' => $order,
+                    'payment' => $freshPayment,
+                    'invoice' => $invoice,
+                    'type' => 1,
+                    'data' => $checkoutUrl,
+                    'amount_raw' => $expectedAmountRaw,
+                ];
+            });
+        } finally {
+            $orderLock->release();
+            $allocationLock->release();
+        }
+    }
+
+    /**
+     * Atomically record and, once final, settle one verified USDT TRC20 event.
+     *
+     * The scanner is responsible for obtaining the chain event, but this
+     * boundary independently binds its immutable identity, amount, destination
+     * and confirmation count to the frozen invoice. No caller may credit an
+     * order by invoking the generic paid() helper with an arbitrary txid.
+     *
+     * @param array{
+     *   network:mixed, token_contract:mixed, txid:mixed, log_index:mixed,
+     *   from_address?:mixed, to_address:mixed, amount_raw:mixed,
+     *   block_number:mixed, block_hash?:mixed, block_timestamp:mixed,
+     *   confirmations?:mixed, successful?:mixed, receipt_result?:mixed,
+     *   solidified?:mixed, confirmed?:mixed, raw_payload_hash?:mixed
+     * } $event
+     * @return array{invoice: UsdtDirectInvoice, order: Order, transitioned: bool, manual_review: bool, pending_confirmation: bool, replay: bool}
+     */
+    public static function settleUsdtDirectTransfer(int $invoiceId, array $event): array
+    {
+        $event = self::normaliseUsdtDirectEvent($event);
+
+        $outcome = DB::transaction(function () use ($invoiceId, $event): array {
+            $invoice = UsdtDirectInvoice::query()->whereKey($invoiceId)->lockForUpdate()->first();
+            if (!$invoice) {
+                throw new ApiException(__('USDT payment invoice does not exist.'), 404);
+            }
+            $order = Order::query()->whereKey($invoice->order_id)->lockForUpdate()->first();
+            if (!$order) {
+                throw new ApiException(__('Order does not exist'), 400);
+            }
+
+            $checkout = DB::table(self::CHECKOUT_TABLE)
+                ->where('id', $invoice->checkout_id)
+                ->where('order_id', $order->id)
+                ->where('payment_id', $invoice->payment_id)
+                ->where('provider', 'UsdtDirect')
+                ->lockForUpdate()
+                ->first();
+
+            // Match the frozen allocation before touching an existing chain
+            // identity. A malformed scanner call must not be able to push an
+            // unrelated invoice into manual review.
+            if (!hash_equals((string) $invoice->network, $event['network'])
+                || !hash_equals((string) $invoice->token_contract, $event['token_contract'])
+                || !hash_equals((string) $invoice->receiving_address, $event['to_address'])
+                || !hash_equals((string) $invoice->expected_amount_raw, $event['amount_raw'])) {
+                throw new ApiException(__('USDT transfer does not match the payment invoice.'), 409);
+            }
+
+            $identityQuery = UsdtDirectTransfer::query()
+                ->where('network', $event['network'])
+                ->where('token_contract', $event['token_contract'])
+                ->where('txid', $event['txid'])
+                ->where('log_index', $event['log_index']);
+            $transfer = $identityQuery->lockForUpdate()->first();
+            $transferWasExisting = $transfer !== null;
+            if ($transfer && $transfer->invoice_id !== null
+                && (int) $transfer->invoice_id !== (int) $invoice->id) {
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    'transfer_already_bound'
+                );
+            }
+
+            $transferValues = [
+                'invoice_id' => $invoice->id,
+                'network' => $event['network'],
+                'token_contract' => $event['token_contract'],
+                'txid' => $event['txid'],
+                'log_index' => $event['log_index'],
+                'from_address' => $event['from_address'],
+                'to_address' => $event['to_address'],
+                'amount_raw' => $event['amount_raw'],
+                'block_number' => $event['block_number'],
+                'block_hash' => $event['block_hash'],
+                'block_timestamp' => $event['block_timestamp'],
+                'confirmations' => $event['confirmations'],
+                'manual_review_reason' => null,
+                'raw_payload_hash' => $event['raw_payload_hash'],
+                'updated_at' => time(),
+            ];
+
+            if (!$transfer) {
+                // Reserve the on-chain identity before any state transition.
+                // insertOrIgnore plus the database unique key closes the race
+                // where two invoices are processed by different workers.
+                $inserted = DB::table('v2_usdt_direct_transfer')->insertOrIgnore($transferValues + [
+                    'state' => UsdtDirectTransfer::STATE_SEEN,
+                    'created_at' => time(),
+                ]);
+                // If another worker won the unique-chain-identity race, the
+                // row we are about to re-fetch is pre-existing evidence and
+                // must pass the immutable conflict check below.
+                $transferWasExisting = $inserted === 0;
+                $transfer = UsdtDirectTransfer::query()
+                    ->where('network', $event['network'])
+                    ->where('token_contract', $event['token_contract'])
+                    ->where('txid', $event['txid'])
+                    ->where('log_index', $event['log_index'])
+                    ->lockForUpdate()
+                    ->first();
+                if (!$transfer || ($transfer->invoice_id !== null
+                    && (int) $transfer->invoice_id !== (int) $invoice->id)) {
+                    return self::manualReviewUsdtDirect(
+                        $invoice,
+                        $order,
+                        $checkout,
+                        'transfer_already_bound'
+                    );
+                }
+                if ($transfer->invoice_id === null) {
+                    $transfer->invoice_id = $invoice->id;
+                    $transfer->saveOrFail();
+                }
+            }
+
+            if ($transferWasExisting && self::usdtDirectTransferConflicts($transfer, $event)) {
+                $transfer->state = UsdtDirectTransfer::STATE_MANUAL_REVIEW;
+                $transfer->manual_review_reason = 'transfer_evidence_changed';
+                $transfer->confirmations = max(
+                    (int) $transfer->confirmations,
+                    (int) $event['confirmations']
+                );
+                $transfer->saveOrFail();
+
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    'transfer_evidence_changed'
+                );
+            }
+
+            // Optional evidence can become available on later scans, but it
+            // must never be erased. Confirmation counts are monotonic in our
+            // record even if one TronGrid replica momentarily lags another.
+            $transferValues['from_address'] ??= $transfer->from_address;
+            $transferValues['block_hash'] ??= $transfer->block_hash;
+            $transferValues['raw_payload_hash'] ??= $transfer->raw_payload_hash;
+            $transferValues['confirmations'] = max(
+                (int) $transfer->confirmations,
+                (int) $event['confirmations']
+            );
+
+            if (!$checkout) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW]
+                );
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    null,
+                    'payment_checkout_missing'
+                );
+            }
+            if (!self::usdtDirectCheckoutMatchesInvoice($invoice, $checkout, $order)) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW]
+                );
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    'payment_checkout_mismatch'
+                );
+            }
+
+            $callbackNo = self::usdtDirectCallbackNo($event);
+            $sameSettledTransfer = in_array(
+                (int) $order->status,
+                [Order::STATUS_PROCESSING, Order::STATUS_COMPLETED],
+                true
+            )
+                && (int) $order->payment_id === (int) $invoice->payment_id
+                && hash_equals((string) $order->callback_no, $callbackNo)
+                && (string) $invoice->state === UsdtDirectInvoice::STATE_CONFIRMED;
+            if ($sameSettledTransfer) {
+                $transfer->fill($transferValues + [
+                    'state' => UsdtDirectTransfer::STATE_SETTLED,
+                ])->saveOrFail();
+
+                return [
+                    'invoice' => $invoice,
+                    'order' => $order,
+                    'transitioned' => false,
+                    'manual_review' => false,
+                    'pending_confirmation' => false,
+                    'replay' => true,
+                ];
+            }
+
+            if (!$event['successful']) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_REVERTED]
+                );
+
+                return [
+                    'invoice' => $invoice,
+                    'order' => $order,
+                    'transitioned' => false,
+                    'manual_review' => false,
+                    'pending_confirmation' => false,
+                    'replay' => false,
+                ];
+            }
+
+            // Fulfillment is irreversible at this boundary. A duplicate
+            // payment or a second identical Transfer log is operator evidence,
+            // but it must never downgrade a confirmed invoice or re-dispatch
+            // the order. Preserve it as a transfer-level review item instead.
+            if ((string) $invoice->state === UsdtDirectInvoice::STATE_CONFIRMED) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    array_replace($transferValues, [
+                        'state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW,
+                        'manual_review_reason' => 'additional_transfer_after_settlement',
+                    ])
+                );
+
+                return [
+                    'invoice' => $invoice,
+                    'order' => $order,
+                    'transitioned' => false,
+                    'manual_review' => true,
+                    'pending_confirmation' => false,
+                    'replay' => false,
+                ];
+            }
+
+            if ((int) $event['block_timestamp'] < (int) $invoice->created_at
+                || (int) $event['block_timestamp'] > (int) $invoice->expires_at) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW]
+                );
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    'transfer_outside_invoice_window'
+                );
+            }
+
+            if (!in_array((string) $invoice->state, [
+                UsdtDirectInvoice::STATE_AWAITING,
+                UsdtDirectInvoice::STATE_SEEN,
+            ], true)) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW]
+                );
+                $reason = match ((string) $invoice->state) {
+                    UsdtDirectInvoice::STATE_EXPIRED => 'invoice_expired',
+                    UsdtDirectInvoice::STATE_CLOSED => 'invoice_closed',
+                    UsdtDirectInvoice::STATE_CONFIRMED => 'invoice_settlement_conflict',
+                    default => (string) ($invoice->manual_review_reason ?: 'invoice_requires_manual_review'),
+                };
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    $reason
+                );
+            }
+
+            if ((int) $order->status !== Order::STATUS_PENDING) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW]
+                );
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    (int) $order->status === Order::STATUS_CANCELLED
+                        ? 'order_cancelled'
+                        : 'order_already_settled'
+                );
+            }
+
+            if (!in_array((string) $checkout->state, [
+                self::CHECKOUT_CREATING,
+                self::CHECKOUT_READY,
+                self::CHECKOUT_UNCERTAIN,
+            ], true)) {
+                self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_MANUAL_REVIEW]
+                );
+                return self::manualReviewUsdtDirect(
+                    $invoice,
+                    $order,
+                    $checkout,
+                    'payment_checkout_closed'
+                );
+            }
+
+            if (!$event['solidified']
+                && $event['confirmations'] < (int) $invoice->required_confirmations) {
+                $transfer = self::persistUsdtDirectTransfer(
+                    $transfer,
+                    $transferValues + ['state' => UsdtDirectTransfer::STATE_SEEN]
+                );
+                $invoice->state = UsdtDirectInvoice::STATE_SEEN;
+                $invoice->seen_at ??= time();
+                $invoice->txid = $transfer->txid;
+                $invoice->log_index = $transfer->log_index;
+                $invoice->block_number = $transfer->block_number;
+                $invoice->block_hash = $transfer->block_hash;
+                $invoice->block_timestamp = $transfer->block_timestamp;
+                $invoice->saveOrFail();
+
+                return [
+                    'invoice' => $invoice,
+                    'order' => $order,
+                    'transitioned' => false,
+                    'manual_review' => false,
+                    'pending_confirmation' => true,
+                    'replay' => false,
+                ];
+            }
+
+            $transfer = self::persistUsdtDirectTransfer(
+                $transfer,
+                $transferValues + [
+                    'state' => UsdtDirectTransfer::STATE_SETTLED,
+                    'manual_review_reason' => null,
+                ]
+            );
+            $now = time();
+            $invoice->state = UsdtDirectInvoice::STATE_CONFIRMED;
+            $invoice->seen_at ??= $now;
+            $invoice->confirmed_at = $now;
+            $invoice->manual_review_reason = null;
+            $invoice->txid = $transfer->txid;
+            $invoice->log_index = $transfer->log_index;
+            $invoice->block_number = $transfer->block_number;
+            $invoice->block_hash = $transfer->block_hash;
+            $invoice->block_timestamp = $transfer->block_timestamp;
+            $invoice->saveOrFail();
+
+            $order->payment_id = (int) $invoice->payment_id;
+            $order->status = Order::STATUS_PROCESSING;
+            $order->paid_at = $now;
+            $order->callback_no = $callbackNo;
+            $order->saveOrFail();
+            self::closePaymentCheckouts((int) $order->id);
+
+            return [
+                'invoice' => $invoice,
+                'order' => $order,
+                'transitioned' => true,
+                'manual_review' => false,
+                'pending_confirmation' => false,
+                'replay' => false,
+            ];
+        });
+
+        if ($outcome['transitioned']) {
+            OrderHandleJob::dispatchSync($outcome['order']->trade_no);
+            $outcome['order']->refresh();
+            $outcome['invoice']->refresh();
+        }
+
+        return $outcome;
+    }
+
+    /**
+     * Expire an unpaid invoice without reusing its address/amount assignment.
+     * A seen transfer remains open for finality even if confirmations arrive
+     * after the customer-facing countdown reaches zero.
+     */
+    public static function expireUsdtDirectInvoice(int $invoiceId, ?int $now = null): bool
+    {
+        $now ??= time();
+
+        return DB::transaction(function () use ($invoiceId, $now): bool {
+            $invoice = UsdtDirectInvoice::query()->whereKey($invoiceId)->lockForUpdate()->first();
+            if (!$invoice
+                || (string) $invoice->state !== UsdtDirectInvoice::STATE_AWAITING
+                || (int) $invoice->expires_at > $now) {
+                return false;
+            }
+
+            $hasSeenTransfer = UsdtDirectTransfer::query()
+                ->where('invoice_id', $invoice->id)
+                ->whereIn('state', [
+                    UsdtDirectTransfer::STATE_SEEN,
+                    UsdtDirectTransfer::STATE_CONFIRMED,
+                    UsdtDirectTransfer::STATE_SETTLED,
+                ])
+                ->lockForUpdate()
+                ->exists();
+            if ($hasSeenTransfer) {
+                return false;
+            }
+
+            $invoice->state = UsdtDirectInvoice::STATE_EXPIRED;
+            $invoice->saveOrFail();
+            DB::table(self::CHECKOUT_TABLE)
+                ->where('id', $invoice->checkout_id)
+                ->where('order_id', $invoice->order_id)
+                ->where('payment_id', $invoice->payment_id)
+                ->where('provider', 'UsdtDirect')
+                ->update([
+                    'state' => self::CHECKOUT_CLOSED,
+                    'claim_token' => null,
+                    'response_data' => null,
+                    'updated_at' => $now,
+                ]);
+
+            return true;
+        });
+    }
+
+    private static function usdtDirectConfigText(
+        array $config,
+        string $key,
+        string $default = ''
+    ): string {
+        $value = $config[$key] ?? $default;
+        if (!is_string($value) && !is_int($value)) {
+            throw new ApiException(__("USDT configuration {$key} must be text."), 400);
+        }
+
+        return trim((string) $value);
+    }
+
+    private static function usdtDirectConfigInteger(
+        array $config,
+        string $key,
+        int $default,
+        int $minimum,
+        int $maximum
+    ): int {
+        $value = $config[$key] ?? $default;
+        if ((!is_string($value) && !is_int($value))
+            || filter_var($value, FILTER_VALIDATE_INT) === false
+            || (int) $value < $minimum
+            || (int) $value > $maximum) {
+            throw new ApiException(__("USDT configuration {$key} is invalid."), 400);
+        }
+
+        return (int) $value;
+    }
+
+    /** Convert CNY cents * USDT-per-CNY rate to six-decimal token units. */
+    private static function usdtDirectExpectedAmountRaw(int $amountCnyCents, string $rate): string
+    {
+        if ($amountCnyCents <= 0
+            || !preg_match('/^(?:0|[1-9][0-9]*)(?:\.[0-9]{1,6})?$/D', $rate)) {
+            throw new ApiException(__('USDT exchange rate is invalid.'), 400);
+        }
+
+        try {
+            // XBoard amounts are CNY cents. Multiplication by 10,000 is
+            // therefore equivalent to /100 CNY * 1,000,000 token base units.
+            // Brick math keeps the calculation exact even when a rate has
+            // more than six decimals or the raw amount exceeds native INT.
+            $amountRaw = BigDecimal::of((string) $amountCnyCents)
+                ->multipliedBy($rate)
+                ->multipliedBy('10000')
+                ->toScale(0, RoundingMode::Ceiling)
+                ->getUnscaledValue();
+        } catch (\Throwable $exception) {
+            throw new ApiException(__('USDT payment amount is outside the supported range.'), 400);
+        }
+        $raw = (string) $amountRaw;
+        if ($amountRaw->isLessThanOrEqualTo(BigInteger::zero()) || strlen($raw) > 40) {
+            throw new ApiException(__('USDT payment amount is invalid.'), 400);
+        }
+
+        return $raw;
+    }
+
+    /** Allocate a permanent exact-amount discriminator within 0.009999 USDT. */
+    private static function allocateUsdtDirectAmountRaw(
+        string $network,
+        string $contract,
+        string $address,
+        string $baseAmountRaw,
+        string $tradeNo
+    ): string {
+        $seed = (int) hexdec(substr(hash('sha256', $tradeNo), 0, 7));
+        $base = BigInteger::of($baseAmountRaw);
+        for ($attempt = 0; $attempt < 10_000; $attempt++) {
+            $candidate = (string) $base->plus(($seed + $attempt) % 10_000);
+            if (strlen($candidate) > 40) {
+                break;
+            }
+            $exists = UsdtDirectInvoice::query()
+                ->where('network', $network)
+                ->where('token_contract', $contract)
+                ->where('receiving_address', $address)
+                ->where('expected_amount_raw', $candidate)
+                ->exists();
+            if (!$exists) {
+                return $candidate;
+            }
+        }
+
+        throw new ApiException(__('No unique USDT invoice amount is currently available.'), 503);
+    }
+
+    /** @return array<string, mixed> */
+    private static function decryptUsdtDirectSnapshot(string $encrypted): array
+    {
+        try {
+            $snapshot = json_decode(Crypt::decryptString($encrypted), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $exception) {
+            throw new ApiException(__('USDT invoice configuration could not be verified.'), 409);
+        }
+        if (!is_array($snapshot)
+            || (int) ($snapshot['snapshot_version'] ?? 0) !== 1
+            || !is_string($snapshot['public_token'] ?? null)
+            || !hash_equals(
+                hash('sha256', (string) $snapshot['public_token']),
+                (string) ($snapshot['public_token_hash'] ?? '')
+            )) {
+            throw new ApiException(__('USDT invoice configuration could not be verified.'), 409);
+        }
+
+        return $snapshot;
+    }
+
+    private static function usdtDirectCheckoutMatchesInvoice(
+        UsdtDirectInvoice $invoice,
+        object $checkout,
+        Order $order
+    ): bool {
+        try {
+            if (!hash_equals((string) $invoice->config_snapshot, (string) $checkout->config_snapshot)) {
+                return false;
+            }
+            $snapshot = self::decryptUsdtDirectSnapshot((string) $invoice->config_snapshot);
+        } catch (\Throwable $exception) {
+            return false;
+        }
+
+        $textMatches = [
+            [(string) ($checkout->provider ?? ''), 'UsdtDirect'],
+            [(string) ($checkout->payment_uuid ?? ''), (string) $invoice->payment_uuid],
+            [(string) ($checkout->provider_invoice_id ?? ''), (string) $invoice->public_token_hash],
+            [(string) ($checkout->expected_amount ?? ''), (string) $invoice->expected_amount_raw],
+            [(string) ($snapshot['payment_uuid'] ?? ''), (string) $invoice->payment_uuid],
+            [(string) ($snapshot['network'] ?? ''), (string) $invoice->network],
+            [(string) ($snapshot['token_contract'] ?? ''), (string) $invoice->token_contract],
+            [(string) ($snapshot['receiving_address'] ?? ''), (string) $invoice->receiving_address],
+            [(string) ($snapshot['expected_amount_raw'] ?? ''), (string) $invoice->expected_amount_raw],
+            [(string) ($snapshot['exchange_rate'] ?? ''), (string) $invoice->exchange_rate],
+            [(string) ($snapshot['public_token_hash'] ?? ''), (string) $invoice->public_token_hash],
+        ];
+        foreach ($textMatches as [$actual, $expected]) {
+            if (!hash_equals($expected, $actual)) {
+                return false;
+            }
+        }
+
+        return (int) ($checkout->payment_id ?? 0) === (int) $invoice->payment_id
+            && (int) ($checkout->base_amount ?? 0) === (int) $order->total_amount
+            && (int) ($checkout->provider_expires_at ?? 0) === (int) $invoice->expires_at
+            && (int) ($snapshot['payment_id'] ?? 0) === (int) $invoice->payment_id
+            && (int) ($snapshot['required_confirmations'] ?? 0) === (int) $invoice->required_confirmations
+            && (int) ($snapshot['expires_at'] ?? 0) === (int) $invoice->expires_at;
+    }
+
+    /** @param array<string, int|string|bool|null> $event */
+    private static function usdtDirectTransferConflicts(
+        UsdtDirectTransfer $transfer,
+        array $event
+    ): bool {
+        $requiredText = [
+            [(string) $transfer->network, (string) $event['network']],
+            [(string) $transfer->token_contract, (string) $event['token_contract']],
+            [(string) $transfer->txid, (string) $event['txid']],
+            [(string) $transfer->to_address, (string) $event['to_address']],
+            [(string) $transfer->amount_raw, (string) $event['amount_raw']],
+        ];
+        foreach ($requiredText as [$stored, $incoming]) {
+            if (!hash_equals($stored, $incoming)) {
+                return true;
+            }
+        }
+        if ((int) $transfer->log_index !== (int) $event['log_index']
+            || (int) $transfer->block_number !== (int) $event['block_number']
+            || (int) $transfer->block_timestamp !== (int) $event['block_timestamp']) {
+            return true;
+        }
+
+        foreach (['from_address', 'block_hash', 'raw_payload_hash'] as $field) {
+            $stored = $transfer->{$field};
+            $incoming = $event[$field];
+            if ($stored !== null && $incoming !== null
+                && !hash_equals((string) $stored, (string) $incoming)) {
+                return true;
+            }
+        }
+
+        $state = (string) $transfer->state;
+        if ($state === UsdtDirectTransfer::STATE_MANUAL_REVIEW) {
+            return true;
+        }
+        if ((bool) $event['successful']) {
+            return $state === UsdtDirectTransfer::STATE_REVERTED;
+        }
+
+        return $state !== UsdtDirectTransfer::STATE_REVERTED;
+    }
+
+    /** @return array<string, int|string|bool|null> */
+    private static function normaliseUsdtDirectEvent(array $event): array
+    {
+        $text = static function (mixed $value, string $field, int $maxLength): string {
+            if (!is_string($value) && !is_int($value)) {
+                throw new ApiException(__("USDT transfer {$field} is invalid."), 400);
+            }
+            $value = trim((string) $value);
+            if ($value === '' || strlen($value) > $maxLength) {
+                throw new ApiException(__("USDT transfer {$field} is invalid."), 400);
+            }
+            return $value;
+        };
+        $unsignedInteger = static function (mixed $value, string $field): int {
+            if ((!is_string($value) && !is_int($value))
+                || !preg_match('/^(?:0|[1-9][0-9]*)$/', (string) $value)
+                || filter_var($value, FILTER_VALIDATE_INT) === false
+                || (int) $value < 0) {
+                throw new ApiException(__("USDT transfer {$field} is invalid."), 400);
+            }
+            return (int) $value;
+        };
+
+        $amountRaw = $text($event['amount_raw'] ?? null, 'amount', 40);
+        if (!preg_match('/^[1-9][0-9]*$/', $amountRaw)) {
+            throw new ApiException(__('USDT transfer amount is invalid.'), 400);
+        }
+        $payloadHash = $event['raw_payload_hash'] ?? null;
+        if ($payloadHash !== null) {
+            $payloadHash = strtolower($text($payloadHash, 'payload hash', 64));
+            if (!preg_match('/^[a-f0-9]{64}$/', $payloadHash)) {
+                throw new ApiException(__('USDT transfer payload hash is invalid.'), 400);
+            }
+        }
+
+        $receiptResult = $event['receipt_result'] ?? null;
+        $successful = array_key_exists('successful', $event)
+            ? filter_var($event['successful'], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE)
+            : null;
+        if ($successful === null && is_string($receiptResult)) {
+            $successful = strtoupper(trim($receiptResult)) === 'SUCCESS';
+        }
+        $solidified = false;
+        foreach (['solidified', 'confirmed'] as $key) {
+            if (!array_key_exists($key, $event)) {
+                continue;
+            }
+            $value = filter_var($event[$key], FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+            if ($value === true) {
+                $solidified = true;
+            }
+        }
+        $blockTimestamp = $unsignedInteger($event['block_timestamp'] ?? null, 'block timestamp');
+        if ($blockTimestamp > 9_999_999_999) {
+            $blockTimestamp = intdiv($blockTimestamp, 1000);
+        }
+
+        return [
+            'network' => strtolower($text($event['network'] ?? null, 'network', 16)),
+            'token_contract' => $text(
+                $event['token_contract'] ?? $event['contract'] ?? null,
+                'contract',
+                64
+            ),
+            'txid' => strtolower($text($event['txid'] ?? null, 'transaction ID', 128)),
+            'log_index' => $unsignedInteger($event['log_index'] ?? null, 'log index'),
+            'from_address' => isset($event['from_address'])
+                ? $text($event['from_address'], 'sender address', 64)
+                : null,
+            'to_address' => $text($event['to_address'] ?? null, 'receiving address', 64),
+            'amount_raw' => $amountRaw,
+            'block_number' => $unsignedInteger($event['block_number'] ?? null, 'block number'),
+            'block_hash' => isset($event['block_hash'])
+                ? $text($event['block_hash'], 'block hash', 128)
+                : null,
+            'block_timestamp' => $blockTimestamp,
+            'confirmations' => $unsignedInteger($event['confirmations'] ?? 0, 'confirmation count'),
+            'successful' => $successful === true,
+            'solidified' => $solidified,
+            'raw_payload_hash' => $payloadHash,
+        ];
+    }
+
+    private static function usdtDirectCallbackNo(array $event): string
+    {
+        return 'usdt_' . $event['network'] . ':' . $event['txid'] . ':' . $event['log_index'];
+    }
+
+    private static function persistUsdtDirectTransfer(
+        ?UsdtDirectTransfer $transfer,
+        array $values
+    ): UsdtDirectTransfer {
+        if ($transfer) {
+            $transfer->fill($values)->saveOrFail();
+            return $transfer;
+        }
+
+        return UsdtDirectTransfer::query()->create($values + ['created_at' => time()]);
+    }
+
+    /** @return array{invoice: UsdtDirectInvoice, order: Order, transitioned: false, manual_review: true, pending_confirmation: false, replay: false} */
+    private static function manualReviewUsdtDirect(
+        UsdtDirectInvoice $invoice,
+        Order $order,
+        ?object $checkout,
+        string $reason
+    ): array {
+        // A confirmed invoice is immutable: fulfillment may already have
+        // provisioned service. Keep later contradictions on the transfer
+        // evidence instead of reopening or downgrading the paid checkout.
+        if ((string) $invoice->state !== UsdtDirectInvoice::STATE_CONFIRMED) {
+            $invoice->state = UsdtDirectInvoice::STATE_MANUAL_REVIEW;
+            $invoice->manual_review_reason = $reason;
+            $invoice->saveOrFail();
+            if ($checkout) {
+                DB::table(self::CHECKOUT_TABLE)->where('id', $checkout->id)->update([
+                    'state' => self::CHECKOUT_UNCERTAIN,
+                    'claim_token' => null,
+                    'updated_at' => time(),
+                ]);
+            }
+        }
+
+        return [
+            'invoice' => $invoice,
+            'order' => $order,
+            'transitioned' => false,
+            'manual_review' => true,
+            'pending_confirmation' => false,
+            'replay' => false,
+        ];
+    }
+
     private static function closePaymentCheckouts(int $orderId): void
     {
         DB::table(self::CHECKOUT_TABLE)
@@ -1306,6 +2367,23 @@ class OrderService
                 $order->status = Order::STATUS_CANCELLED;
                 if (!$order->save()) {
                     throw new \RuntimeException('Failed to save order status.');
+                }
+                if ($allowUncertainCheckout && Schema::hasTable('v2_usdt_direct_invoice')) {
+                    $invoice = UsdtDirectInvoice::query()
+                        ->where('order_id', $order->id)
+                        ->whereIn('state', [
+                            UsdtDirectInvoice::STATE_AWAITING,
+                            UsdtDirectInvoice::STATE_SEEN,
+                            UsdtDirectInvoice::STATE_EXPIRED,
+                            UsdtDirectInvoice::STATE_MANUAL_REVIEW,
+                        ])
+                        ->lockForUpdate()
+                        ->first();
+                    if ($invoice) {
+                        $invoice->state = UsdtDirectInvoice::STATE_CLOSED;
+                        $invoice->manual_review_reason = 'cancelled_after_manual_reconciliation';
+                        $invoice->saveOrFail();
+                    }
                 }
                 self::closePaymentCheckouts($order->id);
                 if ($order->balance_amount) {

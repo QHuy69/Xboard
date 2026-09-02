@@ -814,6 +814,7 @@ post_deploy_checks() {
   grep -q '2026_08_31_120000_add_is_reseller_to_users.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_09_01_000001_add_unique_telegram_id_to_users.*Ran' <<<"$migration_status" || return 1
   grep -q '2026_09_01_000002_.*Ran' <<<"$migration_status" || return 1
+  grep -q '2026_09_02_000003_create_usdt_direct_payment_tables.*Ran' <<<"$migration_status" || return 1
   if grep -q 'Pending' <<<"$migration_status"; then
     echo "Post-deploy migration status still contains Pending entries." >&2
     printf '%s\n' "$migration_status" >&2
@@ -821,6 +822,37 @@ post_deploy_checks() {
   fi
   verify_coinpayments_checkout_schema "$container_id" || return 1
   verify_telegram_persistence_schema "$container_id" || return 1
+  usdt_schema_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite "
+    SELECT printf('%d:%d:%d:%d:%d:%d',
+      (SELECT COUNT(*) FROM pragma_table_info('v2_usdt_direct_invoice')),
+      (SELECT COUNT(*) FROM pragma_table_info('v2_usdt_direct_transfer')),
+      (SELECT COUNT(*) FROM pragma_table_info('v2_usdt_direct_scan_cursor')),
+      (SELECT COUNT(*) FROM pragma_index_list('v2_usdt_direct_invoice')
+        WHERE \"unique\" = 1 AND name IN (
+          'usdt_invoice_order_unique',
+          'usdt_invoice_checkout_unique',
+          'usdt_invoice_public_token_unique',
+          'usdt_invoice_amount_assignment_unique'
+        )),
+      (SELECT COUNT(*) FROM pragma_index_list('v2_usdt_direct_transfer')
+        WHERE \"unique\" = 1 AND name = 'usdt_transfer_chain_identity_unique'),
+      (SELECT COUNT(*) FROM pragma_index_list('v2_usdt_direct_scan_cursor')
+        WHERE \"unique\" = 1 AND name = 'usdt_scan_cursor_source_unique')
+    );
+  ")" || return 1
+  if [ "$usdt_schema_state" != '25:18:12:4:1:1' ]; then
+    echo "USDT Direct schema gate failed (invoice:transfer:cursor:invoice-unique:transfer-unique:cursor-unique=$usdt_schema_state)." >&2
+    return 1
+  fi
+  usdt_plugin_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite \
+    "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'usdt_direct';")" || return 1
+  case "$usdt_plugin_state" in
+    '1.0.0:0'|'1.0.0:1') ;;
+    *)
+      echo "Deployed USDT Direct plugin state is $usdt_plugin_state; expected version 1.0.0 with a valid admin-controlled enabled state." >&2
+      return 1
+      ;;
+  esac
   telegram_plugin_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite \
     "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")" || return 1
   case "$telegram_plugin_state" in

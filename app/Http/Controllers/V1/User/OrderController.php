@@ -149,7 +149,7 @@ class OrderController extends Controller
         // availability error rather than an undefined-class/network error.
         try {
             $paymentService = new PaymentService($payment->payment, $payment->id);
-            if ($payment->payment === 'CoinPayments') {
+            if (in_array($payment->payment, ['CoinPayments', 'UsdtDirect'], true)) {
                 $paymentService->validateConfiguration();
             }
         } catch (\Throwable $exception) {
@@ -209,6 +209,33 @@ class OrderController extends Controller
             return response([
                 'type' => $result['type'],
                 'data' => $result['data'],
+            ]);
+        }
+
+        if ($payment->payment === 'UsdtDirect') {
+            // Self-custody checkout creation is a local atomic allocation, not
+            // a provider request. Keep it out of the generic checkout flow so
+            // the opaque URL, exact amount and frozen config are committed as
+            // one unit by OrderService and can be safely reused on retries.
+            $checkout = OrderService::beginUsdtDirectCheckout(
+                (int) $request->user()->id,
+                (string) $tradeNo,
+                $payment
+            );
+
+            // Never reflect source_base_url()'s host back to the browser for
+            // this capability URL. A relative path keeps the raw invoice token
+            // on the origin that handled the authenticated checkout request,
+            // even when the request supplied an untrusted external Referer.
+            $checkoutPath = parse_url((string) $checkout['data'], PHP_URL_PATH);
+            if (!is_string($checkoutPath)
+                || preg_match('#^/pay/usdt/[A-Za-z0-9_-]{32,128}$#D', $checkoutPath) !== 1) {
+                throw new ApiException(__('Payment method is not available'));
+            }
+
+            return response([
+                'type' => $checkout['type'],
+                'data' => $checkoutPath,
             ]);
         }
 
@@ -301,7 +328,7 @@ class OrderController extends Controller
             ->filter(function (Payment $payment): bool {
                 try {
                     $paymentService = new PaymentService($payment->payment, $payment->id);
-                    if ($payment->payment === 'CoinPayments') {
+                    if (in_array($payment->payment, ['CoinPayments', 'UsdtDirect'], true)) {
                         $paymentService->validateConfiguration();
                     }
                     return true;

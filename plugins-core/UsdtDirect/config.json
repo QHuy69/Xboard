@@ -1,0 +1,18 @@
+{
+    "name": "USDT Direct",
+    "code": "usdt_direct",
+    "type": "payment",
+    "version": "1.0.0",
+    "auto_enable": false,
+    "auto_update_on_deploy": true,
+    "description": "Direct USDT TRC20 payments verified against solidified TRON receipts.",
+    "author": "ZaoGuang Service",
+    "config": {
+        "display_name": {
+            "type": "string",
+            "default": "USDT (TRC20)",
+            "label": "Display name",
+            "description": "The name customers see when choosing this payment method."
+        }
+    }
+}

@@ -22,17 +22,24 @@ const changedBackendSources = [
   'app/Http/Controllers/V1/Guest/PaymentController.php',
   'app/Http/Controllers/V2/Admin/PaymentController.php',
   'app/Http/Controllers/V2/Admin/PluginController.php',
+  'app/Http/Controllers/UsdtDirectCheckoutController.php',
   'app/Services/PaymentService.php',
+  'app/Services/OrderService.php',
   'app/Services/Plugin/PluginConfigService.php',
   'app/Services/Plugin/PluginManager.php',
-  'plugins-core/CoinPayments/Plugin.php'
+  'plugins-core/CoinPayments/Plugin.php',
+  'plugins-core/UsdtDirect/Plugin.php',
+  'plugins-core/UsdtDirect/Services/UsdtDirectConfig.php'
 ];
 const changedBackendKeys = new Set();
 const literalTranslationPattern = /__\(\s*(['"])(.*?)\1/g;
 for (const file of changedBackendSources) {
   const source = fs.readFileSync(file, 'utf8');
   for (const match of source.matchAll(literalTranslationPattern)) {
-    changedBackendKeys.add(match[2].replace(/\\'/g, "'").replace(/\\"/g, '"'));
+    const key = match[2].replace(/\\'/g, "'").replace(/\\"/g, '"');
+    if (key.includes('{$')) continue;
+    if (file.endsWith('/OrderService.php') && !key.includes('USDT')) continue;
+    changedBackendKeys.add(key);
   }
 }
 
@@ -46,8 +53,35 @@ function isLocalizablePluginMetadata(value) {
     && !/^(?:CoinPayments|x{8}-x{4}-x{4}-x{4}-x{12}|facebook\.page\.name|\d+\s*MB)$/i.test(value.trim());
 }
 
+const usdtPluginSource = fs.readFileSync('plugins-core/UsdtDirect/Plugin.php', 'utf8');
+for (const match of usdtPluginSource.matchAll(/'(?:label|description)'\s*=>\s*'([^']+)'/g)) {
+  if (isLocalizablePluginMetadata(match[1])) changedBackendKeys.add(match[1]);
+}
+for (const match of usdtPluginSource.matchAll(/'options'\s*=>\s*\[[^\]]*=>\s*'([^']+)'/g)) {
+  if (isLocalizablePluginMetadata(match[1])) changedBackendKeys.add(match[1]);
+}
+
+// These messages interpolate internal field names before __() receives them,
+// so their concrete runtime keys must be present in every locale as well.
+for (const key of ['usdt_network', 'usdt_token_contract', 'usdt_receive_address', 'usdt_cny_usdt_rate', 'usdt_trongrid_api_key']) {
+  changedBackendKeys.add(`USDT Direct configuration ${key} must be text.`);
+}
+for (const key of ['usdt_invoice_ttl_minutes', 'usdt_required_confirmations', 'usdt_scan_overlap_seconds', 'usdt_scan_max_pages']) {
+  changedBackendKeys.add(`USDT Direct configuration ${key} is invalid.`);
+}
+for (const key of ['usdt_network', 'usdt_token_contract', 'usdt_receive_address', 'usdt_cny_usdt_rate']) {
+  changedBackendKeys.add(`USDT configuration ${key} must be text.`);
+}
+for (const key of ['usdt_invoice_ttl_minutes', 'usdt_required_confirmations']) {
+  changedBackendKeys.add(`USDT configuration ${key} is invalid.`);
+}
+for (const field of ['block timestamp', 'network', 'contract', 'transaction ID', 'log index', 'sender address', 'receiving address', 'block number', 'block hash']) {
+  changedBackendKeys.add(`USDT transfer ${field} is invalid.`);
+}
+
 for (const file of [
   'plugins-core/CoinPayments/config.json',
+  'plugins-core/UsdtDirect/config.json',
   'plugins-core/Telegram/config.json',
   'plugins-core/Crisp/config.json',
   'plugins-core/Messenger/config.json'
@@ -111,6 +145,17 @@ for (const locale of ['vi-VN', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-
   const untranslated = criticalKeys.filter((key) => locales[locale][key] === english[key]);
   assert.deepStrictEqual(untranslated, [],
     `${locale} falls back to English in a critical flow: ${JSON.stringify(untranslated)}`);
+}
+
+const localeNeutralUsdtKeys = new Set(['USDT Direct', 'TRON Mainnet (TRC20)']);
+const usdtKeys = [...changedBackendKeys].filter((key) =>
+  /USDT|TRON|TronGrid|Network|Display name|Invoice validity|Required confirmations|Scanner overlap|Maximum pages|Allowed range|Solidity/.test(key)
+  && !localeNeutralUsdtKeys.has(key)
+);
+for (const locale of ['vi-VN', 'zh-CN', 'zh-TW', 'ja-JP', 'ko-KR', 'fa-IR', 'ru-RU']) {
+  const untranslated = usdtKeys.filter((key) => locales[locale][key] === english[key]);
+  assert.deepStrictEqual(untranslated, [],
+    `${locale} leaves USDT Direct admin or checkout copy in English: ${JSON.stringify(untranslated)}`);
 }
 
 assert(/[\u3040-\u30ff\u3400-\u9fff]/.test(locales['ja-JP']['Incorrect email or password']),

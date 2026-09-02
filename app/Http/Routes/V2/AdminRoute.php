@@ -20,6 +20,7 @@ use App\Http\Controllers\V2\Admin\PaymentController;
 use App\Http\Controllers\V2\Admin\SystemController;
 use App\Http\Controllers\V2\Admin\ThemeController;
 use App\Http\Controllers\V2\Admin\TrafficResetController;
+use App\Http\Controllers\V2\Admin\UsdtDirectReconciliationController;
 use App\Http\Controllers\ResourcePortalController;
 use Illuminate\Contracts\Routing\Registrar;
 
@@ -243,6 +244,17 @@ class AdminRoute
                 $router->post('/drop', [PaymentController::class, 'drop']);
                 $router->post('/show', [PaymentController::class, 'show']);
                 $router->post('/sort', [PaymentController::class, 'sort']);
+            });
+
+            // USDT Direct settlement evidence and explicit operator reconciliation.
+            $router->group([
+                'prefix' => 'usdt-direct'
+            ], function ($router) {
+                $router->get('/invoices', [UsdtDirectReconciliationController::class, 'index']);
+                $router->get('/invoices/{invoiceId}', [UsdtDirectReconciliationController::class, 'show'])
+                    ->where('invoiceId', '[1-9][0-9]*');
+                $router->post('/invoices/{invoiceId}/close', [UsdtDirectReconciliationController::class, 'close'])
+                    ->where('invoiceId', '[1-9][0-9]*');
             });
 
             // System

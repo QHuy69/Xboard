@@ -129,6 +129,13 @@ class PaymentController extends Controller
                     && OrderService::hasActiveCoinPaymentsCheckoutForPayment((int) $existingPayment->id)) {
                     return $this->fail([409, __('CoinPayments has an active invoice. Reconcile it before changing the gateway.')]);
                 }
+                if ($existingPayment->payment === 'UsdtDirect'
+                    && $params['payment'] !== 'UsdtDirect'
+                    && OrderService::hasUsdtDirectInvoiceForPayment((int) $existingPayment->id)) {
+                    return $this->fail([409, __(
+                        'USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.'
+                    )]);
+                }
             }
 
             if (is_array($params['config'])) {
@@ -244,6 +251,12 @@ class PaymentController extends Controller
             if ($payment->payment === 'CoinPayments'
                 && OrderService::hasActiveCoinPaymentsCheckoutForPayment((int) $payment->id)) {
                 return $this->fail([409, __('CoinPayments has an active invoice. Reconcile it before deleting the payment method.')]);
+            }
+            if ($payment->payment === 'UsdtDirect'
+                && OrderService::hasUsdtDirectInvoiceForPayment((int) $payment->id)) {
+                return $this->fail([409, __(
+                    'USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.'
+                )]);
             }
 
             return $this->success($payment->delete());

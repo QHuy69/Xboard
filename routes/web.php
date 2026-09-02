@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\File;
 use App\Models\Order;
 use App\Http\Controllers\ResourcePortalController;
+use App\Http\Controllers\UsdtDirectCheckoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -588,6 +589,19 @@ Route::get('/payment/status/{tradeNo}', function (string $tradeNo) {
         'Pragma' => 'no-cache',
     ]);
 })->where('tradeNo', '[A-Za-z0-9_-]+');
+
+// Same-site USDT TRC20 checkout. The public URL contains only a high-entropy
+// token; trade numbers and sequential database identifiers are never route
+// parameters, so order existence cannot be enumerated from this surface.
+Route::get('/pay/usdt/{opaqueToken}', [UsdtDirectCheckoutController::class, 'show'])
+    ->where('opaqueToken', '[A-Za-z0-9_-]{32,128}')
+    ->name('payment.usdt-direct.show');
+Route::get('/pay/usdt/{opaqueToken}/status', [UsdtDirectCheckoutController::class, 'status'])
+    ->where('opaqueToken', '[A-Za-z0-9_-]{32,128}')
+    ->name('payment.usdt-direct.status');
+Route::get('/pay/usdt/{opaqueToken}/qr.svg', [UsdtDirectCheckoutController::class, 'qr'])
+    ->where('opaqueToken', '[A-Za-z0-9_-]{32,128}')
+    ->name('payment.usdt-direct.qr');
 
 // The Luck theme is a history-mode SPA. Serve its shell for client-side
 // routes as well, so refreshing /servers, /profile, /orders, etc. does not

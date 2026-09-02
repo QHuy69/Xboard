@@ -453,6 +453,21 @@ class PluginManager
                     throw new \RuntimeException(__('CoinPayments has an active invoice. Reconcile it before disabling the plugin.'));
                 }
             }
+            if ($pluginCode === 'usdt_direct') {
+                // Checkout creation locks its payment row before persisting an
+                // invoice. Taking the same locks closes the disable/create
+                // race while allowing individual payment rows to be hidden.
+                Payment::query()
+                    ->where('payment', 'UsdtDirect')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+                if (!$forceForUpgrade && OrderService::hasMonitoredUsdtDirectInvoice()) {
+                    throw new \RuntimeException(__(
+                        'USDT Direct still has invoices that require chain monitoring. Reconcile them before disabling the plugin.'
+                    ));
+                }
+            }
 
             $dbPlugin = Plugin::query()->where('code', $pluginCode)->lockForUpdate()->first();
             if (!$dbPlugin) {
