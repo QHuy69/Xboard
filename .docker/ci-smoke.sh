@@ -415,7 +415,7 @@ done
 for resource_controller_marker in \
   "\$request->query('platform', '')" \
   "\$items->where('platform', \$selectedPlatform)" \
-  'public function download(string $platform)' \
+  'public function download(string $platform, ?string $fingerprint = null)' \
   'client_catalog_version' \
   "'empty_platform' =>"; do
   docker exec "$container_name" grep -aFq "$resource_controller_marker" \
