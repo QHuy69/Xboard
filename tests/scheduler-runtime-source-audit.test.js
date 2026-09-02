@@ -56,7 +56,7 @@ includesAll('app/Providers/OctaneServiceProvider.php', [
 ]);
 
 includesAll('app/Console/Kernel.php', [
-  "name('scheduler-heartbeat')->everyMinute()->onOneServer()",
+  "name('scheduler-heartbeat')->everyMinute()",
   'registerPluginSchedules($schedule)',
 ]);
 
@@ -71,7 +71,11 @@ const kernel = read('app/Console/Kernel.php');
 const scheduleMethod = kernel.slice(kernel.indexOf('protected function schedule'), kernel.indexOf('protected function commands'));
 const heartbeatEvent = scheduleMethod.indexOf('$schedule->call(static function');
 const heartbeatWrite = scheduleMethod.indexOf('Cache::put(', heartbeatEvent);
+const heartbeatChainEnd = scheduleMethod.indexOf(';', heartbeatWrite);
 assert(heartbeatEvent >= 0 && heartbeatWrite > heartbeatEvent,
   'Scheduler heartbeat is still written eagerly while merely listing the schedule');
+assert(heartbeatChainEnd > heartbeatWrite
+    && !scheduleMethod.slice(heartbeatWrite, heartbeatChainEnd).includes('onOneServer()'),
+  'The idempotent heartbeat must not inherit a persistent one-server mutex across deploys');
 
 console.log('Dedicated scheduler wiring and Telegram callback guards passed source audit.');

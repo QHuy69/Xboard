@@ -30,9 +30,14 @@ class Kernel extends ConsoleKernel
         // Record an actual scheduler execution. Keeping this write inside a
         // due event prevents `artisan schedule:list` from faking a healthy
         // runtime heartbeat in the admin system status screen and CI.
+        //
+        // Do not put this idempotent heartbeat behind `onOneServer()`. The
+        // scheduler mutex lives in persistent Redis, so replacing a container
+        // while the previous process owns the mutex can suppress the first
+        // heartbeat of the new release and make a healthy deploy roll back.
         $schedule->call(static function (): void {
             Cache::put(CacheKey::get('SCHEDULE_LAST_CHECK_AT', null), time());
-        })->name('scheduler-heartbeat')->everyMinute()->onOneServer();
+        })->name('scheduler-heartbeat')->everyMinute();
 
         // v2board
         $schedule->command('xboard:statistics')->dailyAt('0:10')->onOneServer();

@@ -877,7 +877,9 @@ post_deploy_checks() {
   fi
 
   docker exec "$container_id" php /www/artisan schedule:list --no-ansi >/dev/null || return 1
-  for _ in $(seq 1 30); do
+  # A schedule:work process may start just after a minute boundary. Allow two
+  # complete boundaries plus startup jitter before deciding it is unhealthy.
+  for _ in $(seq 1 50); do
     last_heartbeat="$(docker exec "$container_id" php -r '
       require "/www/vendor/autoload.php";
       $app = require "/www/bootstrap/app.php";
