@@ -376,9 +376,10 @@ class PaymentService
                     continue;
                 }
                 $label = $option['label'] ?? $value;
+                $translatedLabel = $this->translateFormMetadata($label);
                 $normalized[] = array_replace($option, [
                     'value' => $value,
-                    'label' => $this->translateFormMetadata($label) ?: $value,
+                    'label' => $translatedLabel === '' ? $value : $translatedLabel,
                 ]);
                 continue;
             }
