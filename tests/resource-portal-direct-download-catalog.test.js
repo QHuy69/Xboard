@@ -8,8 +8,11 @@ const portal = fs.readFileSync('resources/views/resources/portal.blade.php', 'ut
 
 assert(controller.includes("'apps' => 'present|array|max:30'"), 'admin catalog must allow the built-in multi-client list');
 assert(controller.includes("'client_catalog_version' => self::CLIENT_CATALOG_VERSION"), 'catalog upgrades must be persisted after an admin save');
-assert(routes.includes("Route::get('/download/{platform}', [ResourcePortalController::class, 'download'])"), 'platform download route is missing');
+assert(routes.includes("Route::get('/download/{platform}/{fingerprint?}', [ResourcePortalController::class, 'download'])"), 'platform download route is missing');
 assert(controller.includes("filter_var($item['download_url'], FILTER_VALIDATE_URL)"), 'redirects must accept only valid configured URLs');
+assert(controller.includes("public function download(string $platform, ?string $fingerprint = null)"), 'download route must support per-app fingerprints');
+assert(controller.includes("redirect()->away($app['download_url']"), 'downloads must redirect to the configured direct binary without proxying it through PHP');
+assert(controller.includes("filter_var(($app['download_url'] ?? ''), FILTER_VALIDATE_URL) !== false"), 'blank or invalid download URLs must not render broken cards');
 assert(!portal.includes('target="_blank"'), 'resource downloads should stay in the current tab and start the file download');
 assert(manage.includes('Liên kết tải xuống trực tiếp') && manage.includes('không dùng trang giới thiệu'), 'admin UI must explain the direct-file URL requirement');
 

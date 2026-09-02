@@ -10,9 +10,10 @@
     *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 10% 5%,#d8f5ef 0,transparent 28rem),linear-gradient(180deg,#f7fbfb 0,#eef5f5 100%)}
     a{color:inherit}.shell{width:min(1120px,calc(100% - 32px));margin:0 auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:26px 0}.brand{display:flex;align-items:center;min-width:0;gap:12px;text-decoration:none;font-weight:800}.brand>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.brand-mark{width:42px;height:42px;flex:0 0 42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#19bba7,#1478d4);color:#fff;box-shadow:0 10px 24px rgba(15,159,143,.26)}.brand-mark img{width:100%;height:100%;object-fit:contain;border-radius:14px}.back{max-width:min(48vw,240px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;text-decoration:none;color:#48605f;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.72)}
     .hero{padding:72px 0 46px;text-align:center}.eyebrow{display:inline-flex;gap:8px;align-items:center;border:1px solid #bfe8e1;background:rgba(255,255,255,.76);color:var(--brand-dark);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:750}.hero h1{font-size:clamp(34px,6vw,62px);line-height:1.05;letter-spacing:-.045em;margin:20px auto 16px;max-width:820px}.hero p{max-width:680px;margin:0 auto;color:var(--muted);font-size:clamp(16px,2.5vw,20px);line-height:1.7}.notice{margin:28px auto 0;max-width:780px;padding:13px 18px;border-radius:14px;background:#fff8df;border:1px solid #f1df9a;color:#715a08;font-size:14px}
+    .resource-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,210px) minmax(170px,210px) auto;gap:12px;align-items:end;margin:0 auto 8px;padding:16px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.78);box-shadow:0 10px 30px rgba(15,73,70,.08)}.resource-controls label{display:grid;gap:6px;min-width:0;color:var(--muted);font-size:12px;font-weight:750}.resource-controls input,.resource-controls select{width:100%;min-height:44px;border:1px solid #cfe1de;border-radius:11px;background:#fff;color:var(--ink);padding:0 12px;font:inherit;font-size:14px;outline:none}.resource-controls input:focus,.resource-controls select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,159,143,.14)}.resource-controls button{min-height:44px;border:0;border-radius:11px;padding:0 18px;background:linear-gradient(135deg,var(--brand),#2f88d8);color:#fff;font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
     .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:18px 0 76px;scroll-margin-top:24px;outline:none}.card{position:relative;display:flex;flex-direction:column;min-height:310px;padding:26px;border:1px solid rgba(189,218,214,.85);border-radius:24px;background:rgba(255,255,255,.88);box-shadow:var(--shadow);backdrop-filter:blur(12px);overflow:hidden}.card:before{content:"";position:absolute;inset:0 0 auto;height:4px;background:linear-gradient(90deg,#11a895,#3f8ce8)}.platform-icon{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;color:#fff;background:linear-gradient(145deg,#0f9f8f,#3c8be1);box-shadow:0 12px 28px rgba(27,125,139,.22)}.platform-icon svg{width:28px;height:28px}.platform{margin-top:22px;color:var(--brand-dark);font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}.card h2{font-size:22px;letter-spacing:-.02em;margin:7px 0 8px}.version{display:inline-flex;align-self:flex-start;background:var(--soft);color:var(--brand-dark);font-size:12px;font-weight:750;border-radius:999px;padding:6px 9px;margin-bottom:14px}.description{margin:0;color:var(--muted);line-height:1.65;font-size:14px}.download{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:9px;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--brand),#2f88d8);border-radius:14px;padding:14px 18px;font-weight:800;box-shadow:0 12px 24px rgba(15,159,143,.2);transition:.18s transform,.18s box-shadow}.download:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(15,159,143,.28)}
     .empty{grid-column:1/-1;text-align:center;padding:58px 24px;border:1px dashed #b7cfcb;border-radius:24px;background:rgba(255,255,255,.7);color:var(--muted)}.footer{display:flex;justify-content:space-between;gap:16px;align-items:center;border-top:1px solid var(--line);padding:26px 0 36px;color:#6f817f;font-size:13px}.footer a{color:var(--brand-dark);font-weight:700;text-decoration:none}
-    @media(max-width:860px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.shell{width:min(100% - 22px,1120px)}.topbar{padding:16px 0}.brand span:last-child{font-size:14px}.back{padding:8px 10px}.hero{padding:48px 0 30px}.hero h1{font-size:38px}.grid{grid-template-columns:1fr;gap:14px;padding-bottom:48px}.card{min-height:285px;border-radius:20px;padding:22px}.footer{align-items:flex-start;flex-direction:column}}@media(max-width:360px){.shell{width:calc(100% - 16px)}.topbar{gap:8px}.brand{gap:8px}.brand-mark{width:36px;height:36px;flex-basis:36px;border-radius:11px}.back{max-width:46vw;font-size:12px;padding:8px}.hero{padding-top:34px}.hero h1{font-size:clamp(30px,11vw,36px)}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.download{transition:none}.download:hover{transform:none}}
+    @media(max-width:960px){.resource-controls{grid-template-columns:minmax(0,1fr) minmax(170px,210px) auto}.resource-controls label:first-child{grid-column:1/-1}}@media(max-width:600px){.shell{width:min(100% - 22px,1120px)}.topbar{padding:16px 0}.brand span:last-child{font-size:14px}.back{padding:8px 10px}.hero{padding:48px 0 30px}.hero h1{font-size:38px}.resource-controls{grid-template-columns:1fr;gap:10px;margin-bottom:4px}.resource-controls label:first-child{grid-column:auto}.resource-controls button{width:100%}.grid{grid-template-columns:1fr;gap:14px;padding-bottom:48px}.card{min-height:285px;border-radius:20px;padding:22px}.footer{align-items:flex-start;flex-direction:column}}@media(max-width:360px){.shell{width:calc(100% - 16px)}.topbar{gap:8px}.brand{gap:8px}.brand-mark{width:36px;height:36px;flex-basis:36px;border-radius:11px}.back{max-width:46vw;font-size:12px;padding:8px}.hero{padding-top:34px}.hero h1{font-size:clamp(30px,11vw,36px)}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.download{transition:none}.download:hover{transform:none}}
   </style>
 </head>
 <body>
@@ -32,10 +33,36 @@
         <p>{{ $config['subtitle'] }}</p>
         @if($config['notice'])<div class="notice">{{ $config['notice'] }}</div>@endif
       </section>
-
       @php
         $platformNames = ['windows' => 'Windows', 'macos' => 'macOS', 'linux' => 'Linux', 'android' => 'Android', 'ios' => 'iOS', 'other' => $copy['other']];
       @endphp
+      <form class="resource-controls" method="get" action="{{ route('resources.index') }}">
+        <input type="hidden" name="lang" value="{{ $locale }}">
+        <label>
+          <span>{{ $copy['search'] }}</span>
+          <input type="search" name="q" value="{{ $searchQuery }}" maxlength="80" placeholder="{{ $copy['search_placeholder'] }}" autocomplete="off">
+        </label>
+        <label>
+          <span>{{ $copy['platform_filter'] }}</span>
+          <select name="platform">
+            <option value="">{{ $copy['all_platforms'] }}</option>
+            @foreach($platformNames as $platformKey => $platformName)
+              @if($platformKey !== 'other')<option value="{{ $platformKey }}" @selected($selectedPlatform === $platformKey)>{{ $platformName }}</option>@endif
+            @endforeach
+          </select>
+        </label>
+        <label>
+          <span>{{ $copy['sort'] }}</span>
+          <select name="sort">
+            <option value="default" @selected($sort === 'default')>{{ $copy['sort_default'] }}</option>
+            <option value="name" @selected($sort === 'name')>{{ $copy['sort_name'] }}</option>
+            <option value="platform" @selected($sort === 'platform')>{{ $copy['sort_platform'] }}</option>
+            <option value="version" @selected($sort === 'version')>{{ $copy['sort_version'] }}</option>
+          </select>
+        </label>
+        <button type="submit">{{ $copy['apply'] }}</button>
+      </form>
+
       <section class="grid" id="{{ $selectedPlatform ? 'platform-' . $selectedPlatform : 'apps' }}" data-selected-platform="{{ $selectedPlatform }}" aria-label="{{ $copy['apps_aria'] }}" tabindex="-1">
         @forelse($apps as $app)
           <article class="card" data-platform="{{ $app['platform'] }}">
@@ -57,7 +84,7 @@
             <a class="download" href="{{ $app['download_url'] }}" rel="noopener noreferrer">{{ $copy['download'] }} <span aria-hidden="true">↓</span></a>
           </article>
         @empty
-          <div class="empty">{{ $selectedPlatform ? str_replace(':platform', $platformNames[$selectedPlatform], $copy['empty_platform']) : $copy['empty'] }}</div>
+          <div class="empty">{{ $searchQuery !== '' ? str_replace(':query', $searchQuery, $copy['search_empty']) : ($selectedPlatform ? str_replace(':platform', $platformNames[$selectedPlatform], $copy['empty_platform']) : $copy['empty']) }}</div>
         @endforelse
       </section>
     </main>

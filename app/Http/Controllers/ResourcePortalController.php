@@ -23,10 +23,47 @@ class ResourcePortalController extends Controller
         if (!in_array($selectedPlatform, $allowedPlatforms, true)) {
             $selectedPlatform = '';
         }
+        $searchQuery = trim((string) $request->query('q', ''));
+        if (mb_strlen($searchQuery) > 80) {
+            $searchQuery = mb_substr($searchQuery, 0, 80);
+        }
+        $sort = strtolower(trim((string) $request->query('sort', 'default')));
+        $allowedSorts = ['default', 'name', 'platform', 'version'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $sort = 'default';
+        }
+
         $apps = collect($config['apps'])
             ->filter(fn (array $app) => $app['enabled'] && $app['download_url'] !== '')
-            ->sortBy('sort')
+            ->when($searchQuery !== '', function ($items) use ($searchQuery) {
+                $needle = mb_strtolower($searchQuery);
+
+                return $items->filter(function (array $app) use ($needle): bool {
+                    $haystack = implode(' ', [
+                        (string) ($app['name'] ?? ''),
+                        (string) ($app['platform'] ?? ''),
+                        (string) ($app['version'] ?? ''),
+                        (string) ($app['description'] ?? ''),
+                    ]);
+
+                    return str_contains(mb_strtolower($haystack), $needle);
+                });
+            })
             ->when($selectedPlatform !== '', fn ($items) => $items->where('platform', $selectedPlatform))
+            ->when($sort === 'name', fn ($items) => $items->sortBy(fn (array $app) => mb_strtolower((string) ($app['name'] ?? ''))))
+            ->when($sort === 'platform', function ($items) use ($allowedPlatforms) {
+                return $items->sortBy(function (array $app) use ($allowedPlatforms): string {
+                    $platformIndex = array_search($app['platform'] ?? '', $allowedPlatforms, true);
+
+                    return sprintf('%02d-%06d', $platformIndex === false ? 99 : $platformIndex, (int) ($app['sort'] ?? 0));
+                });
+            })
+            ->when($sort === 'version', fn ($items) => $items->sortByDesc(function (array $app): string {
+                $version = mb_strtolower((string) ($app['version'] ?? ''));
+
+                return (string) preg_replace_callback('/\d+/', fn (array $match): string => str_pad($match[0], 12, '0', STR_PAD_LEFT), $version);
+            }))
+            ->when($sort === 'default', fn ($items) => $items->sortBy('sort'))
             ->values()
             ->all();
 
@@ -36,6 +73,8 @@ class ResourcePortalController extends Controller
             'appName' => admin_setting('app_name', 'ZaoGuang Service'),
             'logo' => admin_setting('logo'),
             'selectedPlatform' => $selectedPlatform,
+            'searchQuery' => $searchQuery,
+            'sort' => $sort,
             'locale' => $locale,
             'direction' => $locale === 'fa-IR' ? 'rtl' : 'ltr',
             'copy' => $copy,
@@ -71,26 +110,38 @@ class ResourcePortalController extends Controller
      * Only URLs saved in the resource portal catalog are eligible; arbitrary
      * redirect targets are never accepted from the request.
      */
-    public function download(string $platform)
+    public function download(string $platform, ?string $fingerprint = null)
     {
         $platform = strtolower(trim($platform));
         if (!in_array($platform, self::PORTAL_PLATFORMS, true)) {
             abort(404);
         }
 
-        $app = collect($this->getEditablePortalConfig()['apps'])
+        $apps = collect($this->getEditablePortalConfig()['apps'])
             ->filter(fn (array $item) => $item['enabled']
                 && $item['platform'] === $platform
                 && filter_var($item['download_url'], FILTER_VALIDATE_URL))
-            ->sortBy('sort')
-            ->first();
+            ->sortBy('sort');
+
+        $app = $fingerprint === null
+            ? $apps->first()
+            : $apps->first(fn (array $item) => hash_equals(
+                strtolower($fingerprint),
+                hash('sha256', $item['download_url'])
+            ));
 
         if (!$app) {
             abort(404, 'Bản tải cho nền tảng này chưa được cấu hình.');
         }
 
+        // The catalog stores direct vendor binary URLs. Keep the application
+        // out of the data path: proxying public downloads through PHP would
+        // expose workers and bandwidth to unbounded files and redirect-chain
+        // SSRF. The opaque fingerprint still prevents selecting an arbitrary
+        // configured app from the request.
         return redirect()->away($app['download_url'], 302, [
             'Cache-Control' => 'no-store',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -208,7 +259,11 @@ class ResourcePortalController extends Controller
             'subtitle' => $content['subtitle'],
             'notice' => $content['notice'],
             'support_url' => $editable['support_url'],
-            'apps' => collect($editable['apps'])->map(function (array $app) use ($locale): array {
+            'apps' => collect($editable['apps'])
+                ->filter(fn (array $app): bool => ($app['enabled'] ?? false)
+                    && in_array(($app['platform'] ?? ''), self::PORTAL_PLATFORMS, true)
+                    && filter_var(($app['download_url'] ?? ''), FILTER_VALIDATE_URL) !== false)
+                ->map(function (array $app) use ($locale): array {
                 $translation = $app['translations'][$locale]
                     ?? $app['translations']['vi-VN']
                     ?? ['name' => $app['name'], 'description' => $app['description']];
@@ -217,12 +272,15 @@ class ResourcePortalController extends Controller
                     'name' => $translation['name'],
                     'platform' => $app['platform'],
                     'version' => $app['version'],
-                    'download_url' => $app['download_url'],
+                    'download_url' => route('resources.download', [
+                        'platform' => $app['platform'],
+                        'fingerprint' => hash('sha256', $app['download_url']),
+                    ]),
                     'description' => $translation['description'],
                     'enabled' => $app['enabled'],
                     'sort' => $app['sort'],
                 ];
-            })->all(),
+                })->values()->all(),
         ];
     }
 
@@ -665,6 +723,68 @@ class ResourcePortalController extends Controller
                 'footer' => 'Официальные ссылки для загрузки.', 'support' => 'Нужна помощь?', 'manage' => 'Управление загрузками',
             ],
         ];
+
+        $filterCopy = [
+            'vi-VN' => [
+                'search' => 'Tìm kiếm', 'search_placeholder' => 'Tìm ứng dụng hoặc hệ điều hành…',
+                'platform_filter' => 'Hệ điều hành', 'all_platforms' => 'Tất cả hệ điều hành',
+                'sort' => 'Sắp xếp', 'sort_default' => 'Mặc định', 'sort_name' => 'Tên A–Z',
+                'sort_platform' => 'Theo hệ điều hành', 'sort_version' => 'Phiên bản mới', 'apply' => 'Áp dụng',
+                'search_empty' => 'Không tìm thấy ứng dụng phù hợp với từ khóa “:query”.',
+            ],
+            'en-US' => [
+                'search' => 'Search', 'search_placeholder' => 'Search apps or operating systems…',
+                'platform_filter' => 'Operating system', 'all_platforms' => 'All operating systems',
+                'sort' => 'Sort by', 'sort_default' => 'Default', 'sort_name' => 'Name A–Z',
+                'sort_platform' => 'Operating system', 'sort_version' => 'Newest version', 'apply' => 'Apply',
+                'search_empty' => 'No apps match “:query”.',
+            ],
+            'zh-CN' => [
+                'search' => '搜索', 'search_placeholder' => '搜索应用或操作系统…',
+                'platform_filter' => '操作系统', 'all_platforms' => '所有操作系统',
+                'sort' => '排序', 'sort_default' => '默认', 'sort_name' => '名称 A–Z',
+                'sort_platform' => '按操作系统', 'sort_version' => '最新版本', 'apply' => '应用',
+                'search_empty' => '没有符合“:query”的应用。',
+            ],
+            'zh-TW' => [
+                'search' => '搜尋', 'search_placeholder' => '搜尋應用程式或作業系統…',
+                'platform_filter' => '作業系統', 'all_platforms' => '所有作業系統',
+                'sort' => '排序', 'sort_default' => '預設', 'sort_name' => '名稱 A–Z',
+                'sort_platform' => '依作業系統', 'sort_version' => '最新版本', 'apply' => '套用',
+                'search_empty' => '找不到符合「:query」的應用程式。',
+            ],
+            'ja-JP' => [
+                'search' => '検索', 'search_placeholder' => 'アプリや OS を検索…',
+                'platform_filter' => 'OS', 'all_platforms' => 'すべての OS',
+                'sort' => '並べ替え', 'sort_default' => '既定', 'sort_name' => '名前 A–Z',
+                'sort_platform' => 'OS 順', 'sort_version' => '新しいバージョン', 'apply' => '適用',
+                'search_empty' => '「:query」に一致するアプリはありません。',
+            ],
+            'ko-KR' => [
+                'search' => '검색', 'search_placeholder' => '앱 또는 운영체제 검색…',
+                'platform_filter' => '운영체제', 'all_platforms' => '모든 운영체제',
+                'sort' => '정렬', 'sort_default' => '기본', 'sort_name' => '이름 A–Z',
+                'sort_platform' => '운영체제순', 'sort_version' => '최신 버전', 'apply' => '적용',
+                'search_empty' => '“:query”와 일치하는 앱이 없습니다.',
+            ],
+            'fa-IR' => [
+                'search' => 'جست‌وجو', 'search_placeholder' => 'جست‌وجوی برنامه یا سیستم‌عامل…',
+                'platform_filter' => 'سیستم‌عامل', 'all_platforms' => 'همه سیستم‌عامل‌ها',
+                'sort' => 'مرتب‌سازی', 'sort_default' => 'پیش‌فرض', 'sort_name' => 'نام A–Z',
+                'sort_platform' => 'بر اساس سیستم‌عامل', 'sort_version' => 'جدیدترین نسخه', 'apply' => 'اعمال',
+                'search_empty' => 'برنامه‌ای مطابق «:query» پیدا نشد.',
+            ],
+            'ru-RU' => [
+                'search' => 'Поиск', 'search_placeholder' => 'Поиск приложений или ОС…',
+                'platform_filter' => 'Операционная система', 'all_platforms' => 'Все операционные системы',
+                'sort' => 'Сортировка', 'sort_default' => 'По умолчанию', 'sort_name' => 'Название A–Z',
+                'sort_platform' => 'По ОС', 'sort_version' => 'Новая версия', 'apply' => 'Применить',
+                'search_empty' => 'Приложений по запросу «:query» не найдено.',
+            ],
+        ];
+        foreach ($filterCopy as $copyLocale => $labels) {
+            $copy[$copyLocale] = array_merge($labels, $copy[$copyLocale] ?? []);
+        }
 
         return $copy[$locale] ?? $copy['vi-VN'];
     }

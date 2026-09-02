@@ -197,15 +197,16 @@ assert(
   'Resources must reject unsupported platforms and filter server-side from the stable platform query parameter'
 );
 assert(
-  routes.includes("Route::get('/download/{platform}', [ResourcePortalController::class, 'download'])") &&
-    routes.includes("->where('platform', 'windows|macos|linux|android|ios')"),
+  routes.includes("Route::get('/download/{platform}/{fingerprint?}', [ResourcePortalController::class, 'download'])") &&
+    routes.includes("'platform' => 'windows|macos|linux|android|ios'") &&
+    routes.includes("'fingerprint' => '[a-f0-9]{64}'"),
   'Resources must expose an allow-listed direct-download route for every supported platform'
 );
 assert(
-  controller.includes("admin_setting('linux_download_url', '')") &&
+    controller.includes("admin_setting('linux_download_url', '')") &&
     controller.includes("admin_setting('ios_download_url', '')") &&
     controller.includes('private const CLIENT_CATALOG_VERSION = 1;') &&
-    controller.includes('public function download(string $platform)') &&
+    controller.includes('public function download(string $platform, ?string $fingerprint = null)') &&
     controller.includes("redirect()->away($app['download_url']") &&
     controller.includes('https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-Windows-Setup-x64.exe') &&
     controller.includes('https://s3.amazonaws.com/outline-releases/client/android/stable/Outline-Client.apk') &&
@@ -227,9 +228,28 @@ assert(
 );
 assert(
   controller.includes("->filter(fn (array $app) => $app['enabled'] && $app['download_url'] !== '')") &&
+    controller.includes("in_array(($app['platform'] ?? ''), self::PORTAL_PLATFORMS, true)") &&
+    controller.includes("filter_var(($app['download_url'] ?? ''), FILTER_VALIDATE_URL) !== false") &&
     controller.includes("->when($selectedPlatform !== '', fn ($items) => $items->where('platform', $selectedPlatform))") &&
+    portal.includes("$searchQuery !== '' ? str_replace(':query', $searchQuery, $copy['search_empty'])") &&
     portal.includes("$selectedPlatform ? str_replace(':platform', $platformNames[$selectedPlatform], $copy['empty_platform']) : $copy['empty']"),
   'a selected OS with no configured download must render its localized empty state instead of a blank grid'
+);
+assert(
+  controller.includes("$request->query('q', '')") &&
+    controller.includes("$request->query('sort', 'default')") &&
+    controller.includes("$allowedSorts = ['default', 'name', 'platform', 'version']") &&
+    controller.includes("str_contains(mb_strtolower($haystack), $needle)"),
+  'Resources must support bounded server-side search and allow-listed sorting'
+);
+assert(
+  portal.includes('class="resource-controls"') &&
+    portal.includes('name="q"') &&
+    portal.includes('name="platform"') &&
+    portal.includes('name="sort"') &&
+    portal.includes("$copy['search_placeholder']") &&
+    portal.includes("$copy['sort_version']"),
+  'Resources must expose localized search, OS filter, and sort controls'
 );
 
 for (const releaseGate of [ciSmoke, deploy]) {

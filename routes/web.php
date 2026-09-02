@@ -438,8 +438,8 @@ $renderTheme = function (Request $request) {
 $resourcesHost = env('LUCK_RESOURCES_HOST', 'resources.zaoguang-vpn.com');
 Route::domain($resourcesHost)->group(function () {
     Route::get('/', [ResourcePortalController::class, 'index'])->name('resources.index');
-    Route::get('/download/{platform}', [ResourcePortalController::class, 'download'])
-        ->where('platform', 'windows|macos|linux|android|ios')
+    Route::get('/download/{platform}/{fingerprint?}', [ResourcePortalController::class, 'download'])
+        ->where(['platform' => 'windows|macos|linux|android|ios', 'fingerprint' => '[a-f0-9]{64}'])
         ->name('resources.download');
     Route::get('/manage', [ResourcePortalController::class, 'manage'])->name('resources.manage');
 });
