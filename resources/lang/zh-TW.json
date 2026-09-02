@@ -504,11 +504,17 @@
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Direct 帳單會保留供結算稽核，此付款方式無法更換閘道。",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct 帳單會保留供結算稽核，無法刪除此付款方式。",
     "Send a daily commercial summary": "傳送每日營運報告",
-    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "越南時間午夜後，將前一完整日期的流量、銷售、收入、優惠碼及節點與使用者排名傳送到受保護的目的地。",
+    "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.": "越南時間午夜後，依照下方的接收對象選項，分別向管理員私人聊天傳送前一完整日期的完整營運報告，並且/或者向已設定的節點報告群組傳送群組安全的節點狀態摘要。",
     "Daily commercial report time": "每日營運報告時間",
     "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "使用越南時間 (Asia/Ho_Chi_Minh)，格式為 HH:MM。報告一律彙整前一個完整的越南日曆日。",
-    "Daily commercial report Chat ID": "營運報告 Chat ID",
-    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "可接收收入與遮罩使用者排名的管理員私訊或可信群組。Telegram 群組 ID 通常為負數。",
-    "Reuse the node report group": "重用節點報告群組",
-    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "未設定獨立營運報告 Chat ID 時，明確允許將營運資料傳送到節點報告群組。"
+    "Private administrator Chat ID": "管理員私人聊天 ID",
+    "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.": "必須是已透過 /bind 連結至 Xboard 管理員帳戶的 Telegram 私人聊天正數 ID。完整營運報告絕不傳送給員工或經銷商；不接受群組或超級群組 ID。",
+    "Send the full report to the administrator privately": "私下向管理員傳送完整報告",
+    "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.": "僅向已設定的管理員私人聊天 ID 傳送包含收入與遮罩使用者排名的完整營運報告。",
+    "Publish a safe summary to the node report group": "向節點報告群組發布安全摘要",
+    "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.": "向節點報告 Telegram 聊天 ID 發布獨立的群組安全摘要；該 ID 必須是群組或超級群組的負數 ID。摘要預設僅包含節點狀態，絕不包含收入、訂單、優惠碼或使用者身分。",
+    "Include aggregate online-user count in the group summary": "在群組摘要中包含線上使用者總數",
+    "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.": "在群組摘要中加入線上使用者總數。此資料僅為彙總值，不包含使用者身分。",
+    "Include aggregate traffic in the group summary": "在群組摘要中包含彙總流量",
+    "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included.": "在群組摘要中加入全系統彙總流量。不包含使用者身分或個別使用者排名。"
 }

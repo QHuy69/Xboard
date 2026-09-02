@@ -129,7 +129,14 @@
     "daily_business_server_line": ":rank. :name (:type) — :traffic",
     "daily_business_user_title": "👤 課金換算通信量上位 10 ユーザー",
     "daily_business_user_line": ":rank. :email — :traffic",
-    "daily_business_empty": "データがありません。"
+    "daily_business_empty": "データがありません。",
+    "daily_public_title": "📡 日次システム概要",
+    "daily_public_date": "日付：:date",
+    "daily_public_timezone": "🕐 タイムゾーン：ベトナム (Asia/Ho_Chi_Minh)",
+    "daily_public_nodes": "オンラインノード：:online/:total",
+    "daily_public_online_users": "オンラインユーザー：:count",
+    "daily_public_traffic": "集計通信量：:traffic",
+    "daily_public_footer": "🔒 収益、注文、クーポン、ユーザーの身元は管理者向け個人レポートでのみ確認できます。"
   },
   "commands": {
     "start": "メインメニューを開く",

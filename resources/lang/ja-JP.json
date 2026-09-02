@@ -501,11 +501,17 @@
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Directの請求は決済監査のため保持されます。この支払い方法のゲートウェイは変更できません。",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Directの請求は決済監査のため保持されます。この支払い方法は削除できません。",
     "Send a daily commercial summary": "日次営業レポートを送信",
-    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "ベトナム時間の深夜以降に、前日の通信量、販売、収入、クーポン、ノードおよびユーザー順位を保護された送信先へ送ります。",
+    "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.": "ベトナム時間の深夜以降、下記の送信先オプションに従って、完了した前日の完全な営業レポートを管理者へ個別送信し、かつ／またはグループ向けの安全なノード状態概要を設定済みのノード報告グループへ送信します。",
     "Daily commercial report time": "日次営業レポート時刻",
     "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "ベトナム時間 (Asia/Ho_Chi_Minh) を HH:MM 形式で指定します。常に完了した前日のベトナム暦日を集計します。",
-    "Daily commercial report Chat ID": "営業レポート Chat ID",
-    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "収入とマスク済みユーザー順位を受信できる管理者の個人チャットまたは信頼済みグループです。Telegram のグループ ID は通常負数です。",
-    "Reuse the node report group": "ノード報告グループを再利用",
-    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "専用の営業レポート Chat ID がない場合に、営業データをノード報告グループへ送ることを明示的に許可します。"
+    "Private administrator Chat ID": "管理者のプライベート Chat ID",
+    "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.": "/bind で Xboard 管理者アカウントへ連携済みの正数 Telegram プライベートチャット ID です。完全な営業レポートはスタッフや販売代理店には送信されず、グループおよびスーパーグループ ID も使用できません。",
+    "Send the full report to the administrator privately": "完全なレポートを管理者へ個別送信",
+    "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.": "収益とマスク済みユーザー順位を含む完全な営業レポートを、設定済みの管理者プライベート Chat ID のみに送信します。",
+    "Publish a safe summary to the node report group": "ノード報告グループへ安全な概要を公開",
+    "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.": "ノード報告用 Telegram Chat ID へ、グループ向けの安全な概要を別途公開します。この ID はグループまたはスーパーグループの負数 ID である必要があります。概要は既定でノード状態のみを含み、収益、注文、クーポン、ユーザーの身元は一切含めません。",
+    "Include aggregate online-user count in the group summary": "グループ概要にオンラインユーザー総数を含める",
+    "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.": "オンラインユーザー総数をグループ概要に追加します。集計値のみで、ユーザーの身元は含みません。",
+    "Include aggregate traffic in the group summary": "グループ概要に集計通信量を含める",
+    "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included.": "システム全体の集計通信量をグループ概要に追加します。ユーザーの身元やユーザー別順位は含みません。"
 }

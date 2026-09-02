@@ -129,7 +129,14 @@
     "daily_business_server_line": ":rank. :name (:type) — :traffic",
     "daily_business_user_title": "👤 Топ-10 по тарифицируемому трафику",
     "daily_business_user_line": ":rank. :email — :traffic",
-    "daily_business_empty": "Нет данных."
+    "daily_business_empty": "Нет данных.",
+    "daily_public_title": "📡 Ежедневная сводка системы",
+    "daily_public_date": "Дата: :date",
+    "daily_public_timezone": "🕐 Часовой пояс: Вьетнам (Asia/Ho_Chi_Minh)",
+    "daily_public_nodes": "Узлов онлайн: :online/:total",
+    "daily_public_online_users": "Пользователей онлайн: :count",
+    "daily_public_traffic": "Агрегированный трафик: :traffic",
+    "daily_public_footer": "🔒 Доход, заказы, купоны и личности пользователей доступны только в личном отчёте администратора."
   },
   "commands": {
     "start": "Открыть главное меню",

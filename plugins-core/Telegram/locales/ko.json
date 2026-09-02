@@ -129,7 +129,14 @@
     "daily_business_server_line": ":rank. :name (:type) — :traffic",
     "daily_business_user_title": "👤 요금 환산 트래픽 상위 10명 사용자",
     "daily_business_user_line": ":rank. :email — :traffic",
-    "daily_business_empty": "데이터가 없습니다."
+    "daily_business_empty": "데이터가 없습니다.",
+    "daily_public_title": "📡 일일 시스템 요약",
+    "daily_public_date": "날짜: :date",
+    "daily_public_timezone": "🕐 시간대: 베트남 (Asia/Ho_Chi_Minh)",
+    "daily_public_nodes": "온라인 노드: :online/:total",
+    "daily_public_online_users": "온라인 사용자: :count",
+    "daily_public_traffic": "집계 트래픽: :traffic",
+    "daily_public_footer": "🔒 매출, 주문, 쿠폰 및 사용자 신원은 관리자 개인 보고서에서만 제공됩니다."
   },
   "commands": {
     "start": "메인 메뉴 열기",

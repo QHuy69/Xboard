@@ -501,11 +501,17 @@
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "صورت‌حساب‌های USDT Direct برای حسابرسی تسویه نگهداری می‌شوند. درگاه این روش پرداخت قابل تغییر نیست.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "صورت‌حساب‌های USDT Direct برای حسابرسی تسویه نگهداری می‌شوند. این روش پرداخت قابل حذف نیست.",
     "Send a daily commercial summary": "ارسال گزارش تجاری روزانه",
-    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "پس از نیمه‌شب ویتنام، ترافیک، فروش، درآمد، کدهای تخفیف و رتبه‌بندی نودها و کاربران روز کامل قبل به مقصد محافظت‌شده ارسال شود.",
+    "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.": "پس از نیمه‌شب ویتنام، مطابق گزینه‌های دریافت‌کننده زیر، گزارش تجاری کامل روز پایان‌یافته قبل به‌طور مستقل برای مدیر در گفت‌وگوی خصوصی و/یا خلاصه امن وضعیت نودها برای گروه تنظیم‌شده گزارش نود ارسال شود.",
     "Daily commercial report time": "زمان گزارش تجاری روزانه",
     "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "زمان ویتنام (Asia/Ho_Chi_Minh) با قالب HH:MM. گزارش همیشه روز تقویمی کامل قبلی ویتنام را جمع‌بندی می‌کند.",
-    "Daily commercial report Chat ID": "شناسه چت گزارش تجاری",
-    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "چت خصوصی مدیر یا گروه مورد اعتمادی که مجاز به دریافت درآمد و رتبه‌بندی کاربران به‌صورت پوشانده‌شده است. شناسه گروه تلگرام معمولاً منفی است.",
-    "Reuse the node report group": "استفاده دوباره از گروه گزارش نود",
-    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "اگر شناسه چت تجاری جداگانه تنظیم نشده است، ارسال داده تجاری به گروه گزارش نود را صریحاً مجاز کنید."
+    "Private administrator Chat ID": "شناسه گفت‌وگوی خصوصی مدیر",
+    "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.": "شناسه مثبت گفت‌وگوی خصوصی Telegram باید از قبل با /bind به حساب مدیر Xboard متصل شده باشد. گزارش تجاری کامل هرگز برای کارکنان یا فروشندگان ارسال نمی‌شود و شناسه گروه یا ابرگروه پذیرفته نیست.",
+    "Send the full report to the administrator privately": "ارسال خصوصی گزارش کامل به مدیر",
+    "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.": "گزارش تجاری کامل، شامل درآمد و رتبه‌بندی کاربران با اطلاعات پوشانده‌شده، فقط به شناسه گفت‌وگوی خصوصی مدیر تنظیم‌شده ارسال شود.",
+    "Publish a safe summary to the node report group": "انتشار خلاصه امن در گروه گزارش نود",
+    "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.": "یک خلاصه جداگانه و امن برای گروه به شناسه گفت‌وگوی Telegram گزارش نود منتشر شود؛ این شناسه باید عدد منفی گروه یا ابرگروه باشد. خلاصه به‌طور پیش‌فرض فقط وضعیت نود را دارد و درآمد، سفارش‌ها، کدهای تخفیف و هویت کاربران هرگز درج نمی‌شوند.",
+    "Include aggregate online-user count in the group summary": "افزودن تعداد تجمیعی کاربران آنلاین به خلاصه گروه",
+    "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.": "تعداد کل کاربران آنلاین به خلاصه گروه افزوده شود. این فقط داده تجمیعی است و هویت کاربران را ندارد.",
+    "Include aggregate traffic in the group summary": "افزودن ترافیک تجمیعی به خلاصه گروه",
+    "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included.": "ترافیک تجمیعی کل سامانه به خلاصه گروه افزوده شود. هویت یا رتبه‌بندی جداگانه کاربران درج نمی‌شود."
 }

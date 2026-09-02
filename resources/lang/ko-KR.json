@@ -501,11 +501,17 @@
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Direct 청구서는 정산 감사를 위해 보관됩니다. 이 결제 수단의 게이트웨이는 변경할 수 없습니다.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct 청구서는 정산 감사를 위해 보관됩니다. 이 결제 수단은 삭제할 수 없습니다.",
     "Send a daily commercial summary": "일일 영업 보고서 전송",
-    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "베트남 시간 자정 이후 완료된 전날의 트래픽, 판매, 수익, 쿠폰, 노드 및 사용자 순위를 보호된 대상으로 전송합니다.",
+    "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.": "베트남 시간 자정 이후 아래 수신 대상 옵션에 따라 완료된 전날의 전체 영업 보고서를 관리자 개인 채팅으로 보내고, 그리고/또는 그룹에 안전한 노드 상태 요약을 설정된 노드 보고 그룹으로 각각 전송합니다.",
     "Daily commercial report time": "일일 영업 보고서 시간",
     "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "베트남 시간(Asia/Ho_Chi_Minh)을 HH:MM 형식으로 지정합니다. 보고서는 항상 완료된 이전 베트남 날짜를 집계합니다.",
-    "Daily commercial report Chat ID": "영업 보고서 Chat ID",
-    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "수익과 마스킹된 사용자 순위를 받을 수 있는 관리자 개인 채팅 또는 신뢰할 수 있는 그룹입니다. Telegram 그룹 ID는 일반적으로 음수입니다.",
-    "Reuse the node report group": "노드 보고 그룹 재사용",
-    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "별도의 영업 보고서 Chat ID가 없을 때 영업 데이터를 노드 보고 그룹으로 보내도록 명시적으로 허용합니다."
+    "Private administrator Chat ID": "관리자 개인 채팅 ID",
+    "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.": "/bind로 Xboard 관리자 계정에 이미 연결된 양수 Telegram 개인 채팅 ID여야 합니다. 전체 영업 보고서는 직원이나 리셀러에게 전송되지 않으며 그룹 및 슈퍼그룹 ID도 허용되지 않습니다.",
+    "Send the full report to the administrator privately": "전체 보고서를 관리자에게 비공개 전송",
+    "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.": "매출과 마스킹된 사용자 순위를 포함한 전체 영업 보고서를 설정된 관리자 개인 채팅 ID에만 전송합니다.",
+    "Publish a safe summary to the node report group": "노드 보고 그룹에 안전한 요약 게시",
+    "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.": "노드 보고용 Telegram 채팅 ID에 별도의 그룹 안전 요약을 게시합니다. 이 ID는 그룹 또는 슈퍼그룹의 음수 ID여야 합니다. 요약은 기본적으로 노드 상태만 포함하며 매출, 주문, 쿠폰 및 사용자 신원은 절대 포함하지 않습니다.",
+    "Include aggregate online-user count in the group summary": "그룹 요약에 온라인 사용자 총계 포함",
+    "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.": "온라인 사용자 총계를 그룹 요약에 추가합니다. 집계 값만 제공하며 사용자 신원은 포함하지 않습니다.",
+    "Include aggregate traffic in the group summary": "그룹 요약에 집계 트래픽 포함",
+    "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included.": "시스템 전체 집계 트래픽을 그룹 요약에 추가합니다. 사용자 신원이나 사용자별 순위는 포함하지 않습니다."
 }

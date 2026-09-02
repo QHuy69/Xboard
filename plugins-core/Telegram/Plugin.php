@@ -64,15 +64,41 @@ class Plugin extends AbstractPlugin
         if ($chatId !== '' && preg_match('/^-?[1-9][0-9]{0,19}$/', $chatId) !== 1) {
             throw new \InvalidArgumentException(__('The Telegram node report Chat ID must contain digits only.'));
         }
+
+        // Dormant daily-report settings must not prevent activating the
+        // plugin. Validate only the settings that can currently deliver data.
+        if (!$this->configEnabled('enable_daily_business_report')) return;
+
         $dailyTime = $this->getConfig('daily_business_report_time', '00:30');
         $dailyTime = is_scalar($dailyTime) || $dailyTime === null ? trim((string) $dailyTime) : '';
         if (!$this->validDailyBusinessReportTime($dailyTime)) {
             throw new \InvalidArgumentException(__('The daily business report time must use HH:MM in Vietnam time.'));
         }
-        if ($this->getConfig('enable_daily_business_report', false)) {
-            $businessChat = $this->dailyBusinessReportChatId();
-            if ($businessChat === null) {
-                throw new \InvalidArgumentException(__('Configure a valid daily business report Chat ID, or explicitly allow reuse of the node report group.'));
+
+        $sendPrivate = $this->configEnabled('daily_business_report_send_admin_private');
+        $publishGroup = $this->configEnabled('daily_business_report_publish_group_summary');
+        if (!$sendPrivate && !$publishGroup) {
+            throw new \InvalidArgumentException(__('Enable at least one daily business report audience.'));
+        }
+
+        if ($sendPrivate) {
+            $privateRaw = $this->getConfig('daily_business_report_chat_id', '');
+            $privateConfigured = is_scalar($privateRaw) || $privateRaw === null
+                ? trim((string) $privateRaw)
+                : '';
+            if (preg_match('/^[1-9][0-9]{0,19}$/', $privateConfigured) !== 1) {
+                throw new \InvalidArgumentException(__('Configure a positive Telegram user Chat ID for the private daily business report.'));
+            }
+            if ($this->dailyBusinessReportAdminChatId() === null) {
+                throw new \InvalidArgumentException(__('The private daily report Chat ID must be bound to an administrator. Ask that administrator to use /bind first.'));
+            }
+        }
+
+        if ($publishGroup) {
+            $groupChat = $this->nodeReportChatId();
+            if ($groupChat === null
+                || preg_match('/^-[1-9][0-9]{0,19}$/', $groupChat) !== 1) {
+                throw new \InvalidArgumentException(__('Configure a negative Telegram group Chat ID for the public daily summary.'));
             }
         }
     }
@@ -156,7 +182,7 @@ class Plugin extends AbstractPlugin
             match ($interval) { 5 => $event->everyFiveMinutes(), 60 => $event->hourly(), default => $event->everyFifteenMinutes() };
         }
 
-        if ($this->getConfig('enable_daily_business_report', false)) {
+        if ($this->configEnabled('enable_daily_business_report')) {
             $schedule->call(fn () => $this->sendDailyBusinessReport())
                 ->name('telegram-daily-business-report')
                 // A five-minute due check lets a report catch up after a short
@@ -651,7 +677,7 @@ class Plugin extends AbstractPlugin
 
     public function sendDailyBusinessReport(?string $date = null): void
     {
-        if (!$this->getConfig('enable_daily_business_report', false)) return;
+        if (!$this->configEnabled('enable_daily_business_report')) return;
         if ($date === null) {
             $now = \Carbon\CarbonImmutable::now(self::BUSINESS_TIMEZONE);
             if ($now->format('H:i') < $this->dailyBusinessReportTime()) return;
@@ -660,28 +686,110 @@ class Plugin extends AbstractPlugin
             Log::warning('Telegram daily business report skipped: Telegram runtime delivery is disabled');
             return;
         }
-        $chatId = $this->dailyBusinessReportChatId();
-        if ($chatId === null) {
-            Log::warning('Telegram daily business report skipped: no valid destination chat configured');
-            return;
-        }
-
         $reportDate = $date ?: \Carbon\CarbonImmutable::now(self::BUSINESS_TIMEZONE)
             ->subDay()
             ->toDateString();
+
+        if ($this->configEnabled('daily_business_report_send_admin_private')) {
+            $configuredPrivateChat = $this->dailyBusinessReportChatId();
+            try {
+                // Re-check the binding at delivery time so unbinding or
+                // revoking administrator access immediately stops reports.
+                $privateChat = $this->dailyBusinessReportAdminChatId();
+                if ($privateChat === null) {
+                    Log::warning('Telegram daily business audience skipped: invalid destination', [
+                        'action' => 'daily_business_report',
+                        'audience' => 'admin_private',
+                        'report_date' => $reportDate,
+                        'destination_hash' => $configuredPrivateChat === null
+                            ? null
+                            : substr(hash('sha256', $configuredPrivateChat), 0, 12),
+                    ]);
+                } else {
+                    $this->sendDailyBusinessAudience(
+                        'admin_private',
+                        $privateChat,
+                        $reportDate,
+                        fn (): array => $this->dailyBusinessReportChunks(
+                            app(TelegramDailyBusinessReportService::class)->summarize($reportDate),
+                            $this->nodeReportLocale(),
+                        ),
+                    );
+                }
+            } catch (\Throwable $e) {
+                // Keep private authorization lookup failures isolated from
+                // the independently configured public audience.
+                Log::error('Telegram daily business audience failed', [
+                    'action' => 'daily_business_report',
+                    'audience' => 'admin_private',
+                    'report_date' => $reportDate,
+                    'error_type' => $e::class,
+                    'destination_hash' => $configuredPrivateChat === null
+                        ? null
+                        : substr(hash('sha256', $configuredPrivateChat), 0, 12),
+                ]);
+            }
+        }
+
+        if ($this->configEnabled('daily_business_report_publish_group_summary')) {
+            $groupChat = $this->nodeReportChatId();
+            if ($groupChat === null
+                || preg_match('/^-[1-9][0-9]{0,19}$/', $groupChat) !== 1) {
+                Log::warning('Telegram daily business audience skipped: invalid destination', [
+                    'action' => 'daily_business_report',
+                    'audience' => 'group_summary',
+                    'report_date' => $reportDate,
+                    'destination_hash' => $groupChat === null
+                        ? null
+                        : substr(hash('sha256', $groupChat), 0, 12),
+                ]);
+            } else {
+                $this->sendDailyBusinessAudience(
+                    'group_summary',
+                    $groupChat,
+                    $reportDate,
+                    fn (): array => $this->dailyPublicReportChunks(
+                        $reportDate,
+                        $this->nodeReportLocale(),
+                    ),
+                );
+            }
+        }
+    }
+
+    /**
+     * Claim and deliver one audience independently. A failed private delivery
+     * must not consume or block the public claim, and vice versa.
+     *
+     * @param callable(): list<string> $chunksFactory
+     */
+    protected function sendDailyBusinessAudience(
+        string $audience,
+        string $chatId,
+        string $reportDate,
+        callable $chunksFactory,
+    ): void {
         $lock = null;
         $locked = false;
+        $destinationHash = substr(hash('sha256', $chatId), 0, 12);
         try {
-            $lock = Cache::lock('telegram:daily-business-report:dispatch', 3600);
+            $lock = Cache::lock(
+                'telegram:daily-business-report:dispatch:' . $audience,
+                3600,
+            );
             $locked = $lock->get();
             if (!$locked) return;
 
-            // Build the complete immutable payload before claiming the day.
-            // Query/config failures may then be retried safely without risking
-            // duplicate chunks already accepted by Telegram.
-            $summary = app(TelegramDailyBusinessReportService::class)->summarize($reportDate);
-            $chunks = $this->dailyBusinessReportChunks($summary, $this->nodeReportLocale());
-            $claimKey = 'telegram:daily-business-report:date:' . $reportDate;
+            $claimKey = 'telegram:daily-business-report:date:'
+                . $reportDate
+                . ':audience:'
+                . $audience;
+            if (Cache::has($claimKey)) return;
+
+            // Rendering happens before the durable claim, so a query or locale
+            // failure remains retryable. Once sending begins the claim stays in
+            // place to prevent duplicate chunks after a partial Telegram send.
+            $chunks = $chunksFactory();
             if (!Cache::add($claimKey, 'processing', 172800)) return;
 
             if (!isset($this->telegramService)) $this->telegramService = new TelegramService();
@@ -689,18 +797,21 @@ class Plugin extends AbstractPlugin
                 $this->telegramService->sendMessage($chatId, $chunk, 'markdown');
             }
             Cache::put($claimKey, 'done', 172800);
-            Log::notice('Telegram daily business report sent', [
+            Log::notice('Telegram daily business audience sent', [
                 'action' => 'daily_business_report',
+                'audience' => $audience,
                 'report_date' => $reportDate,
                 'timezone' => self::BUSINESS_TIMEZONE,
                 'chunk_count' => count($chunks),
-                'destination_hash' => substr(hash('sha256', $chatId), 0, 12),
+                'destination_hash' => $destinationHash,
             ]);
         } catch (\Throwable $e) {
-            Log::error('Telegram daily business report failed', [
+            Log::error('Telegram daily business audience failed', [
                 'action' => 'daily_business_report',
+                'audience' => $audience,
                 'report_date' => $reportDate,
                 'error_type' => $e::class,
+                'destination_hash' => $destinationHash,
             ]);
         } finally {
             if ($locked && $lock) {
@@ -2399,17 +2510,35 @@ class Plugin extends AbstractPlugin
         return $this->validDailyBusinessReportTime($value) ? $value : '00:30';
     }
 
+    protected function configEnabled(string $key, bool $default = false): bool
+    {
+        return filter_var(
+            $this->getConfig($key, $default),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE,
+        ) ?? $default;
+    }
+
     protected function dailyBusinessReportChatId(): ?string
     {
         $raw = $this->getConfig('daily_business_report_chat_id', '');
         $configured = is_scalar($raw) || $raw === null ? trim((string) $raw) : '';
-        if ($configured !== '') {
-            return preg_match('/^-?[1-9][0-9]{0,19}$/', $configured) === 1 ? $configured : null;
-        }
-        if (!filter_var($this->getConfig('daily_business_report_reuse_node_group', false), FILTER_VALIDATE_BOOLEAN)) {
-            return null;
-        }
-        return $this->nodeReportChatId();
+        return preg_match('/^[1-9][0-9]{0,19}$/', $configured) === 1
+            ? $configured
+            : null;
+    }
+
+    protected function dailyBusinessReportAdminChatId(): ?string
+    {
+        $chatId = $this->dailyBusinessReportChatId();
+        if ($chatId === null) return null;
+
+        return User::query()
+            ->where('telegram_id', $chatId)
+            ->where('is_admin', 1)
+            ->exists()
+                ? $chatId
+                : null;
     }
 
     protected function nodeReportChatId(): ?string
@@ -2490,6 +2619,73 @@ class Plugin extends AbstractPlugin
     protected function nodeReport(string $locale): string
     {
         return implode("\n", $this->nodeReportLines($locale));
+    }
+
+    /** @return list<string> */
+    protected function dailyPublicReportChunks(string $date, string $locale): array
+    {
+        $start = \Carbon\CarbonImmutable::createFromFormat(
+            '!Y-m-d',
+            $date,
+            self::BUSINESS_TIMEZONE,
+        );
+        if (!$start || $start->format('Y-m-d') !== $date) {
+            throw new \InvalidArgumentException('Daily public report date must use YYYY-MM-DD.');
+        }
+        $end = $start->addDay();
+        $locale = $this->language($locale);
+        $safe = static function (mixed $value, int $limit = 120): string {
+            $value = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', trim((string) $value)) ?? '';
+            return Helper::escapeMarkdown(mb_substr($value !== '' ? $value : '-', 0, $limit));
+        };
+
+        $servers = Server::all()->filter(fn (Server $server) => !$server->parent_id);
+        $onlineNodes = $servers
+            // Only fresh health and traffic telemetry counts as online. A
+            // reachable node with stale/no push remains degraded, not green.
+            ->filter(fn (Server $server) => (int) $server->available_status === Server::STATUS_ONLINE)
+            ->count();
+
+        $lines = [
+            $this->text('daily_public_title', $locale),
+            $this->text('daily_public_date', $locale, [
+                'date' => $safe($date, 16),
+            ]),
+            $this->text('daily_public_timezone', $locale, [
+                'timezone' => $safe(self::BUSINESS_TIMEZONE, 32),
+            ]),
+            $this->text('daily_public_nodes', $locale, [
+                'online' => $onlineNodes,
+                'total' => $servers->count(),
+            ]),
+        ];
+
+        if ($this->configEnabled('daily_business_report_group_include_online_users')) {
+            $lines[] = $this->text('daily_public_online_users', $locale, [
+                'count' => User::where('t', '>=', time() - 600)->count(),
+            ]);
+        }
+
+        if ($this->configEnabled('daily_business_report_group_include_traffic')) {
+            $traffic = DB::table('v2_stat_server')
+                ->where('record_type', 'd')
+                ->where('record_at', '>=', $start->timestamp)
+                ->where('record_at', '<', $end->timestamp)
+                ->selectRaw('COUNT(*) AS row_count, COALESCE(SUM(u), 0) AS upload, COALESCE(SUM(d), 0) AS download')
+                ->first();
+            $upload = (int) ($traffic->upload ?? 0);
+            $download = (int) ($traffic->download ?? 0);
+            $formattedTraffic = (int) ($traffic->row_count ?? 0) > 0
+                ? $this->formatTrafficBytes($upload + $download)
+                : '-';
+            $lines[] = $this->text('daily_public_traffic', $locale, [
+                'traffic' => $formattedTraffic,
+                'total' => $formattedTraffic,
+            ]);
+        }
+
+        $lines[] = $this->text('daily_public_footer', $locale);
+        return $this->chunkReportLines($lines);
     }
 
     /** @param array<string, mixed> $summary @return list<string> */

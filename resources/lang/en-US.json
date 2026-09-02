@@ -501,11 +501,17 @@
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.",
     "Send a daily commercial summary": "Send a daily commercial summary",
-    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.",
+    "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.": "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.",
     "Daily commercial report time": "Daily commercial report time",
     "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.",
-    "Daily commercial report Chat ID": "Daily commercial report Chat ID",
-    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.",
-    "Reuse the node report group": "Reuse the node report group",
-    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured."
+    "Private administrator Chat ID": "Private administrator Chat ID",
+    "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.": "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.",
+    "Send the full report to the administrator privately": "Send the full report to the administrator privately",
+    "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.": "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.",
+    "Publish a safe summary to the node report group": "Publish a safe summary to the node report group",
+    "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.": "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.",
+    "Include aggregate online-user count in the group summary": "Include aggregate online-user count in the group summary",
+    "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.": "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.",
+    "Include aggregate traffic in the group summary": "Include aggregate traffic in the group summary",
+    "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included.": "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included."
 }

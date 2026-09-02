@@ -506,11 +506,17 @@
     "USDT Direct invoices are retained for settlement audit. This payment method cannot change gateways.": "Hóa đơn USDT Direct được lưu lại để kiểm toán quyết toán. Phương thức thanh toán này không thể đổi cổng.",
     "USDT Direct invoices are retained for settlement audit. This payment method cannot be deleted.": "Hóa đơn USDT Direct được lưu lại để kiểm toán quyết toán. Không thể xóa phương thức thanh toán này.",
     "Send a daily commercial summary": "Gửi báo cáo thương mại hằng ngày",
-    "After midnight in Vietnam, send the completed previous day's traffic, sales, revenue, coupon, node and user rankings to a protected destination.": "Sau nửa đêm giờ Việt Nam, gửi lưu lượng, doanh số, doanh thu, mã giảm giá cùng xếp hạng node và người dùng của ngày hoàn tất trước đó đến nơi nhận được bảo vệ.",
+    "After midnight in Vietnam, independently send the completed previous day's full commercial report to the private administrator and/or a group-safe node-status summary to the configured node report group, according to the audience options below.": "Sau nửa đêm giờ Việt Nam, gửi độc lập báo cáo thương mại đầy đủ của ngày hoàn tất trước đó đến quản trị viên qua chat riêng và/hoặc bản tóm tắt tình trạng node an toàn đến nhóm báo cáo node đã cấu hình, tùy theo các lựa chọn đối tượng nhận bên dưới.",
     "Daily commercial report time": "Giờ gửi báo cáo thương mại",
     "Vietnam time (Asia/Ho_Chi_Minh) in HH:MM format. The report always summarizes the completed previous Vietnam calendar day.": "Giờ Việt Nam (Asia/Ho_Chi_Minh) theo định dạng HH:MM. Báo cáo luôn tổng kết trọn ngày Việt Nam trước đó.",
-    "Daily commercial report Chat ID": "Chat ID nhận báo cáo thương mại",
-    "Private administrator chat or trusted group that may receive revenue and masked user rankings. Telegram group IDs are normally negative.": "Chat riêng của quản trị viên hoặc nhóm tin cậy được phép nhận doanh thu và xếp hạng người dùng đã che thông tin. ID nhóm Telegram thường là số âm.",
-    "Reuse the node report group": "Dùng lại nhóm báo cáo node",
-    "Explicitly allow commercial data to be sent to the node report group when no separate commercial Chat ID is configured.": "Cho phép rõ ràng việc gửi dữ liệu thương mại vào nhóm báo cáo node khi chưa cấu hình Chat ID thương mại riêng."
+    "Private administrator Chat ID": "ID chat riêng của quản trị viên",
+    "Positive Telegram private-chat ID already linked with /bind to an Xboard administrator account. The full commercial report is never sent to staff or resellers; group and supergroup IDs are not accepted.": "ID chat riêng Telegram dạng số dương đã liên kết bằng /bind với tài khoản quản trị viên Xboard. Báo cáo thương mại đầy đủ không bao giờ gửi cho nhân viên hoặc đại lý; không chấp nhận ID nhóm hay siêu nhóm.",
+    "Send the full report to the administrator privately": "Gửi riêng toàn bộ báo cáo cho quản trị viên",
+    "Send the full commercial report, including revenue and masked user rankings, only to the configured private administrator Chat ID.": "Chỉ gửi toàn bộ báo cáo thương mại, gồm doanh thu và xếp hạng người dùng đã che thông tin, đến ID chat riêng của quản trị viên đã cấu hình.",
+    "Publish a safe summary to the node report group": "Đăng bản tóm tắt an toàn vào nhóm báo cáo node",
+    "Publish a separate group-safe summary to the Node report Telegram chat ID, which must be a negative group or supergroup ID. By default it contains node status only. Revenue, orders, coupons, and user identities are never included.": "Đăng bản tóm tắt riêng an toàn vào ID chat Telegram nhận báo cáo node; ID này phải là số âm của nhóm hoặc siêu nhóm. Mặc định bản tóm tắt chỉ có tình trạng node. Không bao giờ gồm doanh thu, đơn hàng, mã giảm giá hoặc danh tính người dùng.",
+    "Include aggregate online-user count in the group summary": "Gồm tổng số người dùng trực tuyến trong bản tóm tắt nhóm",
+    "Add the total online-user count to the group summary. This is aggregate only and contains no user identities.": "Thêm tổng số người dùng trực tuyến vào bản tóm tắt nhóm. Đây chỉ là số liệu tổng hợp và không chứa danh tính người dùng.",
+    "Include aggregate traffic in the group summary": "Gồm lưu lượng tổng hợp trong bản tóm tắt nhóm",
+    "Add system-wide aggregate traffic to the group summary. No user identities or per-user rankings are included.": "Thêm lưu lượng tổng hợp toàn hệ thống vào bản tóm tắt nhóm. Không chứa danh tính hoặc xếp hạng từng người dùng."
 }

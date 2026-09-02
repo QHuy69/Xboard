@@ -26,7 +26,7 @@ function includesAll(source, needles, contract) {
   }
 }
 
-assert.strictEqual(config.version, '2.3.2', 'Telegram plugin version must ship the report-group persistence fix.');
+assert.strictEqual(config.version, '2.3.3', 'Telegram plugin version must retain the report-group persistence fix.');
 assert.strictEqual(config.auto_update_on_deploy, true,
   'Telegram 2.3 must update the installed plugin record during an image deployment');
 const ciGate = fs.readFileSync('.docker/ci-smoke.sh', 'utf8');
@@ -38,11 +38,11 @@ for (const [releaseGate, gate] of [
   assert(gate.includes("SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';"),
     `${releaseGate} must verify the installed Telegram plugin record`);
 }
-assert(ciGate.includes('if [ "$telegram_plugin_state" != \'2.3.2:1\' ]; then'),
-  'Fresh CI install must enable the bundled Telegram 2.3.2 plugin.');
-assert(deployGate.includes("'2.3.2:0'|'2.3.2:1')"),
+assert(ciGate.includes('if [ "$telegram_plugin_state" != \'2.3.3:1\' ]; then'),
+  'Fresh CI install must enable the bundled Telegram 2.3.3 plugin.');
+assert(deployGate.includes("'2.3.3:0'|'2.3.3:1')"),
   'Deployment must preserve either explicit administrator-controlled Telegram enabled state.');
-assert(!deployGate.includes("'2.3.2:'*)"),
+assert(!deployGate.includes("'2.3.3:'*)"),
   'Deployment accepts an unvalidated Telegram plugin state suffix.');
 assert(ciGate.includes('runtime=/www/plugins/Telegram/Plugin.php')
   && ciGate.includes('runtime=/www/plugins-core/Telegram/Plugin.php')
@@ -61,7 +61,7 @@ for (const legacyWhitelistKey of ['reseller_telegram_ids', 'reseller_allowed_tel
 assert(/is_reseller/.test(config.config.enable_reseller_bot.description)
   && /Administrator and staff roles do not grant reseller access/.test(config.config.enable_reseller_bot.description),
   'Configuration copy does not make explicit reseller assignment independent from admin/staff roles.');
-assert(readme.includes('**2.3.2**') && !readme.includes('khai báo Telegram ID được phép'),
+assert(readme.includes('**2.3.3**') && !readme.includes('khai báo Telegram ID được phép'),
   'README metadata or reseller authority documentation is stale.');
 
 const canManage = between(service, 'public function canManage', 'public function availablePlans');

@@ -129,7 +129,14 @@
     "daily_business_server_line": ":rank. :name (:type) — :traffic",
     "daily_business_user_title": "👤 Top 10 người dùng theo lưu lượng quy đổi tính cước",
     "daily_business_user_line": ":rank. :email — :traffic",
-    "daily_business_empty": "Không có dữ liệu."
+    "daily_business_empty": "Không có dữ liệu.",
+    "daily_public_title": "📡 Tóm tắt hệ thống hằng ngày",
+    "daily_public_date": "Ngày: :date",
+    "daily_public_timezone": "🕐 Múi giờ: Việt Nam (Asia/Ho_Chi_Minh)",
+    "daily_public_nodes": "Node trực tuyến: :online/:total",
+    "daily_public_online_users": "Người dùng trực tuyến: :count",
+    "daily_public_traffic": "Lưu lượng tổng hợp: :traffic",
+    "daily_public_footer": "🔒 Doanh thu, đơn hàng, mã giảm giá và danh tính người dùng chỉ có trong báo cáo riêng gửi quản trị viên."
   },
   "commands": {
     "start": "Mở menu chính",

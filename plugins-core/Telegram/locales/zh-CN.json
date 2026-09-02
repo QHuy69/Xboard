@@ -129,7 +129,14 @@
     "daily_business_server_line": ":rank. :name (:type) — :traffic",
     "daily_business_user_title": "👤 计费折算流量最高的 10 位用户",
     "daily_business_user_line": ":rank. :email — :traffic",
-    "daily_business_empty": "暂无数据。"
+    "daily_business_empty": "暂无数据。",
+    "daily_public_title": "📡 每日系统摘要",
+    "daily_public_date": "日期：:date",
+    "daily_public_timezone": "🕐 时区：越南 (Asia/Ho_Chi_Minh)",
+    "daily_public_nodes": "在线节点：:online/:total",
+    "daily_public_online_users": "在线用户：:count",
+    "daily_public_traffic": "汇总流量：:traffic",
+    "daily_public_footer": "🔒 收入、订单、优惠码和用户身份仅在管理员私人报告中提供。"
   },
   "commands": {
     "start": "打开主菜单",

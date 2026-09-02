@@ -129,7 +129,14 @@
     "daily_business_server_line": ":rank. :name (:type) — :traffic",
     "daily_business_user_title": "👤 Top 10 users by billed rate-adjusted traffic",
     "daily_business_user_line": ":rank. :email — :traffic",
-    "daily_business_empty": "No data."
+    "daily_business_empty": "No data.",
+    "daily_public_title": "📡 Daily system summary",
+    "daily_public_date": "Date: :date",
+    "daily_public_timezone": "🕐 Timezone: Vietnam (Asia/Ho_Chi_Minh)",
+    "daily_public_nodes": "Nodes online: :online/:total",
+    "daily_public_online_users": "Online users: :count",
+    "daily_public_traffic": "Aggregate traffic: :traffic",
+    "daily_public_footer": "🔒 Revenue, orders, coupons, and user identities are available only in the private administrator report."
   },
   "commands": {
     "start": "Open the main menu",
