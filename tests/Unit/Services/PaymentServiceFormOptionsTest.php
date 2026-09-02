@@ -19,7 +19,7 @@ final class PaymentServiceFormOptionsTest extends TestCase
         ]));
 
         $this->assertSame([
-            ['value' => 'tron', 'label' => 'TRON'],
+            ['value' => 'tron', 'label' => 'tron'],
             ['value' => '0', 'label' => '0'],
         ], $this->normalize(['tron', 0]));
 
