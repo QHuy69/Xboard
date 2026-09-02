@@ -13,6 +13,7 @@ use App\Models\UsdtDirectInvoice;
 use App\Models\UsdtDirectTransfer;
 use App\Models\User;
 use App\Services\OrderService;
+use App\Services\PaymentService;
 use App\Services\Plugin\HookManager;
 use App\Services\Plugin\PluginManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,6 +52,28 @@ class UsdtDirectSettlementTest extends TestCase
     {
         HookManager::reset();
         parent::tearDown();
+    }
+
+    public function test_admin_payment_form_exposes_select_options_as_a_frontend_list(): void
+    {
+        $payment = Payment::query()->create([
+            'name' => 'USDT TRC20 draft',
+            'icon' => 'USDT',
+            'payment' => 'UsdtDirect',
+            'uuid' => 'usdtdraft1',
+            'enable' => false,
+            'config' => [],
+        ]);
+
+        $network = (new PaymentService('UsdtDirect', $payment->id))
+            ->form()['usdt_network'];
+
+        $this->assertSame('select', $network['type'] ?? null);
+        $this->assertSame('tron', $network['value'] ?? null);
+        $this->assertTrue(array_is_list($network['options'] ?? []));
+        $this->assertSame([
+            ['value' => 'tron', 'label' => 'TRON Mainnet (TRC20)'],
+        ], $network['options'] ?? []);
     }
 
     public function test_schema_contains_durable_invoice_transfer_and_scan_cursor_guards(): void

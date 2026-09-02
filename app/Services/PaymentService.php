@@ -363,21 +363,45 @@ class PaymentService
             return [];
         }
 
+        $isList = array_is_list($options);
+        $normalized = [];
         foreach ($options as $key => $option) {
             if (is_array($option)) {
-                if (array_key_exists('label', $option)) {
-                    $option['label'] = $this->translateFormMetadata($option['label']);
+                $value = $option['value'] ?? ($isList ? null : $key);
+                if ($value === null || (!is_scalar($value) && $value !== null)) {
+                    continue;
                 }
-                $options[$key] = $option;
+                $value = (string) $value;
+                if ($value === '') {
+                    continue;
+                }
+                $label = $option['label'] ?? $value;
+                $normalized[] = array_replace($option, [
+                    'value' => $value,
+                    'label' => $this->translateFormMetadata($label) ?: $value,
+                ]);
                 continue;
             }
 
-            if (is_string($option)) {
-                $options[$key] = $this->translateFormMetadata($option);
+            if (is_scalar($option) && $option !== false) {
+                // The generated admin form always calls options.map(). JSON
+                // encodes PHP value=>label maps as objects, which crashed the
+                // payment editor. Normalize both shorthand maps and scalar
+                // lists to the frontend's [{value,label}] contract.
+                $value = $isList ? $option : $key;
+                $value = (string) $value;
+                $label = $this->translateFormMetadata($option);
+                if ($value === '' || $label === '') {
+                    continue;
+                }
+                $normalized[] = [
+                    'value' => $value,
+                    'label' => $label,
+                ];
             }
         }
 
-        return $options;
+        return $normalized;
     }
 
     /**

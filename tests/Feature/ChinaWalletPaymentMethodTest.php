@@ -76,7 +76,11 @@ class ChinaWalletPaymentMethodTest extends TestCase
         $form = (new PaymentService('ChinaWallet', $payment->id))->form();
         $this->assertSame('select', $form['china_wallet_provider']['type'] ?? null);
         $this->assertSame('pending', $form['china_wallet_provider']['value'] ?? null);
-        $this->assertArrayHasKey('direct', $form['china_wallet_provider']['options'] ?? []);
+        $this->assertTrue(array_is_list($form['china_wallet_provider']['options'] ?? []));
+        $this->assertContains([
+            'value' => 'direct',
+            'label' => 'Direct WeChat Pay / Alipay merchant APIs',
+        ], $form['china_wallet_provider']['options'] ?? []);
         $this->assertSame('both', $form['china_wallet_wallet_mode']['value'] ?? null);
     }
 
