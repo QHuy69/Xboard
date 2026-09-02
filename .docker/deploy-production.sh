@@ -478,8 +478,9 @@ post_deploy_checks() {
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
     'if (refreshTimer) return;' \
     '/theme/Luck/assets/luck-clash.svg?v=2' \
-    "target.searchParams.set('platform', platform);" \
-    "target.hash = 'platform-' + platform;"; do
+    "target.pathname = '/download/' + platform;" \
+    "target.search = '';" \
+    "target.hash = '';"; do
     grep -Fq "$dashboard_platform_marker" <<<"$dashboard_html" || {
       echo "The deployed Luck dashboard is missing platform marker: $dashboard_platform_marker" >&2
       return 1
@@ -488,6 +489,8 @@ post_deploy_checks() {
   for resource_controller_marker in \
     "\$request->query('platform', '')" \
     "\$items->where('platform', \$selectedPlatform)" \
+    'public function download(string $platform)' \
+    'client_catalog_version' \
     "'empty_platform' =>"; do
     docker exec "$container_id" grep -aFq "$resource_controller_marker" \
       '/www/app/Http/Controllers/ResourcePortalController.php' || {

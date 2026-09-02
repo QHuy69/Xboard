@@ -10,6 +10,9 @@ class ResourcePortalController extends Controller
 
     private const PORTAL_PLATFORMS = ['windows', 'macos', 'linux', 'android', 'ios'];
 
+    /** Increment when the built-in client catalog gains new direct-download entries. */
+    private const CLIENT_CATALOG_VERSION = 1;
+
     public function index(Request $request)
     {
         $locale = $this->normalizePortalLocale((string) $request->query('lang', 'vi-VN'));
@@ -63,6 +66,34 @@ class ResourcePortalController extends Controller
         return $this->success($this->getEditablePortalConfig());
     }
 
+    /**
+     * Redirect a platform CTA to the first enabled, configured client binary.
+     * Only URLs saved in the resource portal catalog are eligible; arbitrary
+     * redirect targets are never accepted from the request.
+     */
+    public function download(string $platform)
+    {
+        $platform = strtolower(trim($platform));
+        if (!in_array($platform, self::PORTAL_PLATFORMS, true)) {
+            abort(404);
+        }
+
+        $app = collect($this->getEditablePortalConfig()['apps'])
+            ->filter(fn (array $item) => $item['enabled']
+                && $item['platform'] === $platform
+                && filter_var($item['download_url'], FILTER_VALIDATE_URL))
+            ->sortBy('sort')
+            ->first();
+
+        if (!$app) {
+            abort(404, 'Bản tải cho nền tảng này chưa được cấu hình.');
+        }
+
+        return redirect()->away($app['download_url'], 302, [
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+
     public function save(Request $request)
     {
         $rules = [
@@ -71,7 +102,7 @@ class ResourcePortalController extends Controller
             'notice' => 'nullable|string|max:1000',
             'locales' => 'nullable|array',
             'support_url' => 'nullable|url|max:2048',
-            'apps' => 'present|array|max:20',
+            'apps' => 'present|array|max:30',
             'apps.*.name' => 'required|string|max:100',
             'apps.*.platform' => 'required|in:windows,android,macos,ios,linux,other',
             'apps.*.version' => 'nullable|string|max:50',
@@ -160,6 +191,7 @@ class ResourcePortalController extends Controller
             'locales' => $localizedPage,
             'support_url' => trim((string) ($validated['support_url'] ?? '')),
             'apps' => $apps,
+            'client_catalog_version' => self::CLIENT_CATALOG_VERSION,
         ];
         admin_setting(['resource_portal' => $saved]);
 
@@ -229,9 +261,8 @@ class ResourcePortalController extends Controller
             }
         }
 
-        $storedApps = isset($stored['apps']) && is_array($stored['apps'])
-            ? $stored['apps']
-            : $this->defaultEditableApps();
+        $hasStoredApps = isset($stored['apps']) && is_array($stored['apps']);
+        $storedApps = $hasStoredApps ? $stored['apps'] : $this->defaultEditableApps();
         $apps = collect($storedApps)
             ->filter(fn ($app) => is_array($app))
             ->map(function (array $app, $index) use ($viCopy): array {
@@ -295,14 +326,20 @@ class ResourcePortalController extends Controller
             })
             ->values();
 
-        // Old saved lists may predate Linux/iOS. Preserve every old/custom row
-        // and only add an OS whose platform is genuinely absent.
-        $existingPlatforms = $apps->pluck('platform')->unique()->all();
-        foreach ($this->defaultEditableApps() as $defaultApp) {
-            if (!in_array($defaultApp['platform'], $existingPlatforms, true)) {
-                $apps->push($defaultApp);
-                $existingPlatforms[] = $defaultApp['platform'];
+        // Upgrade older saved lists once by adding the built-in direct-download
+        // catalog. Existing/custom rows are preserved and duplicate URLs are
+        // skipped. The version marker prevents removed rows from reappearing.
+        $catalogVersion = (int) ($stored['client_catalog_version'] ?? 0);
+        if ($catalogVersion < self::CLIENT_CATALOG_VERSION) {
+            $existingUrls = $apps->pluck('download_url')->filter()->all();
+            foreach ($this->defaultEditableApps() as $defaultApp) {
+                $url = $defaultApp['download_url'];
+                if ($url !== '' && !in_array($url, $existingUrls, true)) {
+                    $apps->push($defaultApp);
+                    $existingUrls[] = $url;
+                }
             }
+            $catalogVersion = self::CLIENT_CATALOG_VERSION;
         }
 
         return [
@@ -313,6 +350,7 @@ class ResourcePortalController extends Controller
             'support_url' => trim((string) ($stored['support_url']
                 ?? (rtrim((string) admin_setting('app_url', 'https://zaoguang-vpn.com'), '/') . '/tickets'))),
             'apps' => $apps->values()->all(),
+            'client_catalog_version' => $catalogVersion,
         ];
     }
 
@@ -326,27 +364,102 @@ class ResourcePortalController extends Controller
             'ios' => ['version' => (string) admin_setting('ios_version', ''), 'download_url' => (string) admin_setting('ios_download_url', ''), 'sort' => 4],
         ];
 
-        return collect(self::PORTAL_PLATFORMS)->map(function (string $platform) use ($shared): array {
-            $translations = collect(self::PORTAL_LOCALES)->mapWithKeys(function (string $locale) use ($platform): array {
-                $copy = $this->portalCopy($locale);
+        $apps = [];
+        $sort = 0;
 
-                return [$locale => [
-                    'name' => $copy['app_names'][$platform],
-                    'description' => $copy['app_descriptions'][$platform],
-                ]];
-            })->all();
+        // Keep any existing ZaoGuang client links configured in legacy admin
+        // settings. They remain available alongside the public client catalog.
+        foreach (self::PORTAL_PLATFORMS as $platform) {
+            if ($shared[$platform]['download_url'] === '') {
+                continue;
+            }
+            $copy = $this->portalCopy('vi-VN');
+            $apps[] = $this->makeCatalogApp(
+                $copy['app_names'][$platform],
+                $platform,
+                $shared[$platform]['version'],
+                $shared[$platform]['download_url'],
+                $copy['app_descriptions'][$platform],
+                $sort++
+            );
+        }
 
-            return [
-                'name' => $translations['vi-VN']['name'],
-                'platform' => $platform,
-                'version' => $shared[$platform]['version'],
-                'download_url' => $shared[$platform]['download_url'],
-                'description' => $translations['vi-VN']['description'],
-                'translations' => $translations,
-                'enabled' => true,
-                'sort' => $shared[$platform]['sort'],
-            ];
+        // Official release assets. These are binary/package URLs, not vendor
+        // landing pages, so the dashboard CTA starts the download directly.
+        $catalog = [
+            ['Hiddify', 'windows', '4.1.1', 'https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-Windows-Setup-x64.exe'],
+            ['Clash Verge Rev', 'windows', '2.5.2', 'https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.5.2/Clash.Verge_2.5.2_x64-setup.exe'],
+            ['v2rayN', 'windows', '7.24.9', 'https://github.com/2dust/v2rayN/releases/download/7.24.9/v2rayN-windows-64-desktop.zip'],
+            ['Hiddify', 'macos', '4.1.1', 'https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-MacOS.dmg'],
+            ['Clash Verge Rev', 'macos', '2.5.2', 'https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.5.2/Clash.Verge_2.5.2_x64.dmg'],
+            ['v2rayN', 'macos', '7.24.9', 'https://github.com/2dust/v2rayN/releases/download/7.24.9/v2rayN-macos-64.dmg'],
+            ['Hiddify', 'linux', '4.1.1', 'https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-Linux-x64-AppImage.AppImage'],
+            ['Clash Verge Rev', 'linux', '2.5.2', 'https://github.com/clash-verge-rev/clash-verge-rev/releases/download/v2.5.2/Clash.Verge_2.5.2_amd64.deb'],
+            ['v2rayN', 'linux', '7.24.9', 'https://github.com/2dust/v2rayN/releases/download/7.24.9/v2rayN-linux-64.zip'],
+            ['Hiddify', 'android', '4.1.1', 'https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-Android-universal.apk'],
+            ['v2rayNG', 'android', '2.2.6', 'https://github.com/2dust/v2rayNG/releases/download/2.2.6/v2rayNG_2.2.6_arm64-v8a.apk'],
+            ['NekoBox', 'android', '1.4.2', 'https://github.com/MatsuriDayo/NekoBoxForAndroid/releases/download/1.4.2/NekoBox-1.4.2-arm64-v8a.apk'],
+            ['Shadowsocks', 'windows', '4.4.1.0', 'https://github.com/shadowsocks/shadowsocks-windows/releases/download/4.4.1.0/Shadowsocks-4.4.1.0.zip'],
+            ['ShadowsocksX', 'macos', '2.6.3', 'https://github.com/shadowsocks/shadowsocks-iOS/releases/download/2.6.3/ShadowsocksX-2.6.3.dmg'],
+            ['Shadowsocks', 'android', '5.3.5-nightly', 'https://github.com/shadowsocks/shadowsocks-android/releases/download/v5.3.5-nightly/shadowsocks-5.3.5-nightly.apk'],
+            ['sing-box', 'windows', '1.14.0', 'https://github.com/SagerNet/sing-box/releases/download/v1.14.0/SFW-1.14.0-x64.exe'],
+            ['sing-box', 'macos', '1.14.0', 'https://github.com/SagerNet/sing-box/releases/download/v1.14.0/SFM-1.14.0-Universal.pkg'],
+            ['sing-box', 'linux', '1.14.0', 'https://github.com/SagerNet/sing-box/releases/download/v1.14.0/SFL-1.14.0-amd64.deb'],
+            ['sing-box', 'android', '1.14.0', 'https://github.com/SagerNet/sing-box/releases/download/v1.14.0/SFA-1.14.0-universal.apk'],
+            ['Outline', 'windows', 'stable', 'https://s3.amazonaws.com/outline-releases/client/windows/stable/Outline-Client.exe'],
+            ['Outline', 'linux', 'stable', 'https://s3.amazonaws.com/outline-releases/client/linux/stable/outline-client_amd64.deb'],
+            ['Outline', 'android', 'stable', 'https://s3.amazonaws.com/outline-releases/client/android/stable/Outline-Client.apk'],
+            // Apple requires App Store distribution for signed iOS clients; the
+            // link opens the official app listing rather than an untrusted IPA.
+            ['Outline (App Store)', 'ios', 'stable', 'https://apps.apple.com/us/app/outline-app/id1356177741'],
+        ];
+
+        foreach ($catalog as [$name, $platform, $version, $url]) {
+            $copy = $this->portalCopy('vi-VN');
+            $apps[] = $this->makeCatalogApp(
+                $name,
+                $platform,
+                $version,
+                $url,
+                $copy['app_descriptions'][$platform],
+                $sort++
+            );
+        }
+
+        return $apps;
+    }
+
+    private function makeCatalogApp(
+        string $name,
+        string $platform,
+        string $version,
+        string $downloadUrl,
+        string $description,
+        int $sort
+    ): array {
+        $translations = collect(self::PORTAL_LOCALES)->mapWithKeys(function (string $locale) use (
+            $name,
+            $platform,
+            $description
+        ): array {
+            $copy = $this->portalCopy($locale);
+
+            return [$locale => [
+                'name' => $name,
+                'description' => $copy['app_descriptions'][$platform] ?? $description,
+            ]];
         })->all();
+
+        return [
+            'name' => $name,
+            'platform' => $platform,
+            'version' => $version,
+            'download_url' => $downloadUrl,
+            'description' => $translations['vi-VN']['description'],
+            'translations' => $translations,
+            'enabled' => true,
+            'sort' => $sort,
+        ];
     }
 
     private function portalLocaleOptions(): array

@@ -99,7 +99,7 @@
             '<div class="app-grid"><div class="field"><label>Tên ứng dụng <span class="locale-mark">' + localeName + '</span></label><input data-i18n-key="name" maxlength="100" required value="' + escapeHtml(translation.name) + '"></div>' +
             '<div class="field"><label>Nền tảng <span class="shared-badge">Dùng chung</span></label><select data-key="platform">' + platformOptions(app.platform) + '</select></div>' +
             '<div class="field"><label>Phiên bản <span class="shared-badge">Dùng chung</span></label><input data-key="version" maxlength="50" value="' + escapeHtml(app.version) + '"></div>' +
-            '<div class="field wide"><label>Liên kết tải xuống <span class="shared-badge">Dùng chung</span></label><input data-key="download_url" type="url" placeholder="https://..." value="' + escapeHtml(app.download_url) + '"></div>' +
+            '<div class="field wide"><label>Liên kết tải xuống trực tiếp <span class="shared-badge">Dùng chung</span></label><input data-key="download_url" type="url" placeholder="https://.../file.exe hoặc .apk" value="' + escapeHtml(app.download_url) + '"><small style="color:var(--muted)">Dùng URL tới tệp cài đặt trực tiếp; không dùng trang giới thiệu.</small></div>' +
             '<div class="field wide"><label>Mô tả ngắn <span class="locale-mark">' + localeName + '</span></label><textarea data-i18n-key="description" maxlength="300">' + escapeHtml(translation.description) + '</textarea></div>' +
             '<label class="toggle wide"><input data-key="enabled" type="checkbox"' + (app.enabled ? ' checked' : '') + '> Hiển thị ứng dụng này <span class="shared-badge">Dùng chung</span></label></div></section>';
         }).join('');

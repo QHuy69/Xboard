@@ -54,7 +54,7 @@
             <h2>{{ $app['name'] }}</h2>
             @if($app['version'])<span class="version">{{ $copy['version'] }} {{ $app['version'] }}</span>@endif
             @if($app['description'])<p class="description">{{ $app['description'] }}</p>@endif
-            <a class="download" href="{{ $app['download_url'] }}" target="_blank" rel="noopener noreferrer">{{ $copy['download'] }} <span aria-hidden="true">↓</span></a>
+            <a class="download" href="{{ $app['download_url'] }}" rel="noopener noreferrer">{{ $copy['download'] }} <span aria-hidden="true">↓</span></a>
           </article>
         @empty
           <div class="empty">{{ $selectedPlatform ? str_replace(':platform', $platformNames[$selectedPlatform], $copy['empty_platform']) : $copy['empty'] }}</div>

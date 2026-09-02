@@ -6,6 +6,7 @@ const dashboard = fs.readFileSync('luck-dashboard.blade.php', 'utf8');
 const css = fs.readFileSync('luck-overrides.css', 'utf8');
 const controller = fs.readFileSync('app/Http/Controllers/ResourcePortalController.php', 'utf8');
 const portal = fs.readFileSync('resources/views/resources/portal.blade.php', 'utf8');
+const routes = fs.readFileSync('routes/web.php', 'utf8');
 const ciSmoke = fs.readFileSync('.docker/ci-smoke.sh', 'utf8');
 const deploy = fs.readFileSync('.docker/deploy-production.sh', 'utf8');
 
@@ -113,11 +114,9 @@ const updateDownloadHref = vm.runInNewContext(`(${updateHrefMatch[1]})`, {
 updateDownloadHref('linux');
 const selectedUrl = new URL(fakeDownload.attributes.href);
 assert.strictEqual(selectedUrl.origin, 'https://resources.example.test');
-assert.strictEqual(selectedUrl.pathname, '/catalog');
-assert.strictEqual(selectedUrl.searchParams.get('channel'), 'stable', 'configured Resources query values must be preserved');
-assert.strictEqual(selectedUrl.searchParams.get('platform'), 'linux');
-assert.strictEqual(selectedUrl.searchParams.get('lang'), 'fa-IR');
-assert.strictEqual(selectedUrl.hash, '#platform-linux');
+assert.strictEqual(selectedUrl.pathname, '/download/linux');
+assert.strictEqual(selectedUrl.search, '', 'direct download routes must not inherit catalog query state');
+assert.strictEqual(selectedUrl.hash, '', 'direct download routes must not inherit catalog anchors');
 assert.strictEqual(fakeDownload.attributes.target, undefined, 'the generated CTA must remain same-tab navigation');
 assert.strictEqual(fakeDownload.dataset.luckPlatform, 'linux');
 const validHref = fakeDownload.attributes.href;
@@ -196,12 +195,20 @@ assert(
   'Resources must reject unsupported platforms and filter server-side from the stable platform query parameter'
 );
 assert(
+  routes.includes("Route::get('/download/{platform}', [ResourcePortalController::class, 'download'])") &&
+    routes.includes("->where('platform', 'windows|macos|linux|android|ios')"),
+  'Resources must expose an allow-listed direct-download route for every supported platform'
+);
+assert(
   controller.includes("admin_setting('linux_download_url', '')") &&
     controller.includes("admin_setting('ios_download_url', '')") &&
-    controller.includes("$existingPlatforms = $apps->pluck('platform')->unique()->all()") &&
-    controller.includes("if (!in_array($defaultApp['platform'], $existingPlatforms, true))") &&
+    controller.includes('private const CLIENT_CATALOG_VERSION = 1;') &&
+    controller.includes('public function download(string $platform)') &&
+    controller.includes("redirect()->away($app['download_url']") &&
+    controller.includes('https://github.com/hiddify/hiddify-app/releases/download/v4.1.1/Hiddify-Windows-Setup-x64.exe') &&
+    controller.includes('https://s3.amazonaws.com/outline-releases/client/android/stable/Outline-Client.apk') &&
     controller.includes('$apps->push($defaultApp)'),
-  'default and older saved Resources configurations must expose administrator-configurable Linux and iOS slots'
+  'Resources must expose direct-download client catalog entries and a safe platform redirect'
 );
 assert(
   portal.includes('id="{{ $selectedPlatform ? \'platform-\' . $selectedPlatform : \'apps\' }}"') &&
@@ -226,7 +233,7 @@ assert(
 for (const releaseGate of [ciSmoke, deploy]) {
   assert(releaseGate.includes("var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];"), 'release gate is missing the exact five-platform marker');
   assert(releaseGate.includes('if (refreshTimer) return;'), 'release gate must keep the starvation-safe dashboard scheduler');
-  assert(releaseGate.includes("target.searchParams.set('platform', platform);"), 'release gate is missing the Resources query handoff marker');
+  assert(releaseGate.includes("target.pathname = '/download/' + platform;"), 'release gate is missing the direct-download handoff marker');
   assert(releaseGate.includes('data-selected-platform="{{ $selectedPlatform }}"'), 'release gate is missing the filtered Resources view marker');
   assert(releaseGate.includes("'empty_platform' =>"), 'release gate is missing the localized zero-download marker');
   assert(releaseGate.includes('for resource_platform in windows macos linux android ios; do'),
