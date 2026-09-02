@@ -807,8 +807,12 @@ if [ "$usdt_plugin_state" != '1.0.0:0' ]; then
 fi
 telegram_plugin_state="$(docker exec "$container_name" sqlite3 /www/.docker/.data/database.sqlite \
   "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")"
-if [ "$telegram_plugin_state" != '2.3.0:1' ]; then
-  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.3.0:1." >&2
+if [ "$telegram_plugin_state" != '2.3.1:1' ]; then
+  echo "Telegram plugin deployment state is $telegram_plugin_state; expected 2.3.1:1." >&2
+  exit 1
+fi
+if ! docker exec "$container_name" grep -Fq "app(PluginConfigService::class)->updateConfig('telegram'" /www/plugins/Telegram/Plugin.php; then
+  echo "Telegram plugin runtime copy is missing the canonical /setreportgroup persistence fix." >&2
   exit 1
 fi
 echo "[smoke] Required migrations passed with no pending migration"

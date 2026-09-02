@@ -26,7 +26,7 @@ function includesAll(source, needles, contract) {
   }
 }
 
-assert.strictEqual(config.version, '2.3.0', 'One-bot support inbox must ship as Telegram plugin v2.3.0.');
+assert.strictEqual(config.version, '2.3.1', 'One-bot support inbox must remain present in Telegram plugin v2.3.1.');
 for (const removedConfig of [
   'enable_reseller_support_chat',
   'reseller_support_chat_id',
@@ -47,7 +47,7 @@ assert.deepStrictEqual(
 );
 assert(!Object.keys(config.config).some((key) => /(?:bot.*token|token.*bot)/i.test(key)),
   'The plugin schema exposes a second bot-token field instead of using the default bot.');
-assert(readme.includes('**2.3.0**')
+assert(readme.includes('**2.3.1**')
   && readme.includes('cùng bot mặc định')
   && readme.includes('không cần bot thứ hai, nhóm hỗ trợ hoặc cấu hình chat ID riêng')
   && readme.includes('Chỉ tài khoản đã liên kết có cờ `is_admin`'),

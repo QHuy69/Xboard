@@ -859,12 +859,16 @@ post_deploy_checks() {
   telegram_plugin_state="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite \
     "SELECT version || ':' || is_enabled FROM v2_plugins WHERE code = 'telegram';")" || return 1
   case "$telegram_plugin_state" in
-    '2.3.0:0'|'2.3.0:1') ;;
+    '2.3.1:0'|'2.3.1:1') ;;
     *)
-      echo "Deployed Telegram plugin state is $telegram_plugin_state; expected version 2.3.0 with a valid admin-controlled enabled state." >&2
+      echo "Deployed Telegram plugin state is $telegram_plugin_state; expected version 2.3.1 with a valid admin-controlled enabled state." >&2
       return 1
       ;;
   esac
+  if ! docker exec "$container_id" grep -Fq "app(PluginConfigService::class)->updateConfig('telegram'" /www/plugins/Telegram/Plugin.php; then
+    echo "Deployed Telegram plugin runtime copy is missing the canonical /setreportgroup persistence fix." >&2
+    return 1
+  fi
 
   integrity="$(docker exec "$container_id" sqlite3 /www/.docker/.data/database.sqlite 'PRAGMA integrity_check;')" || return 1
   if [ "$integrity" != "ok" ]; then
