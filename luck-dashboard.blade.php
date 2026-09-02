@@ -495,12 +495,11 @@
         if (!download || PLATFORM_ORDER.indexOf(platform) === -1 || !resourcesBaseHref) return;
         try {
           var target = new URL(resourcesBaseHref, window.location.href);
-          // Route through the resource portal's allow-listed redirect so this
-          // CTA downloads the selected client binary instead of opening a
-          // catalog/landing page. Query/hash state is intentionally cleared.
-          target.pathname = '/download/' + platform;
-          target.search = '';
-          target.hash = '';
+          // Open the filtered resource catalog so customers can see and choose
+          // a client. Each card's own Download button points to the binary.
+          target.searchParams.set('platform', platform);
+          target.searchParams.set('lang', platformLocale);
+          target.hash = 'platform-' + platform;
           download.setAttribute('href', target.toString());
           download.removeAttribute('target');
           download.dataset.luckPlatform = platform;

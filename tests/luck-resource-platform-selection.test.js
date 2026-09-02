@@ -114,9 +114,11 @@ const updateDownloadHref = vm.runInNewContext(`(${updateHrefMatch[1]})`, {
 updateDownloadHref('linux');
 const selectedUrl = new URL(fakeDownload.attributes.href);
 assert.strictEqual(selectedUrl.origin, 'https://resources.example.test');
-assert.strictEqual(selectedUrl.pathname, '/download/linux');
-assert.strictEqual(selectedUrl.search, '', 'direct download routes must not inherit catalog query state');
-assert.strictEqual(selectedUrl.hash, '', 'direct download routes must not inherit catalog anchors');
+assert.strictEqual(selectedUrl.pathname, '/catalog');
+assert.strictEqual(selectedUrl.searchParams.get('channel'), 'stable', 'configured Resources query values must be preserved');
+assert.strictEqual(selectedUrl.searchParams.get('platform'), 'linux');
+assert.strictEqual(selectedUrl.searchParams.get('lang'), 'fa-IR');
+assert.strictEqual(selectedUrl.hash, '#platform-linux');
 assert.strictEqual(fakeDownload.attributes.target, undefined, 'the generated CTA must remain same-tab navigation');
 assert.strictEqual(fakeDownload.dataset.luckPlatform, 'linux');
 const validHref = fakeDownload.attributes.href;
@@ -233,7 +235,7 @@ assert(
 for (const releaseGate of [ciSmoke, deploy]) {
   assert(releaseGate.includes("var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];"), 'release gate is missing the exact five-platform marker');
   assert(releaseGate.includes('if (refreshTimer) return;'), 'release gate must keep the starvation-safe dashboard scheduler');
-  assert(releaseGate.includes("target.pathname = '/download/' + platform;"), 'release gate is missing the direct-download handoff marker');
+  assert(releaseGate.includes("target.searchParams.set('platform', platform);"), 'release gate is missing the Resources query handoff marker');
   assert(releaseGate.includes('data-selected-platform="{{ $selectedPlatform }}"'), 'release gate is missing the filtered Resources view marker');
   assert(releaseGate.includes("'empty_platform' =>"), 'release gate is missing the localized zero-download marker');
   assert(releaseGate.includes('for resource_platform in windows macos linux android ios; do'),

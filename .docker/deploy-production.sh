@@ -478,9 +478,9 @@ post_deploy_checks() {
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
     'if (refreshTimer) return;' \
     '/theme/Luck/assets/luck-clash.svg?v=2' \
-    "target.pathname = '/download/' + platform;" \
-    "target.search = '';" \
-    "target.hash = '';"; do
+    "target.searchParams.set('platform', platform);" \
+    "target.searchParams.set('lang', platformLocale);" \
+    "target.hash = 'platform-' + platform;"; do
     grep -Fq "$dashboard_platform_marker" <<<"$dashboard_html" || {
       echo "The deployed Luck dashboard is missing platform marker: $dashboard_platform_marker" >&2
       return 1

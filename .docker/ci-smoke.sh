@@ -394,9 +394,9 @@ for luck_dashboard_template in \
     "var PLATFORM_ORDER = ['windows', 'macos', 'linux', 'android', 'ios'];" \
     'if (refreshTimer) return;' \
     '/theme/{{$theme}}/assets/luck-clash.svg?v=2' \
-    "target.pathname = '/download/' + platform;" \
-    "target.search = '';" \
-    "target.hash = '';" \
+    "target.searchParams.set('platform', platform);" \
+    "target.searchParams.set('lang', platformLocale);" \
+    "target.hash = 'platform-' + platform;" \
     'data-luck-icon="language"'; do
     docker exec "$container_name" grep -aFq "$dashboard_asset_marker" "$luck_dashboard_template" || {
       echo "Packaged Luck dashboard is missing marker $dashboard_asset_marker in $luck_dashboard_template" >&2
