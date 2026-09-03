@@ -429,6 +429,53 @@
       var syncIconVisibility = function () {
         document.querySelectorAll(ICON_IMAGE_SELECTOR).forEach(bindIconImage);
       };
+      /* Windows often renders regional-indicator flag emoji as the literal
+         ISO letters (for example "CN"). Replace a leading plan-name flag
+         with our local SVG sprite so the plan card keeps a real flag icon on
+         desktop, while preserving the plan name itself. */
+      var PLAN_NAME_FLAG_SELECTOR = '.plans-grid .plan-name, .plan-comparison .plan-name';
+      var syncPlanNameFlags = function () {
+        document.querySelectorAll(PLAN_NAME_FLAG_SELECTOR).forEach(function (node) {
+          var characters = Array.from(String(node.textContent || '').trim());
+          var first = characters[0] ? characters[0].codePointAt(0) : 0;
+          var second = characters[1] ? characters[1].codePointAt(0) : 0;
+          var isRegionalPair = first >= 0x1F1E6 && first <= 0x1F1FF
+            && second >= 0x1F1E6 && second <= 0x1F1FF;
+          if (!isRegionalPair) {
+            if (node.dataset.luckPlanFlag) {
+              node.textContent = String(node.textContent || '').trim();
+              delete node.dataset.luckPlanFlag;
+            }
+            return;
+          }
+          var flagCode = String.fromCharCode(first - 0x1F1E6 + 97, second - 0x1F1E6 + 97);
+          var label = characters.slice(2).join('').trim();
+          if (!label) return;
+          if (node.dataset.luckPlanFlag === flagCode
+              && node.querySelector(':scope > .luck-plan-name-flag')) {
+            var labelNode = node.querySelector(':scope > .luck-plan-name-label');
+            if (labelNode) labelNode.textContent = label;
+            return;
+          }
+          node.textContent = '';
+          var flag = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          flag.classList.add('luck-plan-name-flag');
+          flag.setAttribute('viewBox', '0 0 32 22');
+          flag.setAttribute('aria-hidden', 'true');
+          flag.setAttribute('focusable', 'false');
+          flag.style.cssText = 'display:inline-block;width:1.25em;height:.86em;flex:0 0 auto;vertical-align:-.08em;margin-inline-end:.35em;overflow:visible;';
+          var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+          var flagHref = '/theme/Luck/assets/luck-flags.svg?v=1#' + flagCode;
+          use.setAttribute('href', flagHref);
+          use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', flagHref);
+          flag.appendChild(use);
+          var labelNode = document.createElement('span');
+          labelNode.className = 'luck-plan-name-label';
+          labelNode.textContent = label;
+          node.append(flag, labelNode);
+          node.dataset.luckPlanFlag = flagCode;
+        });
+      };
       var syncClashIcons = function () {
         document.querySelectorAll('.subscription-icon.clash img.subscription-logo').forEach(function (image) {
           if (image.getAttribute('src') !== CLASH_ICON) image.setAttribute('src', CLASH_ICON);
@@ -619,6 +666,7 @@
       var runRefresh = function () {
         syncClashIcons();
         syncIconVisibility();
+        syncPlanNameFlags();
         syncDownloadPlacement();
         checkEligibility(false);
       };

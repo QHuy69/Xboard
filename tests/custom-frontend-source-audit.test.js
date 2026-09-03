@@ -27,6 +27,9 @@ includesAll('luck-dashboard.blade.php', [
   'class="fb-customerchat"',
   "'facebook-jssdk'",
   'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js',
+  'PLAN_NAME_FLAG_SELECTOR',
+  'luck-plan-name-flag',
+  'regional-indicator flag emoji',
 ]);
 
 includesAll('app/Services/LuckThemeAssetPatcher.php', [
