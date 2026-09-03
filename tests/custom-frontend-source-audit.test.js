@@ -28,6 +28,8 @@ includesAll('luck-dashboard.blade.php', [
   "'facebook-jssdk'",
   'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js',
   'PLAN_NAME_FLAG_SELECTOR',
+  'LOCAL_FLAG_CODES',
+  'resolvedFlagCode',
   'luck-plan-name-flag',
   'regional-indicator flag emoji',
 ]);

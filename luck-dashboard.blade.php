@@ -434,6 +434,12 @@
          with our local SVG sprite so the plan card keeps a real flag icon on
          desktop, while preserving the plan name itself. */
       var PLAN_NAME_FLAG_SELECTOR = '.plans-grid .plan-name, .plan-comparison .plan-name';
+      var LOCAL_FLAG_CODES = {
+        ae: true, au: true, br: true, ca: true, ch: true, cn: true, de: true, dk: true,
+        es: true, fi: true, fr: true, gb: true, hk: true, id: true, in: true, it: true,
+        jp: true, kr: true, my: true, nl: true, no: true, pl: true, ru: true, se: true,
+        sg: true, th: true, tw: true, un: true, us: true, vn: true
+      };
       var syncPlanNameFlags = function () {
         document.querySelectorAll(PLAN_NAME_FLAG_SELECTOR).forEach(function (node) {
           var characters = Array.from(String(node.textContent || '').trim());
@@ -442,16 +448,17 @@
           var isRegionalPair = first >= 0x1F1E6 && first <= 0x1F1FF
             && second >= 0x1F1E6 && second <= 0x1F1FF;
           if (!isRegionalPair) {
-            if (node.dataset.luckPlanFlag) {
-              node.textContent = String(node.textContent || '').trim();
-              delete node.dataset.luckPlanFlag;
-            }
+            /* Keep generated icons through observer passes. Vue removes the
+               child only when it replaces this node with fresh text. */
+            if (node.dataset.luckPlanFlag && node.querySelector(':scope > .luck-plan-name-flag')) return;
+            delete node.dataset.luckPlanFlag;
             return;
           }
           var flagCode = String.fromCharCode(first - 0x1F1E6 + 97, second - 0x1F1E6 + 97);
+          var resolvedFlagCode = LOCAL_FLAG_CODES[flagCode] ? flagCode : 'un';
           var label = characters.slice(2).join('').trim();
           if (!label) return;
-          if (node.dataset.luckPlanFlag === flagCode
+          if (node.dataset.luckPlanFlag === resolvedFlagCode
               && node.querySelector(':scope > .luck-plan-name-flag')) {
             var labelNode = node.querySelector(':scope > .luck-plan-name-label');
             if (labelNode) labelNode.textContent = label;
@@ -465,7 +472,7 @@
           flag.setAttribute('focusable', 'false');
           flag.style.cssText = 'display:inline-block;width:1.25em;height:.86em;flex:0 0 auto;vertical-align:-.08em;margin-inline-end:.35em;overflow:visible;';
           var use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-          var flagHref = '/theme/Luck/assets/luck-flags.svg?v=1#' + flagCode;
+          var flagHref = '/theme/Luck/assets/luck-flags.svg?v=1#' + resolvedFlagCode;
           use.setAttribute('href', flagHref);
           use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', flagHref);
           flag.appendChild(use);
@@ -473,7 +480,7 @@
           labelNode.className = 'luck-plan-name-label';
           labelNode.textContent = label;
           node.append(flag, labelNode);
-          node.dataset.luckPlanFlag = flagCode;
+          node.dataset.luckPlanFlag = resolvedFlagCode;
         });
       };
       var syncClashIcons = function () {
