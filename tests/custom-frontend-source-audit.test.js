@@ -22,7 +22,11 @@ includesAll('luck-dashboard.blade.php', [
   "CRISP_RUNTIME_CONFIG.locale",
   "theme.support.crisp.website_id",
   "theme.support.messenger.page_username",
+  "theme.support.messenger.page_id",
   "messenger_page_username",
+  'class="fb-customerchat"',
+  "'facebook-jssdk'",
+  'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js',
 ]);
 
 includesAll('app/Services/LuckThemeAssetPatcher.php', [

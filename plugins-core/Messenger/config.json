@@ -3,7 +3,7 @@
     "code": "messenger",
     "type": "feature",
     "version": "1.0.0",
-    "description": "Display a Messenger support button on the customer dashboard using the plugin configuration.",
+    "description": "Display an embedded Messenger chat window and an optional Facebook link on the customer dashboard.",
     "author": "ZaoGuang Service",
     "config": {
         "page_username": {
@@ -12,6 +12,13 @@
             "label": "Facebook Page username",
             "placeholder": "facebook.page.name",
             "description": "Enter the Page username from the end of its m.me link, not the full URL."
+        },
+        "page_id": {
+            "type": "string",
+            "default": "",
+            "label": "Facebook Page ID",
+            "placeholder": "e.g. 123456789012345",
+            "description": "Numeric Page ID enables the embedded Messenger chat. Add your domain to the Page's allowlist in Meta Business settings."
         }
     }
 }

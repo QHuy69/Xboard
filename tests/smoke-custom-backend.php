@@ -152,6 +152,20 @@ if (HookManager::filter('theme.support.messenger.page_username', '') !== 'zaogua
     exit(1);
 }
 HookManager::reset();
+$messenger->setConfig(['page_id' => 'invalid-page-id']);
+$messenger->boot();
+if (HookManager::filter('theme.support.messenger.page_id', 'fallback-page-id') !== 'fallback-page-id') {
+    fwrite(STDERR, "Messenger accepted an invalid Page ID.\n");
+    exit(1);
+}
+HookManager::reset();
+$messenger->setConfig(['page_id' => '123456789012345']);
+$messenger->boot();
+if (HookManager::filter('theme.support.messenger.page_id', '') !== '123456789012345') {
+    fwrite(STDERR, "Messenger did not expose a valid Page ID.\n");
+    exit(1);
+}
+HookManager::reset();
 $webhookUrl = 'https://payments.example.test/coinpayments/callback';
 $plugin = new CoinPaymentsPlugin('coin_payments');
 $plugin->setConfig([

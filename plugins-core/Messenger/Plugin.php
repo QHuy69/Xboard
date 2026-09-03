@@ -12,5 +12,10 @@ final class Plugin extends AbstractPlugin
             $username = trim((string) $this->getConfig('page_username', ''));
             return preg_match('/^[A-Za-z0-9._-]{3,100}$/', $username) ? $username : $fallback;
         });
+
+        $this->filter('theme.support.messenger.page_id', function (string $fallback): string {
+            $pageId = trim((string) $this->getConfig('page_id', ''));
+            return preg_match('/^\d{5,30}$/', $pageId) ? $pageId : $fallback;
+        });
     }
 }

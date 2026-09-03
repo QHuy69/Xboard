@@ -1098,6 +1098,12 @@
     $messengerUsername = $messengerInstalled && !(bool) $supportPluginStates->get('messenger')
       ? ''
       : trim((string) \App\Services\Plugin\HookManager::filter('theme.support.messenger.page_username', $messengerFallback));
+    $messengerPageIdFallback = $messengerInstalled
+      ? ''
+      : (string) admin_setting('messenger_page_id', env('MESSENGER_PAGE_ID', ''));
+    $messengerPageId = $messengerInstalled && !(bool) $supportPluginStates->get('messenger')
+      ? ''
+      : trim((string) \App\Services\Plugin\HookManager::filter('theme.support.messenger.page_id', $messengerPageIdFallback));
   @endphp
   <script>
     (function () {
@@ -1117,6 +1123,23 @@
   </script>
   @if($messengerUsername !== '' && preg_match('/^[A-Za-z0-9._-]{3,100}$/', $messengerUsername))
     <a class="luck-messenger-support" href="https://m.me/{{ rawurlencode($messengerUsername) }}" target="_blank" rel="noopener noreferrer" dir="{{ app()->getLocale() === 'fa-IR' ? 'rtl' : 'ltr' }}" aria-label="{{ __('Chat with support on Messenger') }}" title="{{ __('Chat with support on Messenger') }}">f</a>
+  @endif
+  @if($messengerPageId !== '' && preg_match('/^\d{5,30}$/', $messengerPageId))
+    <div id="fb-root"></div>
+    <div class="fb-customerchat" page_id="{{ $messengerPageId }}" attribution="setup_tool" data-luck-integration="messenger" data-luck-page-id="{{ $messengerPageId }}"></div>
+    <script>
+      (function (document, tag, id) {
+        if (document.getElementById(id)) return;
+        var script = document.createElement(tag);
+        script.id = id;
+        script.async = true;
+        script.defer = true;
+        script.crossOrigin = 'anonymous';
+        script.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
+        var first = document.getElementsByTagName(tag)[0];
+        first.parentNode.insertBefore(script, first);
+      }(document, 'script', 'facebook-jssdk'));
+    </script>
   @endif
   <script>
     window.V2BOARD_CONFIG = window.V2BOARD_CONFIG || {};
